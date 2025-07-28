@@ -1,5 +1,9 @@
-// part of 'clonify_helpers.dart';
+import 'dart:convert';
+import 'dart:io';
 
+import 'package:clonify/utils/build_manager.dart';
+import 'package:clonify/utils/clone_manager.dart';
+import 'package:clonify/utils/clonify_helpers.dart';
 // // 🚀 Upload the app to the App Store
 
 // Future<void> uploadToAppStore(String clientId, List<String> args) async {
@@ -199,3 +203,78 @@
 //   });
 //   return answer.toLowerCase() == 'y';
 // }
+
+// 🚀 Upload the app to the App Store
+
+Future<void> uploadToAppStore(String clientId) async {
+  print('🚀 Uploading app for client: $clientId');
+  await getCurrentCloneConfig();
+
+  const iosDir = './build/ios';
+  const appBundleDir = './build/app/outputs/bundle/release';
+
+  validateDirectories(clientId, iosDir, appBundleDir);
+
+  final appIdentifier = await getAppBundleId(clientId);
+  if (appIdentifier.isEmpty) {
+    print('❌ Error: Could not determine bundle ID for client "$clientId".');
+    return;
+  }
+
+  final ipaPath = '$iosDir/ipa/$appIdentifier.ipa';
+  const aabPath = '$appBundleDir/app-release.aab';
+
+  if (!await validateBuildFiles(ipaPath, 'IPA', clientId) ||
+      !await validateBuildFiles(aabPath, 'AAB', clientId)) {
+    return;
+  }
+
+  final apiKeyPath = Platform.environment['APPSTORE_API_KEY_PATH'] ?? '';
+  // =
+  // '/Users/safeersoft/development/flutter_projects/natejsoft_hr_app/clonify/doc/fastlane_settings.json';
+  if (apiKeyPath.isEmpty) {
+    print('❌ Error: APPSTORE_API_KEY_PATH environment variable is not set.');
+    return;
+  }
+
+  await _runFastlaneUpload(ipaPath, appIdentifier, apiKeyPath);
+}
+
+// 🚀 Run Fastlane command for uploading to App Store
+Future<void> _runFastlaneUpload(
+  String ipaPath,
+  String appIdentifier,
+  String apiKeyPath,
+) async {
+  final content = File(apiKeyPath).readAsStringSync();
+  try {
+    jsonDecode(content);
+  } catch (_) {
+    print(
+      '❌ Error: The file at $apiKeyPath is not valid JSON See fastlane_instructions.md.',
+    );
+    exit(1);
+  }
+
+  final deliverCommand =
+      '''
+    fastlane deliver --ipa "$ipaPath" \\
+    --app_identifier "$appIdentifier" \\
+    --submit_for_review true \\
+    --automatic_release true \\
+    --api_key_path "$apiKeyPath"
+  ''';
+
+  print('🔄 Running Fastlane Deliver...');
+  final process = await Process.start('bash', [
+    '-c',
+    deliverCommand,
+  ], mode: ProcessStartMode.inheritStdio);
+
+  final exitCode = await process.exitCode;
+  if (exitCode == 0) {
+    print('✅ Successfully uploaded to the App Store!');
+  } else {
+    print('❌ Upload failed with exit code $exitCode.');
+  }
+}

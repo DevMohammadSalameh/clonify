@@ -1,6 +1,16 @@
-part of 'clonify_helpers.dart';
-
 // Clone Config Section
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:clonify/models/config_model.dart';
+import 'package:clonify/utils/asset_manager.dart';
+import 'package:clonify/utils/clonify_helpers.dart';
+import 'package:clonify/utils/firebase_manager.dart';
+import 'package:clonify/utils/package_rename_plus_manager.dart';
+import 'package:yaml_edit/yaml_edit.dart';
+// ignore: depend_on_referenced_packages
+import 'package:yaml/yaml.dart' as yaml;
+
 Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   // 1. Check if the 'generated' directory exists
   final generatedDir = Directory('./lib/generated');
@@ -26,14 +36,16 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   // 3.2. Write gradients
   for (var i = 0; i < (configModel.gradientsColors?.length ?? 0); i++) {
     final gradient = configModel.gradientsColors![i];
-    sink.writeln('  static const ${gradient.name} = LinearGradient('
-        'colors: <Color>['
-        '${gradient.colors?.map((color) => 'Color(0xFF$color)').join(', ')}'
-        '],'
-        'begin: Alignment.${gradient.begin},'
-        'end: Alignment.${gradient.end},'
-        'transform: GradientRotation(${gradient.transform})'
-        ');');
+    sink.writeln(
+      '  static const ${gradient.name} = LinearGradient('
+      'colors: <Color>['
+      '${gradient.colors?.map((color) => 'Color(0xFF$color)').join(', ')}'
+      '],'
+      'begin: Alignment.${gradient.begin},'
+      'end: Alignment.${gradient.end},'
+      'transform: GradientRotation(${gradient.transform})'
+      ');',
+    );
   }
 
   // 3.3 Write Base URL
@@ -44,9 +56,10 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   sink.writeln('  static const String version = "${configModel.version}";');
   // 3.7 Write Primary Color
   sink.writeln(
-      '  static const String primaryColor = "${configModel.primaryColor}";');
+    '  static const String primaryColor = "${configModel.primaryColor}";',
+  );
 
-// 4. Access the _assetTargetDirectory and for each file in that directory add its path
+  // 4. Access the _assetTargetDirectory and for each file in that directory add its path
   // final assetsDirectory =
   //     Directory('./clonify/clones/${configModel.clientId}/assets');
 
@@ -79,34 +92,43 @@ Future<void> createClone() async {
   print('🛠 Creating a new project clone...');
 
   // Step 1: Prompt user for inputs
-  final clientId =
-      prompt('Enter Clone ID. This ID will be used to identify your project:');
+  final clientId = prompt(
+    'Enter Clone ID. This ID will be used to identify your project:',
+  );
 
   final primaryColor = promptUser(
-      'Enter the primary color (e.g., 0xFFFFFFFF):', '0xFF3EA7E1',
-      validator: (value) => RegExp(r'^0x[0-9A-Fa-f]{8}$').hasMatch(value));
+    'Enter the primary color (e.g., 0xFFFFFFFF):',
+    '0xFF3EA7E1',
+    validator: (value) => RegExp(r'^0x[0-9A-Fa-f]{8}$').hasMatch(value),
+  );
 
   final packageName = promptUser(
-      'Enter the package name (e.g., com.example.example):',
-      // 'com.${clientId.toLowerCase()}.${clientId.toLowerCase()}hr',
-      'com.natejsoft.${clientId.toLowerCase()}hr',
-      validator: (value) =>
-          RegExp(r'^[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z]+$').hasMatch(value));
+    'Enter the package name (e.g., com.example.example):',
+    // 'com.${clientId.toLowerCase()}.${clientId.toLowerCase()}hr',
+    'com.natejsoft.${clientId.toLowerCase()}hr',
+    validator: (value) =>
+        RegExp(r'^[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z]+$').hasMatch(value),
+  );
 
   final appName = promptUser(
-      'Enter the app name (e.g., Clone App):', '${toTitleCase(clientId)} HR',
-      validator: (value) => value.isNotEmpty);
+    'Enter the app name (e.g., Clone App):',
+    '${toTitleCase(clientId)} HR',
+    validator: (value) => value.isNotEmpty,
+  );
 
   final version = promptUser(
-      'Enter the app version (e.g., 1.0.0+1):', '1.0.0+1',
-      validator: (value) => value.isNotEmpty);
+    'Enter the app version (e.g., 1.0.0+1):',
+    '1.0.0+1',
+    validator: (value) => value.isNotEmpty,
+  );
 
   final cloneDir = Directory('./clonify/clones/$clientId');
   cloneDir.createSync(recursive: true);
 
   final firebaseProjectId = promptUser(
-      'Enter the Firebase project ID (e.g., my-project-id):',
-      'firebase-$clientId-flutter');
+    'Enter the Firebase project ID (e.g., my-project-id):',
+    'firebase-$clientId-flutter',
+  );
 
   final configFile = File('${cloneDir.path}/config.json');
 
@@ -126,12 +148,10 @@ Future<void> createClone() async {
   // Step 3: Create Firebase project and configure
   try {
     final doRename = prompt(
-        'Do you want to rename the app with $appName and package with $packageName? (y/n):');
+      'Do you want to rename the app with $appName and package with $packageName? (y/n):',
+    );
     if (doRename.toLowerCase() == 'y') {
-      await runRenamePackage(
-        appName: appName,
-        packageName: packageName,
-      );
+      await runRenamePackage(appName: appName, packageName: packageName);
     } else {
       print('🚀 Skipping renaming process...');
     }
@@ -146,7 +166,8 @@ Future<void> createClone() async {
 
     print('🎉 Clone successfully created for $clientId!');
     print(
-        '🚀 Run "clonify configure --clientId $clientId" to generate this clone.');
+      '🚀 Run "clonify configure --clientId $clientId" to generate this clone.',
+    );
     // print('Dont forget to add the assets to the assets folder');
   } catch (e) {
     print('❌ Error during clone creation: $e');
@@ -154,7 +175,7 @@ Future<void> createClone() async {
 }
 
 Future<Map<String, dynamic>?> configureApp(List<String> args) async {
-  final clientId = _getArgValue(args, '--clientId');
+  final clientId = getArgValue(args, '--clientId');
   print('🚀 Starting cloning process for client: $clientId');
 
   try {
@@ -173,11 +194,13 @@ Future<Map<String, dynamic>?> configureApp(List<String> args) async {
     await addFirebaseToApp(
       packageName: configJson['packageName'],
       firebaseProjectId: configJson['firebaseProjectId'],
-      skip: args.any((arg) =>
-          arg == '--skip-firebase-configure' ||
-          arg == '-SF' ||
-          arg == '--skip-all' ||
-          arg == '-SA'),
+      skip: args.any(
+        (arg) =>
+            arg == '--skip-firebase-configure' ||
+            arg == '-SF' ||
+            arg == '--skip-all' ||
+            arg == '-SA',
+      ),
     );
 
     // Step 3: Replace assets
@@ -188,7 +211,7 @@ Future<Map<String, dynamic>?> configureApp(List<String> args) async {
     String yamlVersion;
     try {
       final pubspecContent = File(pubspecFilePath).readAsStringSync();
-      final pubspecMap = loadYaml(pubspecContent);
+      final pubspecMap = yaml.loadYaml(pubspecContent);
       yamlVersion = pubspecMap['version'] ?? 'Unknown Version';
     } catch (e) {
       print('❌ Failed to read or parse $pubspecFilePath: $e');
@@ -202,23 +225,28 @@ Future<Map<String, dynamic>?> configureApp(List<String> args) async {
         '1.0.0+1',
         validator: (value) => RegExp(r'^\d+\.\d+\.\d+\+\d+$').hasMatch(value),
         skipValue: '1.0.0+1',
-        skip: args.any((arg) =>
-            arg == '--skip-version' ||
-            arg == '-SV' ||
-            arg == '--skip-all' ||
-            arg == '-SA'),
+        skip: args.any(
+          (arg) =>
+              arg == '--skip-version' ||
+              arg == '-SV' ||
+              arg == '--skip-all' ||
+              arg == '-SA',
+        ),
       );
       configJson['version'] = configVersion;
-      await File('./clonify/clones/$clientId/config.json')
-          .writeAsString(jsonEncode(configJson));
+      await File(
+        './clonify/clones/$clientId/config.json',
+      ).writeAsString(jsonEncode(configJson));
     }
 
     if (yamlVersion != configVersion) {
-      final skipPubUpdate = args.any((arg) =>
-          arg == '--skip-pub-update' ||
-          arg == '-SPU' ||
-          arg == '--skip-all' ||
-          arg == '-SA');
+      final skipPubUpdate = args.any(
+        (arg) =>
+            arg == '--skip-pub-update' ||
+            arg == '-SPU' ||
+            arg == '--skip-all' ||
+            arg == '-SA',
+      );
 
       final String updateYamlVersionAnswer = prompt(
         'Version in pubspec.yaml ($yamlVersion) is different from config file ($configVersion). Do you want to update pubspec.yaml with the config version? (y/n):',
@@ -231,14 +259,17 @@ Future<Map<String, dynamic>?> configureApp(List<String> args) async {
       }
     }
 
-    final skipVersionUpdate = args.any((arg) =>
-        arg == '--skip-version-update' ||
-        arg == '-SVU' ||
-        arg == '--skip-all' ||
-        arg == '-SA');
+    final skipVersionUpdate = args.any(
+      (arg) =>
+          arg == '--skip-version-update' ||
+          arg == '-SVU' ||
+          arg == '--skip-all' ||
+          arg == '-SA',
+    );
 
-    final autoUpdate =
-        args.any((arg) => arg == '--auto-update' || arg == '-AU');
+    final autoUpdate = args.any(
+      (arg) => arg == '--auto-update' || arg == '-AU',
+    );
     final changeVersionAnswer = prompt(
       'Do you want to update the version number ($configVersion)? (y/n):',
       skip: skipVersionUpdate,
@@ -254,17 +285,17 @@ Future<Map<String, dynamic>?> configureApp(List<String> args) async {
       );
       await updateYamlVersionInPubspec(newVersion);
       configJson['version'] = newVersion;
-      await File('./clonify/clones/$clientId/config.json')
-          .writeAsString(jsonEncode(configJson));
+      await File(
+        './clonify/clones/$clientId/config.json',
+      ).writeAsString(jsonEncode(configJson));
     }
 
     // Step 5: run flutter_launcher_icons
     try {
-      await runCommand(
-        'dart',
-        ['run', 'flutter_launcher_icons'],
-        successMessage: '✅ Flutter launcher icons generated successfully!',
-      );
+      await runCommand('dart', [
+        'run',
+        'flutter_launcher_icons',
+      ], successMessage: '✅ Flutter launcher icons generated successfully!');
 
       // Step 6: run flutter_native_splash
       await runCommand(
@@ -274,11 +305,10 @@ Future<Map<String, dynamic>?> configureApp(List<String> args) async {
       );
 
       // Step 7: run intl_utils:generate
-      await runCommand(
-        'dart',
-        ['run', 'intl_utils:generate'],
-        successMessage: '✅ Intl utils generated successfully!',
-      );
+      await runCommand('dart', [
+        'run',
+        'intl_utils:generate',
+      ], successMessage: '✅ Intl utils generated successfully!');
 
       generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
     } catch (e) {
@@ -338,7 +368,7 @@ Future<void> buildApps(String clientId, List<String> args) async {
   String version;
   try {
     final pubspecContent = File(pubspecFilePath).readAsStringSync();
-    final pubspecMap = loadYaml(pubspecContent);
+    final pubspecMap = yaml.loadYaml(pubspecContent);
     version = pubspecMap['version'] ?? 'Unknown Version';
   } catch (e) {
     print('❌ Failed to read or parse $pubspecFilePath: $e');
@@ -348,11 +378,13 @@ Future<void> buildApps(String clientId, List<String> args) async {
   //change bundleId in xcode project
   // _changeBundleIdInXcodeProject(bundleId: packageName);
 
-  final skipBuildCheck = args.any((arg) =>
-      arg == '--skip-build-check' ||
-      arg == '-SBC' ||
-      arg == '--skip-all' ||
-      arg == '-SA');
+  final skipBuildCheck = args.any(
+    (arg) =>
+        arg == '--skip-build-check' ||
+        arg == '-SBC' ||
+        arg == '--skip-all' ||
+        arg == '-SA',
+  );
   // Update prompt message with packageName, appName, and version
   final answer = prompt(
     ' Have you verified the Bundle ID ($packageName) and App Name ($appName) in the Xcode project, with the version [$version]? (y/n):',
@@ -372,7 +404,8 @@ Future<void> buildApps(String clientId, List<String> args) async {
   // Periodically display a loading message with the elapsed time
   final progress = Stream.periodic(const Duration(milliseconds: 100), (count) {
     stdout.write(
-        '\r🛠 Apps are being built... [${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s]');
+      '\r🛠 Apps are being built... [${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s]',
+    );
   });
   final progressSubscription = progress.listen((_) {});
 
@@ -408,12 +441,15 @@ Future<void> buildApps(String clientId, List<String> args) async {
     progressSubscription.cancel();
     stdout.write('\r'); // Clear the line
     print(
-        '✓ You can find the iOS app archive at\n  ${'-' * 10}→ build/ios/archive/Runner.xcarchive');
+      '✓ You can find the iOS app archive at\n  ${'-' * 10}→ build/ios/archive/Runner.xcarchive',
+    );
     print(
-        '✓ You can find the Android app bundle at\n  ${'-' * 10}→ build/app/outputs/bundle/release/app-release.aab');
+      '✓ You can find the Android app bundle at\n  ${'-' * 10}→ build/app/outputs/bundle/release/app-release.aab',
+    );
     // Display the total build time
     print(
-        '✅ Apps built successfully for client ID: $clientId in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.');
+      '✅ Apps built successfully for client ID: $clientId in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.',
+    );
   } catch (e) {
     // Stop the progress display and print the error
     progressSubscription.cancel();
@@ -424,11 +460,13 @@ Future<void> buildApps(String clientId, List<String> args) async {
   }
 
   // Upload apps
-  final skipAndroidUploadCheck = args.any((arg) =>
-      arg == '--upload-all' ||
-      arg == '-UALL' ||
-      arg == '--upload-android' ||
-      arg == '-UA');
+  final skipAndroidUploadCheck = args.any(
+    (arg) =>
+        arg == '--upload-all' ||
+        arg == '-UALL' ||
+        arg == '--upload-android' ||
+        arg == '-UA',
+  );
   final uploadAndroid = prompt(
     'Do you want to upload the Android AAB? (y/n):',
     skip: skipAndroidUploadCheck,
@@ -451,11 +489,13 @@ Future<void> buildApps(String clientId, List<String> args) async {
     );
   }
 
-  final skipIOSUploadCheck = args.any((arg) =>
-      arg == '--upload-all' ||
-      arg == '-UALL' ||
-      arg == '--upload-ios' ||
-      arg == '-UI');
+  final skipIOSUploadCheck = args.any(
+    (arg) =>
+        arg == '--upload-all' ||
+        arg == '-UALL' ||
+        arg == '--upload-ios' ||
+        arg == '-UI',
+  );
   final uploadIOS = prompt(
     'Do you want to upload the iOS IPA? (y/n):',
     skip: skipIOSUploadCheck,
@@ -486,7 +526,9 @@ Future<void> updateFastlaneFiles({
 }) async {
   // Function to replace variables in Fastlane files
   Future<void> updateFile(
-      String filePath, Map<String, String> replacements) async {
+    String filePath,
+    Map<String, String> replacements,
+  ) async {
     final file = File(filePath);
     if (!file.existsSync()) {
       print('❌ Fastlane file not found: $filePath');
@@ -516,18 +558,18 @@ Future<void> updateFastlaneFiles({
 Future<void> getCurrentCloneConfig() async {
   try {
     // Run 'rename getAppName'
-    final ProcessResult appNameResult = await Process.run(
-      'dart',
-      ['run', 'rename', 'getAppName'],
-      runInShell: true,
-    );
+    final ProcessResult appNameResult = await Process.run('dart', [
+      'run',
+      'rename',
+      'getAppName',
+    ], runInShell: true);
 
     // Run 'rename getBundleId'
-    final ProcessResult bundleIdResult = await Process.run(
-      'dart',
-      ['run', 'rename', 'getBundleId'],
-      runInShell: true,
-    );
+    final ProcessResult bundleIdResult = await Process.run('dart', [
+      'run',
+      'rename',
+      'getBundleId',
+    ], runInShell: true);
 
     // Check and print the results
     if (appNameResult.stderr.toString().isNotEmpty) {
@@ -551,7 +593,9 @@ Future<Map<String, dynamic>> parseConfigFile(String clientId) async {
 
   if (!configFile.existsSync()) {
     throw FileSystemException(
-        'Config file not found for $clientId', configFile.path);
+      'Config file not found for $clientId',
+      configFile.path,
+    );
   }
 
   final content = await configFile.readAsString();
@@ -593,14 +637,16 @@ void listClients() {
           final version = content['version']?.toString() ?? 'N/A';
 
           //adjust column widths
-          clientIdWidth =
-              clientId.length > clientIdWidth ? clientId.length : clientIdWidth;
-          appNameWidth =
-              appName.length > appNameWidth ? appName.length : appNameWidth;
+          clientIdWidth = clientId.length > clientIdWidth
+              ? clientId.length
+              : clientIdWidth;
+          appNameWidth = appName.length > appNameWidth
+              ? appName.length
+              : appNameWidth;
           firebaseProjectIdWidth =
               firebaseProjectId.length > firebaseProjectIdWidth
-                  ? firebaseProjectId.length
-                  : firebaseProjectIdWidth;
+              ? firebaseProjectId.length
+              : firebaseProjectIdWidth;
 
           clientsData.add({
             'clientId': clientId,
@@ -623,22 +669,29 @@ void listClients() {
 
   // Print Table Header
   print(
-      '\n+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+');
-  print('| ${'Client ID'.padRight(clientIdWidth)}|'
-      ' ${'App Name'.padRight(appNameWidth)}|'
-      ' ${'Firebase Project ID'.padRight(firebaseProjectIdWidth)}|'
-      ' ${'Version'.padRight(versionWidth)}|');
+    '\n+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+',
+  );
   print(
-      '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+');
+    '| ${'Client ID'.padRight(clientIdWidth)}|'
+    ' ${'App Name'.padRight(appNameWidth)}|'
+    ' ${'Firebase Project ID'.padRight(firebaseProjectIdWidth)}|'
+    ' ${'Version'.padRight(versionWidth)}|',
+  );
+  print(
+    '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+',
+  );
 
   // Print Table Rows
   for (final client in clientsData) {
-    print('| ${client['clientId']!.padRight(clientIdWidth)}|'
-        ' ${client['appName']!.padRight(appNameWidth)}|'
-        ' ${client['firebaseProjectId']!.padRight(firebaseProjectIdWidth)}|'
-        ' ${client['version']!.padRight(versionWidth)}|');
+    print(
+      '| ${client['clientId']!.padRight(clientIdWidth)}|'
+      ' ${client['appName']!.padRight(appNameWidth)}|'
+      ' ${client['firebaseProjectId']!.padRight(firebaseProjectIdWidth)}|'
+      ' ${client['version']!.padRight(versionWidth)}|',
+    );
   }
 
   print(
-      '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+');
+    '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+',
+  );
 }

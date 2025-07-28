@@ -3,16 +3,7 @@
 import 'dart:io';
 import 'dart:convert';
 
-import 'package:yaml/yaml.dart';
-import 'package:yaml_edit/yaml_edit.dart';
-
-import '../models/config_model.dart';
-
-import 'firebase_manager.dart';
-part 'package_rename_plus_manager.dart';
-part 'asset_manager.dart';
-part 'clone_manager.dart';
-part 'build_manager.dart';
+import 'package:clonify/utils/clone_manager.dart';
 
 // Future<void> runParallelCommands(
 //   List<Future<void> Function()> commands,
@@ -44,19 +35,23 @@ part 'build_manager.dart';
 //   await Future.wait(tasks); // Wait for all commands to finish
 // }
 
-Future<void> runCommand(String command, List<String> args,
-    {String? successMessage,
-    bool showLoading = true,
-    String? loadingMessage,
-    String? workingDirectory}) async {
+Future<void> runCommand(
+  String command,
+  List<String> args, {
+  String? successMessage,
+  bool showLoading = true,
+  String? loadingMessage,
+  String? workingDirectory,
+}) async {
   if (showLoading) {
     final stopwatch = Stopwatch()..start();
     String fullCommand = '$command ${args.join(" ")}';
     if (fullCommand.length > 50) {
       fullCommand = '$command ${args.join(" ").substring(0, 50)}...';
     }
-    final progress =
-        Stream.periodic(const Duration(milliseconds: 100), (count) {
+    final progress = Stream.periodic(const Duration(milliseconds: 100), (
+      count,
+    ) {
       return loadingMessage != null
           ? "🛠 $loadingMessage [${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s]"
           : "🛠 Running $fullCommand [${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s]";
@@ -79,12 +74,15 @@ Future<void> runCommand(String command, List<String> args,
 
       if (result.exitCode == 0) {
         stopwatch.stop();
-        print(successMessage != null
-            ? "$successMessage ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s"
-            : '✅ Command completed in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.');
+        print(
+          successMessage != null
+              ? "$successMessage ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s"
+              : '✅ Command completed in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.',
+        );
       } else {
         throw Exception(
-            '❌ Command failed: $command ${args.join(" ")}\nError: ${result.stderr}');
+          '❌ Command failed: $command ${args.join(" ")}\nError: ${result.stderr}',
+        );
       }
     } catch (e) {
       progressSubscription.cancel();
@@ -104,7 +102,8 @@ Future<void> runCommand(String command, List<String> args,
         print('\r${successMessage ?? '✅ Command completed successfully.'}');
       } else {
         throw Exception(
-            '❌ Command failed: $command ${args.join(" ")}\nError: ${result.stderr}');
+          '❌ Command failed: $command ${args.join(" ")}\nError: ${result.stderr}',
+        );
       }
     } catch (e) {
       print(e);
@@ -125,16 +124,23 @@ String prompt(String message, {String? skipValue, bool? skip}) {
   return stdin.readLineSync() ?? '';
 }
 
-String promptUser(String promptMessage, String defaultValue,
-    {bool Function(String)? validator, bool? skip, String? skipValue}) {
+String promptUser(
+  String promptMessage,
+  String defaultValue, {
+  bool Function(String)? validator,
+  bool? skip,
+  String? skipValue,
+}) {
   if (skip == true) {
     print(
-        '$promptMessage (Default: $defaultValue) >>| Skipping with (${skipValue ?? defaultValue})...');
+      '$promptMessage (Default: $defaultValue) >>| Skipping with (${skipValue ?? defaultValue})...',
+    );
 
     return skipValue ?? defaultValue;
   }
-  final answer =
-      prompt('$promptMessage (Default: $defaultValue) [Enter for default]:');
+  final answer = prompt(
+    '$promptMessage (Default: $defaultValue) [Enter for default]:',
+  );
   if (answer.isEmpty) {
     return defaultValue;
   }
@@ -145,7 +151,7 @@ String promptUser(String promptMessage, String defaultValue,
   return answer;
 }
 
-String _getArgValue(List<String> args, String key) {
+String getArgValue(List<String> args, String key) {
   final index = args.indexOf(key);
   if (index == -1 || index + 1 >= args.length) {
     throw ArgumentError('Missing value for $key');
@@ -165,21 +171,29 @@ void printUsage() {
 
   print('Commands:');
   print(
-      '  create                                              Create a new clone.');
+    '  create                                              Create a new clone.',
+  );
   print(
-      '  configure | con | config | c [--clientId <id>]      Configure the app for the specified client ID.');
+    '  configure | con | config | c [--clientId <id>]      Configure the app for the specified client ID.',
+  );
   print(
-      '  clean | clear [--clientId <id>]                     Clean up a partial clone for the specified client ID.');
+    '  clean | clear [--clientId <id>]                     Clean up a partial clone for the specified client ID.',
+  );
   print(
-      '  build | b [--clientId <id>]                         Build the clone for the specified client ID.');
+    '  build | b [--clientId <id>]                         Build the clone for the specified client ID.',
+  );
   print(
-      '  upload | up | u [--clientId <id>]                   Upload the clone for the specified client ID.');
+    '  upload | up | u [--clientId <id>]                   Upload the clone for the specified client ID.',
+  );
   print(
-      '  list | ls                                           List all available clones.');
+    '  list | ls                                           List all available clones.',
+  );
   print(
-      '  which | current | who                               Get the current clone configuration.');
+    '  which | current | who                               Get the current clone configuration.',
+  );
   print(
-      '  help | -h | --help                                  Print this help message.');
+    '  help | -h | --help                                  Print this help message.',
+  );
   print('');
 
   print('Options:');
@@ -188,41 +202,56 @@ void printUsage() {
 
   print('  For "configure" command:');
   print(
-      '    --clientId | -id <id>                             Specify the client ID for the command.');
+    '    --clientId | -id <id>                             Specify the client ID for the command.',
+  );
   print(
-      '    --skip-all | -SA                                  Skip all user prompts.');
+    '    --skip-all | -SA                                  Skip all user prompts.',
+  );
   print(
-      '    --auto-update | -AU                               Auto update the clone version.');
+    '    --auto-update | -AU                               Auto update the clone version.',
+  );
   print(
-      '    --skip-firebase-configure | -SF                   Skip the Firebase configuration.');
+    '    --skip-firebase-configure | -SF                   Skip the Firebase configuration.',
+  );
   print(
-      '    --skip-version | -SV                              Skip config file empty version check.');
+    '    --skip-version | -SV                              Skip config file empty version check.',
+  );
   print(
-      '    --skip-pub-update | -SPU                          Auto update pub version.');
+    '    --skip-pub-update | -SPU                          Auto update pub version.',
+  );
   print(
-      '    --skip-version-update | -SVU                      Skip the config version update prompt unless --auto-update is used.');
+    '    --skip-version-update | -SVU                      Skip the config version update prompt unless --auto-update is used.',
+  );
   print('');
 
   print('  For "build" command:');
   print(
-      '    --clientId | -id <id>                             Specify the client ID for the command.');
+    '    --clientId | -id <id>                             Specify the client ID for the command.',
+  );
   print(
-      '    --skip-all | -SA                                  Skip all user prompts and build both Android and iOS clones.');
+    '    --skip-all | -SA                                  Skip all user prompts and build both Android and iOS clones.',
+  );
   print(
-      '    --skip-build-check | -SBC                         Skip the confirmation check before building.');
+    '    --skip-build-check | -SBC                         Skip the confirmation check before building.',
+  );
   print(
-      '    --upload-all | -UALL                              Build and upload both Android and iOS clones.');
+    '    --upload-all | -UALL                              Build and upload both Android and iOS clones.',
+  );
   print(
-      '    --upload-android | -UA                            Upload the Android clone after building.');
+    '    --upload-android | -UA                            Upload the Android clone after building.',
+  );
   print(
-      '    --upload-ios | -UI                                Upload the iOS clone after building.');
+    '    --upload-ios | -UI                                Upload the iOS clone after building.',
+  );
   print('');
 
   print('Note:');
   print(
-      '  - For commands that accept --clientId, if it is not provided, the last configured client ID will be used if available.');
+    '  - For commands that accept --clientId, if it is not provided, the last configured client ID will be used if available.',
+  );
   print(
-      '  - Options can be combined, but some may conflict (e.g., --skip-all and --upload-all).');
+    '  - Options can be combined, but some may conflict (e.g., --skip-all and --upload-all).',
+  );
   print('');
 
   print('Examples:');
@@ -282,4 +311,34 @@ String versionNumberIncrementor(String version) {
   versionNumbers[versionNumbers.length - 1] = unifiedNumber.toString();
   final newVersion = '${versionNumbers.join('.')}+$unifiedNumber';
   return newVersion;
+}
+
+Future<String> getAppBundleId(String clientId) async {
+  final Map<String, dynamic> configJson = await parseConfigFile(clientId);
+  return configJson['packageName'] ?? '';
+}
+
+// ✅ Get version from config.json
+Future<String> getVersionFromConfig(String clientId) async {
+  final configFilePath = './clonify/clones/$clientId/config.json';
+  try {
+    final configFile = File(configFilePath);
+    if (!configFile.existsSync()) {
+      print('❌ Config file not found.');
+      return '';
+    }
+
+    final configJson = await parseConfigFile('config');
+    if (configJson['version'] == null) {
+      // If version is not found, update the version in config.json
+      print('❌ Version not found in config.json.');
+      final newVersion = promptUser('Enter the version number:', '1.0.0+1');
+      configJson['version'] = newVersion;
+      configFile.writeAsStringSync(jsonEncode(configJson));
+    }
+    return configJson['version'] ?? '';
+  } catch (e) {
+    print('❌ Failed to read or parse config.json: $e');
+    return '';
+  }
 }

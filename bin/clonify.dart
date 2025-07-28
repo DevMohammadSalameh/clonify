@@ -1,7 +1,9 @@
 import 'dart:io';
 import 'dart:convert';
 
+import 'package:clonify/utils/clone_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
+import 'package:clonify/utils/upload_manager.dart';
 
 const lastClientFilePath = './clonify/last_client.txt';
 const lastConfigFilePath = './clonify/last_config.json';
@@ -36,11 +38,11 @@ Future<String?> getClientIdFromArgsOrLast(List<String> args) async {
   String? clientId =
       getArgumentValue(args, '--clientId') ??
       getArgumentValue(args, '-id') ??
-      getArgumentValue(args, '--clinetId');
-  if (getArgumentValue(args, '--clinetId') != null) {
+      getArgumentValue(args, '--clientId');
+  if (getArgumentValue(args, '--clientId') != null) {
     // I added this case because i have typed it wrong multiple times
     print(
-      ' [!] Typo in argument name. Use "--clientId" instead of "--clinetId" next time.',
+      ' [!] Typo in argument name. Use "--clientId" instead of "--clientId" next time.',
     );
   }
 
