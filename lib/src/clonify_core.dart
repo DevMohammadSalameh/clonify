@@ -85,16 +85,83 @@ Future<void> initClonify() async {
   final settingsFile = File('./clonify/clonify_settings.yaml');
   if (!settingsFile.existsSync()) {
     settingsFile.createSync(recursive: true);
+
+    final bool enableFirebase =
+        promptUser('Do you want to enable Firebase? (y/n)', 'n') == 'y';
+    String firebaseSettingsFilePath = '';
+    if (enableFirebase) {
+      firebaseSettingsFilePath = promptUser(
+        'Enter Firebase settings file path:',
+        '',
+        validator: (value) {
+          if (value.isEmpty) {
+            print('❌ Firebase settings file path cannot be empty.');
+            return false;
+          }
+          if (!File(value).existsSync()) {
+            print('❌ Firebase settings file does not exist at $value.');
+            return false;
+          }
+          return true;
+        },
+      );
+    }
+    final bool enableFastlane =
+        promptUser('Do you want to enable Fastlane? (y/n)', 'n') == 'y';
+
+    String fastlaneSettingsFilePath = '';
+    if (enableFastlane) {
+      fastlaneSettingsFilePath = promptUser(
+        'Enter Fastlane settings file path:',
+        '',
+        validator: (value) {
+          if (value.isEmpty) {
+            print('❌ Fastlane settings file path cannot be empty.');
+            return false;
+          } else if (!File(value).existsSync()) {
+            print('❌ Fastlane settings file does not exist at $value.');
+            return false;
+          }
+          return true;
+        },
+      );
+    }
+    final String companyName = promptUser(
+      'Enter your company name:',
+      '',
+      validator: (value) {
+        if (value.isEmpty) {
+          print('❌ Company name cannot be empty.');
+          return false;
+        }
+        return true;
+      },
+    );
+    final String defaultColor = promptUser(
+      'Enter default app color (hex format, e.g., #FFFFFF):',
+      '#FFFFFF',
+      //check for valid hex color
+      validator: (value) {
+        if (RegExp(r'^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$').hasMatch(value)) {
+          return true;
+        }
+        print('Invalid hex color format. Use #FFFFFF or #FFF.');
+        return false;
+      },
+    );
+
     settingsFile.writeAsStringSync('''
 # Clonify Settings
 firebase:
-  enabled: false
-  settings_file: ""
+  enabled: $enableFirebase
+  settings_file: "${enableFirebase ? firebaseSettingsFilePath : ''}"
+  
 fastlane:
-  enabled: false
-  settings_file: ""
-company_name: ""
-default_color: "#FFFFFF"
+  enabled: $enableFastlane
+  settings_file: "${enableFastlane ? fastlaneSettingsFilePath : ''}"
+company_name: "$companyName"
+
+default_color: "$defaultColor"
 ''');
     print('✅ Created default clonify_settings.yaml at ${settingsFile.path}.');
   } else {
@@ -156,8 +223,8 @@ bool validatedClonifySettings() {
   }
   // Required fields and their types
   final requiredFields = {
-    'firebase': Map,
-    'fastlane': Map,
+    'firebase': yaml.YamlMap,
+    'fastlane': yaml.YamlMap,
     'company_name': String,
     'default_color': String,
   };
@@ -170,7 +237,7 @@ bool validatedClonifySettings() {
     if (rawSettings[field] == null ||
         rawSettings[field].runtimeType != requiredFields[field]) {
       print(
-        '❌ Field "$field" has invalid type. Expected ${requiredFields[field]}.',
+        '❌ Field "$field" has invalid type ${rawSettings[field].runtimeType}. Expected ${requiredFields[field]}.',
       );
       return false;
     }
