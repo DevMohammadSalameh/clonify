@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:clonify/utils/clonify_helpers.dart';
+// ignore: depend_on_referenced_packages
+import 'package:yaml/yaml.dart' as yaml;
 
 const lastClientFilePath = './clonify/last_client.txt';
 const lastConfigFilePath = './clonify/last_config.json';
@@ -61,4 +63,136 @@ Future<String?> getClientIdFromArgsOrLast(List<String> args) async {
     }
   }
   return clientId;
+}
+
+/// Initializes the Clonify environment by performing the following steps:
+///
+/// - Checks for the existence of the `clonify` directory and creates it if it does not exist.
+/// - Checks for the existence of the `clonify_settings.yaml` file inside the `clonify` directory.
+///   - If the file does not exist, creates it with default settings for Firebase, Fastlane, company name, and default color.
+///   - If the file exists, calls `validatedClonifySettings()` to validate the settings.
+///
+/// The initialization process includes prompts for enabling Firebase and Fastlane services,
+/// specifying their respective settings files, entering the company name (used for package naming),
+/// and setting the default app color.
+Future<void> initClonify() async {
+  final clonifyDir = Directory('./clonify');
+  if (!clonifyDir.existsSync()) {
+    clonifyDir.createSync(recursive: true);
+    print('✅ Created clonify directory at ${clonifyDir.path}.');
+  }
+
+  final settingsFile = File('./clonify/clonify_settings.yaml');
+  if (!settingsFile.existsSync()) {
+    settingsFile.createSync(recursive: true);
+    settingsFile.writeAsStringSync('''
+# Clonify Settings
+firebase:
+  enabled: false
+  settings_file: ""
+fastlane:
+  enabled: false
+  settings_file: ""
+company_name: ""
+default_color: "#FFFFFF"
+''');
+    print('✅ Created default clonify_settings.yaml at ${settingsFile.path}.');
+  } else {
+    print('ℹ️ clonify_settings.yaml already exists at ${settingsFile.path}.');
+    validatedClonifySettings();
+  }
+}
+
+/// Validates the `clonify_settings.yaml` configuration file.
+///
+/// This function checks for the existence and correctness of the
+/// `clonify_settings.yaml` file in the `./clonify/` directory. It ensures:
+/// - The file exists and is not empty.
+/// - The YAML content is valid and can be parsed.
+/// - All required fields (`firebase`, `fastlane`, `company_name`, `default_color`)
+///   are present and have the correct types.
+/// - The `firebase` and `fastlane` fields contain `enabled` (bool) and
+///   `settings_file` (string) subfields.
+/// - The `company_name` field is a non-empty string.
+/// - The `default_color` field is a valid hex color string (e.g., `#FFFFFF`).
+///
+/// Prints error messages for any validation failures.
+///
+/// Returns `true` if the settings file is valid, otherwise `false`.
+
+bool validatedClonifySettings() {
+  final settingsFile = File('./clonify/clonify_settings.yaml');
+  if (!settingsFile.existsSync()) {
+    print('❌ clonify_settings.yaml not found. Please run "clonify init".');
+    return false;
+  }
+
+  final content = settingsFile.readAsStringSync();
+  if (content.isEmpty) {
+    print('❌ clonify_settings.yaml is empty. Please run "clonify init".');
+    return false;
+  }
+
+  // Parse YAML content
+  Map<String, dynamic> settings;
+  try {
+    settings = yaml.loadYaml(content);
+  } catch (e) {
+    print('❌ Failed to parse clonify_settings.yaml: $e');
+    return false;
+  }
+
+  // Required fields and their types
+  final requiredFields = {
+    'firebase': Map,
+    'fastlane': Map,
+    'company_name': String,
+    'default_color': String,
+  };
+
+  for (final field in requiredFields.keys) {
+    if (!settings.containsKey(field)) {
+      print('❌ Missing required field: $field');
+      return false;
+    }
+    if (settings[field] == null ||
+        settings[field].runtimeType != requiredFields[field]) {
+      print(
+        '❌ Field "$field" has invalid type. Expected ${requiredFields[field]}.',
+      );
+      return false;
+    }
+  }
+
+  // Check firebase and fastlane subfields
+  for (final service in ['firebase', 'fastlane']) {
+    final serviceSettings = settings[service];
+    if (!serviceSettings.containsKey('enabled') ||
+        serviceSettings['enabled'] is! bool) {
+      print('❌ "$service.enabled" must be a boolean.');
+      return false;
+    }
+    if (!serviceSettings.containsKey('settings_file') ||
+        serviceSettings['settings_file'] is! String) {
+      print('❌ "$service.settings_file" must be a string.');
+      return false;
+    }
+  }
+
+  // Check company_name
+  if ((settings['company_name'] as String).trim().isEmpty) {
+    print('❌ "company_name" cannot be empty.');
+    return false;
+  }
+
+  // Check default_color is a valid hex color
+  final color = settings['default_color'] as String;
+  final hexColorRegExp = RegExp(r'^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$');
+  if (!hexColorRegExp.hasMatch(color)) {
+    print('❌ "default_color" must be a valid hex color (e.g., #FFFFFF).');
+    return false;
+  }
+
+  print('✅ clonify_settings.yaml is valid.');
+  return true;
 }

@@ -6,7 +6,6 @@ import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:clonify/utils/upload_manager.dart';
 
 void main(List<String> args) async {
-  print('Welcome to Clonify!');
   if (args.isEmpty || args.contains('--help')) {
     printUsage();
     exit(1);
@@ -25,6 +24,9 @@ void main(List<String> args) async {
     switch (command) {
       case 'create':
         await createClone();
+        break;
+      case 'init':
+        await initClonify();
         break;
       case 'which' || 'current' || 'who':
         await getCurrentCloneConfig();
