@@ -21,6 +21,7 @@ void main(List<String> args) async {
   final command = args.first;
 
   try {
+    validatedClonifySettings();
     switch (command) {
       case 'create':
         await createClone();

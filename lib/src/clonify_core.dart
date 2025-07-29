@@ -187,7 +187,7 @@ default_color: "$defaultColor"
 ///
 /// Returns `true` if the settings file is valid, otherwise `false`.
 
-bool validatedClonifySettings() {
+bool validatedClonifySettings([bool isSilent = true]) {
   final settingsFile = File('./clonify/clonify_settings.yaml');
   if (!settingsFile.existsSync()) {
     print('❌ clonify_settings.yaml not found. Please run "clonify init".');
@@ -271,7 +271,9 @@ bool validatedClonifySettings() {
     print('❌ "default_color" must be a valid hex color (e.g., #FFFFFF).');
     return false;
   }
+  if (!isSilent) {
+    print('✅ clonify_settings.yaml is valid.');
+  }
 
-  print('✅ clonify_settings.yaml is valid.');
   return true;
 }
