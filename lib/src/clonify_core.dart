@@ -134,14 +134,26 @@ bool validatedClonifySettings() {
   }
 
   // Parse YAML content
-  Map<String, dynamic> settings;
+  dynamic rawSettings;
   try {
-    settings = yaml.loadYaml(content);
+    rawSettings = yaml.loadYaml(content);
   } catch (e) {
     print('❌ Failed to parse clonify_settings.yaml: $e');
     return false;
   }
 
+  // Convert YamlMap to Map<String, dynamic>
+  Map<String, dynamic> settings = {};
+  if (rawSettings is Map) {
+    rawSettings.forEach((key, value) {
+      settings[key.toString()] = value is yaml.YamlMap
+          ? Map<String, dynamic>.from(value)
+          : value;
+    });
+  } else {
+    print('❌ clonify_settings.yaml does not contain a valid map.');
+    return false;
+  }
   // Required fields and their types
   final requiredFields = {
     'firebase': Map,
@@ -151,12 +163,12 @@ bool validatedClonifySettings() {
   };
 
   for (final field in requiredFields.keys) {
-    if (!settings.containsKey(field)) {
+    if (!rawSettings.containsKey(field)) {
       print('❌ Missing required field: $field');
       return false;
     }
-    if (settings[field] == null ||
-        settings[field].runtimeType != requiredFields[field]) {
+    if (rawSettings[field] == null ||
+        rawSettings[field].runtimeType != requiredFields[field]) {
       print(
         '❌ Field "$field" has invalid type. Expected ${requiredFields[field]}.',
       );
@@ -166,7 +178,7 @@ bool validatedClonifySettings() {
 
   // Check firebase and fastlane subfields
   for (final service in ['firebase', 'fastlane']) {
-    final serviceSettings = settings[service];
+    final serviceSettings = rawSettings[service];
     if (!serviceSettings.containsKey('enabled') ||
         serviceSettings['enabled'] is! bool) {
       print('❌ "$service.enabled" must be a boolean.');
@@ -180,13 +192,13 @@ bool validatedClonifySettings() {
   }
 
   // Check company_name
-  if ((settings['company_name'] as String).trim().isEmpty) {
+  if ((rawSettings['company_name'] as String).trim().isEmpty) {
     print('❌ "company_name" cannot be empty.');
     return false;
   }
 
   // Check default_color is a valid hex color
-  final color = settings['default_color'] as String;
+  final color = rawSettings['default_color'] as String;
   final hexColorRegExp = RegExp(r'^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$');
   if (!hexColorRegExp.hasMatch(color)) {
     print('❌ "default_color" must be a valid hex color (e.g., #FFFFFF).');
