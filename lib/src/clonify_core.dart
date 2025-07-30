@@ -13,14 +13,6 @@ Future<void> saveLastClientId(String clientId) async {
   await file.writeAsString(clientId);
 }
 
-Future<String?> getLastClientId() async {
-  final file = File(lastClientFilePath);
-  if (file.existsSync()) {
-    return file.readAsStringSync();
-  }
-  return null;
-}
-
 Future<void> saveLastConfig(Map<String, dynamic> config) async {
   final file = File('./clonify/last_config.json');
   await file.writeAsString(jsonEncode(config));

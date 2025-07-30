@@ -2,11 +2,14 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clonify/models/commands_calls_models/build_command_model.dart';
 import 'package:clonify/models/config_model.dart';
+import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
 import 'package:clonify/utils/asset_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:clonify/utils/firebase_manager.dart';
 import 'package:clonify/utils/package_rename_plus_manager.dart';
+import 'package:clonify/utils/upload_manager.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 // ignore: depend_on_referenced_packages
 import 'package:yaml/yaml.dart' as yaml;
@@ -174,37 +177,34 @@ Future<void> createClone() async {
   }
 }
 
-Future<Map<String, dynamic>?> configureApp(List<String> args) async {
-  final clientId = getArgValue(args, '--clientId');
-  print('🚀 Starting cloning process for client: $clientId');
+Future<Map<String, dynamic>?> configureApp(
+  ConfigureCommandModel callModel,
+) async {
+  print('🚀 Starting cloning process for client: ${callModel.clientId}');
 
   try {
-    final Map<String, dynamic> configJson = await parseConfigFile(clientId);
-    // final isDebug = args.any((arg) => arg == '--debug' || arg == '-D');
+    final Map<String, dynamic> configJson = await parseConfigFile(
+      callModel.clientId!,
+    );
+
     // Step 1: Rename app name and package
     await runRenamePackage(
       appName: configJson['appName'],
       packageName: configJson['packageName'],
     );
-    // if (isDebug) {
-    //   final Map<String, dynamic> temp = {};
-    //   return temp;
-    // }
+    if (callModel.isDebug) {
+      final Map<String, dynamic> temp = {};
+      return temp;
+    }
     // Step 2: Create Firebase project and enable FCM
     await addFirebaseToApp(
       packageName: configJson['packageName'],
       firebaseProjectId: configJson['firebaseProjectId'],
-      skip: args.any(
-        (arg) =>
-            arg == '--skip-firebase-configure' ||
-            arg == '-SF' ||
-            arg == '--skip-all' ||
-            arg == '-SA',
-      ),
+      skip: callModel.skipAll || callModel.skipFirebaseConfigure,
     );
 
     // Step 3: Replace assets
-    replaceAssets(clientId);
+    replaceAssets(callModel.clientId!);
 
     // Step 4: Check and update version
     const pubspecFilePath = './pubspec.yaml';
@@ -225,32 +225,18 @@ Future<Map<String, dynamic>?> configureApp(List<String> args) async {
         '1.0.0+1',
         validator: (value) => RegExp(r'^\d+\.\d+\.\d+\+\d+$').hasMatch(value),
         skipValue: '1.0.0+1',
-        skip: args.any(
-          (arg) =>
-              arg == '--skip-version' ||
-              arg == '-SV' ||
-              arg == '--skip-all' ||
-              arg == '-SA',
-        ),
+        skip: callModel.skipAll || callModel.skipVersionUpdate,
       );
       configJson['version'] = configVersion;
       await File(
-        './clonify/clones/$clientId/config.json',
+        './clonify/clones/${callModel.clientId}/config.json',
       ).writeAsString(jsonEncode(configJson));
     }
 
     if (yamlVersion != configVersion) {
-      final skipPubUpdate = args.any(
-        (arg) =>
-            arg == '--skip-pub-update' ||
-            arg == '-SPU' ||
-            arg == '--skip-all' ||
-            arg == '-SA',
-      );
-
       final String updateYamlVersionAnswer = prompt(
         'Version in pubspec.yaml ($yamlVersion) is different from config file ($configVersion). Do you want to update pubspec.yaml with the config version? (y/n):',
-        skip: skipPubUpdate,
+        skip: callModel.skipAll || callModel.skipPubUpdate,
         skipValue: 'y',
       );
 
@@ -259,21 +245,10 @@ Future<Map<String, dynamic>?> configureApp(List<String> args) async {
       }
     }
 
-    final skipVersionUpdate = args.any(
-      (arg) =>
-          arg == '--skip-version-update' ||
-          arg == '-SVU' ||
-          arg == '--skip-all' ||
-          arg == '-SA',
-    );
-
-    final autoUpdate = args.any(
-      (arg) => arg == '--auto-update' || arg == '-AU',
-    );
     final changeVersionAnswer = prompt(
       'Do you want to update the version number ($configVersion)? (y/n):',
-      skip: skipVersionUpdate,
-      skipValue: autoUpdate ? 'y' : 'No',
+      skip: callModel.skipVersionUpdate,
+      skipValue: callModel.autoUpdate ? 'y' : 'No',
     );
     if (changeVersionAnswer.toLowerCase() == 'y') {
       final newVersion = promptUser(
@@ -281,12 +256,12 @@ Future<Map<String, dynamic>?> configureApp(List<String> args) async {
         configVersion,
         validator: (value) => RegExp(r'^\d+\.\d+\.\d+\+\d+$').hasMatch(value),
         skipValue: versionNumberIncrementor(configVersion),
-        skip: autoUpdate,
+        skip: callModel.autoUpdate,
       );
       await updateYamlVersionInPubspec(newVersion);
       configJson['version'] = newVersion;
       await File(
-        './clonify/clones/$clientId/config.json',
+        './clonify/clones/${callModel.clientId}/config.json',
       ).writeAsString(jsonEncode(configJson));
     }
 
@@ -315,7 +290,7 @@ Future<Map<String, dynamic>?> configureApp(List<String> args) async {
       print('❌ Error during Flutter launcher icons generation: $e');
     }
 
-    print('✅ Successfully cloned app for $clientId!');
+    print('✅ Successfully cloned app for ${callModel.clientId}!');
     return configJson; // Return the parsed configuration
   } catch (e) {
     print('❌ Error during cloning: $e');
@@ -338,221 +313,6 @@ Future<void> cleanupPartialClone(String clientId) async {
     cloneDir.deleteSync(recursive: true);
     print('🧹 Partial clone cleaned up for $clientId.');
   }
-}
-
-Future<void> buildApps(String clientId, List<String> args) async {
-  final configFilePath = './clonify/clones/$clientId/config.json';
-  const pubspecFilePath = './pubspec.yaml';
-
-  // Check if config.json exists
-  final configFile = File(configFilePath);
-  if (!configFile.existsSync()) {
-    print('❌ Config file not found for client ID: $clientId');
-    print('Please run "clonify configure --clientId $clientId" first.');
-    return;
-  }
-
-  // Parse config.json to get the packageName
-  String packageName;
-  String appName;
-  try {
-    final configContent = jsonDecode(configFile.readAsStringSync());
-    packageName = configContent['packageName'] ?? 'Unknown Package Name';
-    appName = configContent['appName'] ?? 'Unknown App Name';
-  } catch (e) {
-    print('❌ Failed to read or parse $configFilePath: $e');
-    return;
-  }
-
-  // Read pubspec.yaml to get the version
-  String version;
-  try {
-    final pubspecContent = File(pubspecFilePath).readAsStringSync();
-    final pubspecMap = yaml.loadYaml(pubspecContent);
-    version = pubspecMap['version'] ?? 'Unknown Version';
-  } catch (e) {
-    print('❌ Failed to read or parse $pubspecFilePath: $e');
-    return;
-  }
-
-  //change bundleId in xcode project
-  // _changeBundleIdInXcodeProject(bundleId: packageName);
-
-  final skipBuildCheck = args.any(
-    (arg) =>
-        arg == '--skip-build-check' ||
-        arg == '-SBC' ||
-        arg == '--skip-all' ||
-        arg == '-SA',
-  );
-  // Update prompt message with packageName, appName, and version
-  final answer = prompt(
-    ' Have you verified the Bundle ID ($packageName) and App Name ($appName) in the Xcode project, with the version [$version]? (y/n):',
-    skip: skipBuildCheck,
-    skipValue: 'y',
-  );
-  if (answer.toLowerCase() != 'y') {
-    print('❌ Please verify the Bundle ID and App Name in the Xcode project.');
-    return;
-  }
-
-  print('🚀 Building apps for client ID: $clientId');
-
-  // Start a stopwatch to track total build time
-  final stopwatch = Stopwatch()..start();
-
-  // Periodically display a loading message with the elapsed time
-  final progress = Stream.periodic(const Duration(milliseconds: 100), (count) {
-    stdout.write(
-      '\r🛠 Apps are being built... [${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s]',
-    );
-  });
-  final progressSubscription = progress.listen((_) {});
-
-  try {
-    // Run all commands in parallel
-    await Future.wait([
-      runCommand(
-        'flutter',
-        ['build', 'apk', '--release'],
-        successMessage: '✅ Android application is built successfully!',
-        showLoading: false,
-      ),
-      runCommand(
-        'flutter',
-        ['build', 'aab', '--release'],
-        successMessage: '✅ Android app bundle is built successfully!',
-        showLoading: false,
-      ),
-      runCommand(
-        'flutter',
-        [
-          'build',
-          'ipa',
-          '--release',
-          '--build-number=${version.split('+').last}',
-        ],
-        successMessage: '✅ iOS app archive is built successfully!',
-        showLoading: false,
-      ),
-    ]);
-
-    // Stop the progress display
-    progressSubscription.cancel();
-    stdout.write('\r'); // Clear the line
-    print(
-      '✓ You can find the iOS app archive at\n  ${'-' * 10}→ build/ios/archive/Runner.xcarchive',
-    );
-    print(
-      '✓ You can find the Android app bundle at\n  ${'-' * 10}→ build/app/outputs/bundle/release/app-release.aab',
-    );
-    // Display the total build time
-    print(
-      '✅ Apps built successfully for client ID: $clientId in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.',
-    );
-  } catch (e) {
-    // Stop the progress display and print the error
-    progressSubscription.cancel();
-    stdout.write('\r'); // Clear the line
-    print('❌ Error during app build: $e');
-  } finally {
-    stopwatch.stop();
-  }
-
-  // Upload apps
-  final skipAndroidUploadCheck = args.any(
-    (arg) =>
-        arg == '--upload-all' ||
-        arg == '-UALL' ||
-        arg == '--upload-android' ||
-        arg == '-UA',
-  );
-  final uploadAndroid = prompt(
-    'Do you want to upload the Android AAB? (y/n):',
-    skip: skipAndroidUploadCheck,
-    skipValue: 'y',
-  );
-  if (uploadAndroid.toLowerCase() == 'y') {
-    // 1. Update android/fastlane/Fastfile variables with packageName, version, etc.
-    updateFastlaneFiles(
-      fastlanePath: 'android/fastlane/Fastfile',
-      bundleId: packageName,
-      appVersion: version.split('+').first,
-      appVersionCode: version.split('+').last,
-    );
-    // 2. Run "fastlane upload" in android folder
-    await runCommand(
-      'fastlane',
-      ['upload'],
-      workingDirectory: 'android',
-      successMessage: '✅ Uploaded Android build!',
-    );
-  }
-
-  final skipIOSUploadCheck = args.any(
-    (arg) =>
-        arg == '--upload-all' ||
-        arg == '-UALL' ||
-        arg == '--upload-ios' ||
-        arg == '-UI',
-  );
-  final uploadIOS = prompt(
-    'Do you want to upload the iOS IPA? (y/n):',
-    skip: skipIOSUploadCheck,
-    skipValue: 'y',
-  );
-  if (uploadIOS.toLowerCase() == 'y') {
-    // 1. Update ios/fastlane/Fastfile variables (bundleId, app_version)
-    updateFastlaneFiles(
-      fastlanePath: 'ios/fastlane/Fastfile',
-      bundleId: packageName,
-      appVersion: version,
-    );
-    // 2. Run "fastlane upload" in ios folder
-    await runCommand(
-      'fastlane',
-      ['upload'],
-      workingDirectory: 'ios',
-      successMessage: '✅ Uploaded iOS build!',
-    );
-  }
-}
-
-Future<void> updateFastlaneFiles({
-  required String fastlanePath,
-  required String bundleId,
-  required String appVersion,
-  String? appVersionCode,
-}) async {
-  // Function to replace variables in Fastlane files
-  Future<void> updateFile(
-    String filePath,
-    Map<String, String> replacements,
-  ) async {
-    final file = File(filePath);
-    if (!file.existsSync()) {
-      print('❌ Fastlane file not found: $filePath');
-      return;
-    }
-
-    String content = file.readAsStringSync();
-    replacements.forEach((key, value) {
-      content = content.replaceAll(RegExp(key), value);
-    });
-
-    file.writeAsStringSync(content);
-    print('✅ Updated $filePath');
-  }
-
-  // Define replacement mappings
-  final Map<String, String> replacements = {
-    r'bundleId = ".*?"': 'bundleId = "$bundleId"',
-    r'app_version = ".*?"': 'app_version = "$appVersion"',
-    r'app_version_code = ".*?"': 'app_version_code = "$appVersionCode"',
-  };
-
-  // Update Fastlane file
-  await updateFile(fastlanePath, replacements);
 }
 
 Future<void> getCurrentCloneConfig() async {

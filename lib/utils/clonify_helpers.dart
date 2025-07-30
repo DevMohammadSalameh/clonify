@@ -278,8 +278,10 @@ Future<void> saveLastClientId(String clientId) async {
   await file.writeAsString(clientId);
 }
 
-Future<String?> getLastClientId() async {
-  final file = File('./clonify/last_client.txt');
+Future<String?> getLastClientId([
+  String lastClientFilePath = './clonify/last_client.txt',
+]) async {
+  final file = File(lastClientFilePath);
   if (file.existsSync()) {
     return file.readAsStringSync();
   }

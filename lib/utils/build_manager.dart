@@ -1,113 +1,118 @@
+import 'dart:convert';
 import 'dart:io';
 
+import 'package:clonify/models/commands_calls_models/build_command_model.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
-import 'package:yaml_edit/yaml_edit.dart';
+import 'package:yaml/yaml.dart' as yaml;
 
-// ✅ Validate directories before uploading
-void validateDirectories(String clientId, String iosDir, String appBundleDir) {
-  if (!Directory(iosDir).existsSync()) {
-    print('❌ Error: iOS project for client "$clientId" not found.');
-    exit(1);
-  }
-
-  if (!Directory(appBundleDir).existsSync()) {
-    print('❌ Error: Android project for client "$clientId" not found.');
-    exit(1);
-  }
-}
-
-// ✅ Validate if the build file exists
-Future<bool> validateBuildFiles(
-  String filePath,
-  String fileType,
-  String clientId,
-) async {
-  if (!File(filePath).existsSync()) {
-    print('❌ Error: $fileType file not found. Build the app first.');
-    final answer = promptUser(
-      'Do you want to build the $fileType? (y/n):',
-      'Y',
-    );
-    if (answer.toLowerCase() == 'y') {
-      await _buildApps(clientId);
-    } else {
-      return false;
-    }
-  }
-  return true;
-}
-
-Future<void> _buildApps(String clientId) async {
+Future<void> buildApps(BuildCommandModel buildModel) async {
+  final configFilePath = './clonify/clones/${buildModel.clientId}/config.json';
   const pubspecFilePath = './pubspec.yaml';
 
-  String version = await getVersionFromConfig(clientId);
-  if (version.isEmpty) {
+  // Check if config.json exists
+  final configFile = File(configFilePath);
+  if (!configFile.existsSync()) {
+    print('❌ Config file not found for client ID: ${buildModel.clientId}');
     return;
   }
 
-  final newVersion = promptUser(
-    'Current version is $version. Enter a new version or press Enter to keep:',
-    version,
-  );
-  await _updatePubspecVersion(newVersion, pubspecFilePath);
-
-  await _runFlutterBuildCommands();
-}
-
-// ✅ Update pubspec.yaml version
-Future<void> _updatePubspecVersion(
-  String newVersion,
-  String pubspecFilePath,
-) async {
+  // Parse config.json to get the packageName
+  String packageName;
+  String appName;
   try {
-    final pubspecFile = File(pubspecFilePath);
-    if (!pubspecFile.existsSync()) {
-      print('❌ pubspec.yaml file not found.');
-      return;
-    }
-
-    final yamlEditor = YamlEditor(pubspecFile.readAsStringSync());
-    yamlEditor.update(['version'], newVersion);
-    pubspecFile.writeAsStringSync(yamlEditor.toString());
-    print('✅ Updated version to $newVersion in pubspec.yaml.');
+    final configContent = jsonDecode(configFile.readAsStringSync());
+    packageName = configContent['packageName'] ?? 'Unknown Package Name';
+    appName = configContent['appName'] ?? 'Unknown App Name';
   } catch (e) {
-    print('❌ Error updating pubspec.yaml: $e');
-  }
-}
-
-Future<void> _runFlutterBuildCommands() async {
-  await runCommand('flutter', [
-    'pub',
-    'get',
-  ], successMessage: '✅ Pub get completed successfully.');
-
-  if (_promptToBuild('IPA')) {
-    await runCommand('flutter', [
-      'build',
-      'ipa',
-      '--release',
-      '--no-codesign',
-    ], successMessage: '✅ IPA build completed successfully.');
+    print('❌ Failed to read or parse $configFilePath: $e');
+    return;
   }
 
-  if (_promptToBuild('AAB')) {
-    await runCommand('flutter', [
-      'build',
-      'aab',
-      '--release',
-    ], successMessage: '✅ AAB build completed successfully.');
+  // Read pubspec.yaml to get the version
+  String version;
+  try {
+    final pubspecContent = File(pubspecFilePath).readAsStringSync();
+    final pubspecMap = yaml.loadYaml(pubspecContent);
+    version = pubspecMap['version'] ?? 'Unknown Version';
+  } catch (e) {
+    print('❌ Failed to read or parse $pubspecFilePath: $e');
+    return;
   }
 
-  print('✅ Build process completed successfully.');
-}
-
-bool _promptToBuild(String buildType) {
-  final answer = promptUser(
-    'Do you want to build the $buildType? (y/n):',
-    'Y',
-    validator: (input) {
-      return input.toLowerCase() == 'y' || input.toLowerCase() == 'n';
-    },
+  // Update prompt message with packageName, appName, and version
+  final answer = prompt(
+    ' Have you verified the Bundle ID ($packageName) and App Name ($appName) in the Xcode project, with the version [$version]? (y/n):',
+    skip: buildModel.skipBuildCheck,
+    skipValue: 'y',
   );
-  return answer.toLowerCase() == 'y';
+  if (answer.toLowerCase() != 'y') {
+    print('❌ Please verify the Bundle ID and App Name in the Xcode project.');
+    return;
+  }
+
+  print('🚀 Building apps for client ID: ${buildModel.clientId}');
+
+  // Start a stopwatch to track total build time
+  final stopwatch = Stopwatch()..start();
+
+  // Periodically display a loading message with the elapsed time
+  final progress = Stream.periodic(const Duration(milliseconds: 100), (count) {
+    stdout.write(
+      '\r🛠 Apps are being built... [${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s]',
+    );
+  });
+  final progressSubscription = progress.listen((_) {});
+
+  try {
+    // Run all commands in parallel
+    await Future.wait([
+      if (buildModel.buildApk)
+        runCommand(
+          'flutter',
+          ['build', 'apk', '--release'],
+          successMessage: '✅ Android application is built successfully!',
+          showLoading: false,
+        ),
+      if (buildModel.buildAab)
+        runCommand(
+          'flutter',
+          ['build', 'aab', '--release'],
+          successMessage: '✅ Android app bundle is built successfully!',
+          showLoading: false,
+        ),
+      if (buildModel.buildIpa)
+        runCommand(
+          'flutter',
+          [
+            'build',
+            'ipa',
+            '--release',
+            '--build-number=${version.split('+').last}',
+          ],
+          successMessage: '✅ iOS app archive is built successfully!',
+          showLoading: false,
+        ),
+    ]);
+
+    // Stop the progress display
+    progressSubscription.cancel();
+    stdout.write('\r'); // Clear the line
+    print(
+      '✓ You can find the iOS app archive at\n  ${'-' * 10}→ build/ios/archive/Runner.xcarchive',
+    );
+    print(
+      '✓ You can find the Android app bundle at\n  ${'-' * 10}→ build/app/outputs/bundle/release/app-release.aab',
+    );
+    // Display the total build time
+    print(
+      '✅ Apps built successfully for client ID: ${buildModel.clientId} in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.',
+    );
+  } catch (e) {
+    // Stop the progress display and print the error
+    progressSubscription.cancel();
+    stdout.write('\r'); // Clear the line
+    print('❌ Error during app build: $e');
+  } finally {
+    stopwatch.stop();
+  }
 }

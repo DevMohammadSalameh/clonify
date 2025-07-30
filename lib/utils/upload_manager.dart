@@ -1,9 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clonify/constants.dart';
+import 'package:clonify/custom_exceptions.dart';
 import 'package:clonify/utils/build_manager.dart';
 import 'package:clonify/utils/clone_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
+import 'package:yaml/yaml.dart';
 // // 🚀 Upload the app to the App Store
 
 // Future<void> uploadToAppStore(String clientId, List<String> args) async {
@@ -204,77 +207,214 @@ import 'package:clonify/utils/clonify_helpers.dart';
 //   return answer.toLowerCase() == 'y';
 // }
 
-// 🚀 Upload the app to the App Store
+Future<void> uploadApps(
+  String clientId, {
 
-Future<void> uploadToAppStore(String clientId) async {
-  print('🚀 Uploading app for client: $clientId');
-  await getCurrentCloneConfig();
+  bool skipAll = false,
+  bool skipAndroidUploadCheck = false,
+  bool skipIOSUploadCheck = false,
+}) async {
+  final configFilePath = './clonify/clones/$clientId/config.json';
+  const pubspecFilePath = './pubspec.yaml';
 
-  const iosDir = './build/ios';
-  const appBundleDir = './build/app/outputs/bundle/release';
-
-  validateDirectories(clientId, iosDir, appBundleDir);
-
-  final appIdentifier = await getAppBundleId(clientId);
-  if (appIdentifier.isEmpty) {
-    print('❌ Error: Could not determine bundle ID for client "$clientId".');
+  // Check if config.json exists
+  final configFile = File(configFilePath);
+  if (!configFile.existsSync()) {
+    print('❌ Config file not found for client ID: $clientId');
     return;
   }
 
-  final ipaPath = '$iosDir/ipa/$appIdentifier.ipa';
-  const aabPath = '$appBundleDir/app-release.aab';
-
-  if (!await validateBuildFiles(ipaPath, 'IPA', clientId) ||
-      !await validateBuildFiles(aabPath, 'AAB', clientId)) {
-    return;
-  }
-
-  final apiKeyPath = Platform.environment['APPSTORE_API_KEY_PATH'] ?? '';
-  // =
-  // '/Users/safeersoft/development/flutter_projects/natejsoft_hr_app/clonify/doc/fastlane_settings.json';
-  if (apiKeyPath.isEmpty) {
-    print('❌ Error: APPSTORE_API_KEY_PATH environment variable is not set.');
-    return;
-  }
-
-  await _runFastlaneUpload(ipaPath, appIdentifier, apiKeyPath);
-}
-
-// 🚀 Run Fastlane command for uploading to App Store
-Future<void> _runFastlaneUpload(
-  String ipaPath,
-  String appIdentifier,
-  String apiKeyPath,
-) async {
-  final content = File(apiKeyPath).readAsStringSync();
+  // Parse config.json to get the packageName
+  String packageName;
   try {
-    jsonDecode(content);
-  } catch (_) {
-    print(
-      '❌ Error: The file at $apiKeyPath is not valid JSON See fastlane_instructions.md.',
+    final configContent = jsonDecode(configFile.readAsStringSync());
+    packageName = configContent['packageName'] ?? 'Unknown Package Name';
+  } catch (e) {
+    print('❌ Failed to read or parse $configFilePath: $e');
+    return;
+  }
+
+  // Read pubspec.yaml to get the version
+  String version;
+  try {
+    final pubspecContent = File(pubspecFilePath).readAsStringSync();
+    final pubspecMap = loadYaml(pubspecContent);
+    version = pubspecMap['version'] ?? 'Unknown Version';
+  } catch (e) {
+    print('❌ Failed to read or parse $pubspecFilePath: $e');
+    return;
+  }
+
+  final uploadIOSAnswer = (skipAll || skipAndroidUploadCheck) == true
+      ? true
+      : prompt('Do you want to upload the iOS IPA? (y/n):');
+
+  final uploadIOS = uploadIOSAnswer == true
+      ? true
+      : (uploadIOSAnswer as String).toLowerCase() == 'y';
+
+  final uploadAndroidAnswer = (skipAll || skipAndroidUploadCheck) == true
+      ? true
+      : prompt('Do you want to upload the Android AAB? (y/n):');
+  final uploadAndroid = uploadAndroidAnswer == true
+      ? true
+      : (uploadAndroidAnswer as String).toLowerCase() == 'y';
+
+  if (packageName.isEmpty || version.isEmpty) {
+    throw CustomException(
+      'Package name and version cannot be empty. During upload.',
     );
-    exit(1);
+  }
+  final ipaFile = File(Constants.ipaPath(packageName));
+  if (!ipaFile.existsSync() && uploadIOS) {
+    throw CustomException('iOS IPA path does not exist. During upload.');
+  }
+  final aabFile = File(Constants.aabPath);
+
+  if (!aabFile.existsSync() && uploadAndroid) {
+    throw CustomException('Android AAB path does not exist. During upload.');
   }
 
-  final deliverCommand =
-      '''
-    fastlane deliver --ipa "$ipaPath" \\
-    --app_identifier "$appIdentifier" \\
-    --submit_for_review true \\
-    --automatic_release true \\
-    --api_key_path "$apiKeyPath"
-  ''';
+  Future.wait([
+    if (uploadAndroid)
+      updateFastlaneFiles(
+        fastlanePath: 'android/fastlane/Fastfile',
+        bundleId: packageName,
+        appVersion: version.split('+').first,
+        appVersionCode: version.split('+').last,
+      ),
+    if (uploadAndroid)
+      runCommand(
+        'fastlane',
+        ['upload'],
+        workingDirectory: 'android',
+        successMessage: '✅ Uploaded Android build!',
+      ),
 
-  print('🔄 Running Fastlane Deliver...');
-  final process = await Process.start('bash', [
-    '-c',
-    deliverCommand,
-  ], mode: ProcessStartMode.inheritStdio);
-
-  final exitCode = await process.exitCode;
-  if (exitCode == 0) {
-    print('✅ Successfully uploaded to the App Store!');
-  } else {
-    print('❌ Upload failed with exit code $exitCode.');
-  }
+    if (uploadIOS)
+      updateFastlaneFiles(
+        fastlanePath: 'ios/fastlane/Fastfile',
+        bundleId: packageName,
+        appVersion: version,
+      ),
+    if (uploadIOS)
+      runCommand(
+        'fastlane',
+        ['upload'],
+        workingDirectory: 'ios',
+        successMessage: '✅ Uploaded iOS build!',
+      ),
+  ]);
 }
+
+Future<void> updateFastlaneFiles({
+  required String fastlanePath,
+  required String bundleId,
+  required String appVersion,
+  String? appVersionCode,
+}) async {
+  // Function to replace variables in Fastlane files
+  Future<void> updateFile(
+    String filePath,
+    Map<String, String> replacements,
+  ) async {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      print('❌ Fastlane file not found: $filePath');
+      return;
+    }
+
+    String content = file.readAsStringSync();
+    replacements.forEach((key, value) {
+      content = content.replaceAll(RegExp(key), value);
+    });
+
+    file.writeAsStringSync(content);
+    print('✅ Updated $filePath');
+  }
+
+  // Define replacement mappings
+  final Map<String, String> replacements = {
+    r'bundleId = ".*?"': 'bundleId = "$bundleId"',
+    r'app_version = ".*?"': 'app_version = "$appVersion"',
+    r'app_version_code = ".*?"': 'app_version_code = "$appVersionCode"',
+  };
+
+  // Update Fastlane file
+  await updateFile(fastlanePath, replacements);
+}
+
+// // 🚀 Upload the app to the App Store
+
+// Future<void> uploadToAppStore(String clientId) async {
+//   print('🚀 Uploading app for client: $clientId');
+//   await getCurrentCloneConfig();
+
+//   const iosDir = './build/ios';
+//   const appBundleDir = './build/app/outputs/bundle/release';
+
+//   validateDirectories(clientId, iosDir, appBundleDir);
+
+//   final appIdentifier = await getAppBundleId(clientId);
+//   if (appIdentifier.isEmpty) {
+//     print('❌ Error: Could not determine bundle ID for client "$clientId".');
+//     return;
+//   }
+
+//   final ipaPath = '$iosDir/ipa/$appIdentifier.ipa';
+//   const aabPath = '$appBundleDir/app-release.aab';
+
+//   if (!await validateBuildFiles(ipaPath, 'IPA', clientId) ||
+//       !await validateBuildFiles(aabPath, 'AAB', clientId)) {
+//     return;
+//   }
+
+//   final apiKeyPath = Platform.environment['APPSTORE_API_KEY_PATH'] ?? '';
+//   // =
+//   // '/Users/safeersoft/development/flutter_projects/natejsoft_hr_app/clonify/doc/fastlane_settings.json';
+//   if (apiKeyPath.isEmpty) {
+//     print('❌ Error: APPSTORE_API_KEY_PATH environment variable is not set.');
+//     return;
+//   }
+
+//   await _runFastlaneUpload(ipaPath, appIdentifier, apiKeyPath);
+// }
+
+// // 🚀 Run Fastlane command for uploading to App Store
+// Future<void> _runFastlaneUpload(
+//   String ipaPath,
+//   String appIdentifier,
+//   String apiKeyPath,
+// ) async {
+//   final content = File(apiKeyPath).readAsStringSync();
+//   try {
+//     jsonDecode(content);
+//   } catch (_) {
+//     print(
+//       '❌ Error: The file at $apiKeyPath is not valid JSON See fastlane_instructions.md.',
+//     );
+//     exit(1);
+//   }
+
+//   final deliverCommand =
+//       '''
+//     fastlane deliver --ipa "$ipaPath" \\
+//     --app_identifier "$appIdentifier" \\
+//     --submit_for_review true \\
+//     --automatic_release true \\
+//     --api_key_path "$apiKeyPath"
+//   ''';
+
+//   print('🔄 Running Fastlane Deliver...');
+//   final process = await Process.start('bash', [
+//     '-c',
+//     deliverCommand,
+//   ], mode: ProcessStartMode.inheritStdio);
+
+//   final exitCode = await process.exitCode;
+//   if (exitCode == 0) {
+//     print('✅ Successfully uploaded to the App Store!');
+//   } else {
+//     print('❌ Upload failed with exit code $exitCode.');
+//   }
+// }

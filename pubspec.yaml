@@ -1,14 +1,16 @@
 name: clonify
-description: A sample command-line application.
+description: Helps you manage your flutter project clones.
 version: 1.0.0
-# repository: https://github.com/my_org/my_repo
+repository: https://github.com/DevMohammadSalameh/clonify.git
 
 environment:
   sdk: ^3.8.1
 
 # Add regular dependencies here.
 dependencies:
-  # path: ^1.8.0
+  args: ^2.3.0
+  logger: ^2.0.2+1
+  path: ^1.8.0
   yaml_edit: ^2.2.2
   yaml: ^3.1.3
 
