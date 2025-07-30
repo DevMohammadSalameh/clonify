@@ -79,7 +79,7 @@ extension ClonifyCommandExtension on ClonifyCommands {
   List<String> get aliases {
     switch (this) {
       case ClonifyCommands.create:
-        return ['c', 'create-clone'];
+        return ['create-clone'];
       case ClonifyCommands.init:
         return ['i', 'initialize'];
       case ClonifyCommands.which:
@@ -184,36 +184,36 @@ extension ClonifyCommandFlagsExtension on ClonifyCommandFlags {
     }
   }
 
-  String get abbr {
-    switch (this) {
-      case ClonifyCommandFlags.skipAll:
-        return 'SA';
-      case ClonifyCommandFlags.version:
-        return 'v';
-      case ClonifyCommandFlags.autoUpdate:
-        return 'AU';
-      case ClonifyCommandFlags.isDebug:
-        return 'D';
-      case ClonifyCommandFlags.skipFirebaseConfigure:
-        return 'SFC';
-      case ClonifyCommandFlags.skipPubUpdate:
-        return 'SPU';
-      case ClonifyCommandFlags.skipVersionUpdate:
-        return 'SVU';
-      case ClonifyCommandFlags.buildAab:
-        return 'BAAB';
-      case ClonifyCommandFlags.buildApk:
-        return 'BAPK';
-      case ClonifyCommandFlags.buildIpa:
-        return 'BIPA';
-      case ClonifyCommandFlags.skipBuildCheck:
-        return 'SBC';
-      case ClonifyCommandFlags.skipAndroidUploadCheck:
-        return 'SAUC';
-      case ClonifyCommandFlags.skipIOSUploadCheck:
-        return 'SIUC';
-    }
-  }
+  // String get abbr {
+  //   switch (this) {
+  //     case ClonifyCommandFlags.skipAll:
+  //       return 'SA';
+  //     case ClonifyCommandFlags.version:
+  //       return 'v';
+  //     case ClonifyCommandFlags.autoUpdate:
+  //       return 'AU';
+  //     case ClonifyCommandFlags.isDebug:
+  //       return 'D';
+  //     case ClonifyCommandFlags.skipFirebaseConfigure:
+  //       return 'SFC';
+  //     case ClonifyCommandFlags.skipPubUpdate:
+  //       return 'SPU';
+  //     case ClonifyCommandFlags.skipVersionUpdate:
+  //       return 'SVU';
+  //     case ClonifyCommandFlags.buildAab:
+  //       return 'BAAB';
+  //     case ClonifyCommandFlags.buildApk:
+  //       return 'BAPK';
+  //     case ClonifyCommandFlags.buildIpa:
+  //       return 'BIPA';
+  //     case ClonifyCommandFlags.skipBuildCheck:
+  //       return 'SBC';
+  //     case ClonifyCommandFlags.skipAndroidUploadCheck:
+  //       return 'SAUC';
+  //     case ClonifyCommandFlags.skipIOSUploadCheck:
+  //       return 'SIUC';
+  //   }
+  // }
 
   String get help {
     switch (this) {

@@ -114,32 +114,32 @@ class ConfigureCommand extends ClientIdCommand {
   ConfigureCommand() : super(mandatory: false) {
     argParser.addFlag(
       ClonifyCommandFlags.skipAll.name,
-      abbr: ClonifyCommandFlags.skipAll.abbr,
+      // abbr: ClonifyCommandFlags.skipAll.abbr,
       help: ClonifyCommandFlags.skipAll.help,
     );
     argParser.addFlag(
       ClonifyCommandFlags.autoUpdate.name,
-      abbr: ClonifyCommandFlags.autoUpdate.abbr,
+      // abbr: ClonifyCommandFlags.autoUpdate.abbr,
       help: ClonifyCommandFlags.autoUpdate.help,
     );
     argParser.addFlag(
       ClonifyCommandFlags.isDebug.name,
-      abbr: ClonifyCommandFlags.isDebug.abbr,
+      // abbr: ClonifyCommandFlags.isDebug.abbr,
       help: ClonifyCommandFlags.isDebug.help,
     );
     argParser.addFlag(
       ClonifyCommandFlags.skipFirebaseConfigure.name,
-      abbr: ClonifyCommandFlags.skipFirebaseConfigure.abbr,
+      // abbr: ClonifyCommandFlags.skipFirebaseConfigure.abbr,
       help: ClonifyCommandFlags.skipFirebaseConfigure.help,
     );
     argParser.addFlag(
       ClonifyCommandFlags.skipPubUpdate.name,
-      abbr: ClonifyCommandFlags.skipPubUpdate.abbr,
+      // abbr: ClonifyCommandFlags.skipPubUpdate.abbr,
       help: ClonifyCommandFlags.skipPubUpdate.help,
     );
     argParser.addFlag(
       ClonifyCommandFlags.skipVersionUpdate.name,
-      abbr: ClonifyCommandFlags.skipVersionUpdate.abbr,
+      // abbr: ClonifyCommandFlags.skipVersionUpdate.abbr,
       help: ClonifyCommandFlags.skipVersionUpdate.help,
     );
   }
@@ -176,30 +176,30 @@ class BuildCommand extends ClientIdCommand {
   BuildCommand() : super(mandatory: false) {
     argParser.addFlag(
       ClonifyCommandFlags.skipAll.name,
-      abbr: ClonifyCommandFlags.skipAll.abbr,
+      // abbr: ClonifyCommandFlags.skipAll.abbr,
       help: ClonifyCommandFlags.skipAll.help,
     );
     argParser.addFlag(
       ClonifyCommandFlags.buildAab.name,
-      abbr: ClonifyCommandFlags.buildAab.abbr,
+      // abbr: ClonifyCommandFlags.buildAab.abbr,
       help: ClonifyCommandFlags.buildAab.help,
       defaultsTo: true,
     );
     argParser.addFlag(
       ClonifyCommandFlags.buildApk.name,
-      abbr: ClonifyCommandFlags.buildApk.abbr,
+      // abbr: ClonifyCommandFlags.buildApk.abbr,
       help: ClonifyCommandFlags.buildApk.help,
       defaultsTo: false,
     );
     argParser.addFlag(
       ClonifyCommandFlags.buildIpa.name,
-      abbr: ClonifyCommandFlags.buildIpa.abbr,
+      // abbr: ClonifyCommandFlags.buildIpa.abbr,
       help: ClonifyCommandFlags.buildIpa.help,
       defaultsTo: true,
     );
     argParser.addFlag(
       ClonifyCommandFlags.skipBuildCheck.name,
-      abbr: ClonifyCommandFlags.skipBuildCheck.abbr,
+      // abbr: ClonifyCommandFlags.skipBuildCheck.abbr,
       help: ClonifyCommandFlags.skipBuildCheck.help,
       defaultsTo: false,
     );
@@ -262,17 +262,17 @@ class UploadCommand extends ClientIdCommand {
   UploadCommand() : super(mandatory: false) {
     argParser.addFlag(
       ClonifyCommandFlags.skipAll.name,
-      abbr: ClonifyCommandFlags.skipAll.abbr,
+      // abbr: ClonifyCommandFlags.skipAll.abbr,
       help: ClonifyCommandFlags.skipAll.help,
     );
     argParser.addFlag(
       ClonifyCommandFlags.skipAndroidUploadCheck.name,
-      abbr: ClonifyCommandFlags.skipAndroidUploadCheck.abbr,
+      // abbr: ClonifyCommandFlags.skipAndroidUploadCheck.abbr,
       help: ClonifyCommandFlags.skipAndroidUploadCheck.help,
     );
     argParser.addFlag(
       ClonifyCommandFlags.skipIOSUploadCheck.name,
-      abbr: ClonifyCommandFlags.skipIOSUploadCheck.abbr,
+      // abbr: ClonifyCommandFlags.skipIOSUploadCheck.abbr,
       help: ClonifyCommandFlags.skipIOSUploadCheck.help,
     );
   }
