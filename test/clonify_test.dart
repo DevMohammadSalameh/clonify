@@ -134,4 +134,43 @@ default_color: "#ABCDEF"
       expect(settingsFile.readAsStringSync(), contains('Existing'));
     });
   });
+
+  group('getClonifySettings', () {
+    final settingsPath = './clonify/clonify_settings.yaml';
+    final clonifyDir = Directory('./clonify');
+
+    setUp(() {
+      if (!clonifyDir.existsSync()) clonifyDir.createSync();
+    });
+
+    tearDown(() {
+      final file = File(settingsPath);
+      if (file.existsSync()) file.deleteSync();
+      if (clonifyDir.existsSync()) clonifyDir.deleteSync(recursive: true);
+    });
+
+    test('returns ClonifySettings for valid settings file', () {
+      File(settingsPath).writeAsStringSync('''
+firebase:
+  enabled: true
+  settings_file: "firebase.json"
+fastlane:
+  enabled: false
+  settings_file: "fastlane.json"
+company_name: "TestCompany"
+default_color: "#ABCDEF"
+''');
+      final settings = getClonifySettings();
+      expect(settings.companyName, equals("TestCompany"));
+      expect(settings.defaultColor, equals("#ABCDEF"));
+      expect(settings.firebaseEnabled, isTrue);
+      expect(settings.firebaseSettingsFile, contains("firebase.json"));
+      expect(settings.fastlaneEnabled, isFalse);
+      expect(settings.fastlaneSettingsFile, contains("fastlane.json"));
+    });
+
+    test('throws if settings file does not exist', () {
+      expect(() => getClonifySettings(), throwsException);
+    });
+  });
 }

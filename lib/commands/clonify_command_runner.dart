@@ -8,8 +8,10 @@ library;
 import 'dart:async';
 
 import 'package:args/command_runner.dart';
+import 'package:clonify/constants.dart';
 import 'package:clonify/enums.dart';
 import 'package:clonify/custom_exceptions.dart';
+import 'package:clonify/messages.dart';
 import 'package:clonify/models/commands_calls_models/build_command_model.dart';
 import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
 import 'package:clonify/src/clonify_core.dart';
@@ -23,12 +25,8 @@ import 'package:clonify/utils/upload_manager.dart';
 class ClonifyCommandRunner extends CommandRunner<void> {
   /// Constructor for [ClonifyCommandRunner].
   /// It initializes the super class with the name of the command and its description.
-  ClonifyCommandRunner()
-    : super(
-        'clonify',
-        'A CLI tool that helps you manage your flutter project clones.',
-      ) {
-    argParser.addFlag('version', abbr: 'v', negatable: false);
+  ClonifyCommandRunner() : super(Constants.toolName, Messages.toolDescription) {
+    // argParser.addFlag('version', abbr: 'v', negatable: false);
 
     addCommand(InitializeCommand());
     addCommand(CreateCommand());
@@ -38,6 +36,22 @@ class ClonifyCommandRunner extends CommandRunner<void> {
     addCommand(UploadCommand());
     addCommand(ListCommand());
     addCommand(WhichCommand());
+  }
+
+  @override
+  Future<void> run(Iterable<String> args) {
+    // if the command is not init call validatedClonifySettings(isSilent: true);
+    if (args.isEmpty ||
+        args.first == ClonifyCommands.init.name ||
+        args.first == ClonifyCommands.list.name) {
+      return super.run(args);
+    } else {
+      // Validate clonify settings before running any other command
+      if (!validatedClonifySettings(isSilent: true)) {
+        throw CustomException('Validation Failed !');
+      }
+      return super.run(args);
+    }
   }
 }
 
@@ -157,14 +171,14 @@ class ConfigureCommand extends ClientIdCommand {
     if (configureModel.clientId == null) {
       final lastClientId = await getLastClientId();
       if (lastClientId != null && !(configureModel.skipAll)) {
-        final answer = prompt('Use last client ID "$lastClientId"? (y/n):');
+        final answer = prompt(Messages.useLastClientIdMessage(lastClientId));
         if (answer.toLowerCase() == 'y') {
           configureModel.clientId = lastClientId;
           await configureApp(configureModel);
           return;
         }
       }
-      throw CustomException('Client ID is required.');
+      throw CustomException(Messages.clientIdRequired);
     }
     await configureApp(configureModel);
   }
@@ -223,7 +237,7 @@ class BuildCommand extends ClientIdCommand {
     if (buildModel.clientId != null) {
       await buildApps(buildModel);
     } else {
-      throw CustomException('Client ID is required for building apps.');
+      throw CustomException(Messages.clientIdRequiredForBuilding);
     }
   }
 }
@@ -304,10 +318,8 @@ class UploadCommand extends ClientIdCommand {
           skipIOSUploadCheck: skipIOSUploadCheck,
         );
       }
-    } catch (e) {
-      throw CustomException(
-        'Failed to upload the clone for client ID "$clientId": $e',
-      );
+    } catch (error) {
+      throw CustomException(Messages.failedToUploadClone(clientId, error));
     }
   }
 }

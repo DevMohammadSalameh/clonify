@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clonify/constants.dart';
+import 'package:clonify/messages.dart';
+import 'package:clonify/models/clonify_settings_model.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 // ignore: depend_on_referenced_packages
 import 'package:yaml/yaml.dart' as yaml;
@@ -158,7 +161,7 @@ default_color: "$defaultColor"
     print('✅ Created default clonify_settings.yaml at ${settingsFile.path}.');
   } else {
     print('ℹ️ clonify_settings.yaml already exists at ${settingsFile.path}.');
-    validatedClonifySettings();
+    validatedClonifySettings(isSilent: false);
   }
 }
 
@@ -178,17 +181,16 @@ default_color: "$defaultColor"
 /// Prints error messages for any validation failures.
 ///
 /// Returns `true` if the settings file is valid, otherwise `false`.
-
-bool validatedClonifySettings([bool isSilent = true]) {
-  final settingsFile = File('./clonify/clonify_settings.yaml');
+bool validatedClonifySettings({bool isSilent = true}) {
+  final settingsFile = File(Constants.clonifySettingsFilePath);
   if (!settingsFile.existsSync()) {
-    print('❌ clonify_settings.yaml not found. Please run "clonify init".');
+    print(Messages.clonifySettingsFileNotFound);
     return false;
   }
 
   final content = settingsFile.readAsStringSync();
   if (content.isEmpty) {
-    print('❌ clonify_settings.yaml is empty. Please run "clonify init".');
+    print(Messages.clonifySettingsFileNotFound);
     return false;
   }
 
@@ -197,7 +199,7 @@ bool validatedClonifySettings([bool isSilent = true]) {
   try {
     rawSettings = yaml.loadYaml(content);
   } catch (e) {
-    print('❌ Failed to parse clonify_settings.yaml: $e');
+    print(Messages.failedToParseClonifySettings(e));
     return false;
   }
 
@@ -210,7 +212,7 @@ bool validatedClonifySettings([bool isSilent = true]) {
           : value;
     });
   } else {
-    print('❌ clonify_settings.yaml does not contain a valid map.');
+    print(Messages.clonifySettingsDoesNotContainAValidMap);
     return false;
   }
   // Required fields and their types
@@ -223,13 +225,17 @@ bool validatedClonifySettings([bool isSilent = true]) {
 
   for (final field in requiredFields.keys) {
     if (!rawSettings.containsKey(field)) {
-      print('❌ Missing required field: $field');
+      print(Messages.missingRequiredField(field));
       return false;
     }
     if (rawSettings[field] == null ||
         rawSettings[field].runtimeType != requiredFields[field]) {
       print(
-        '❌ Field "$field" has invalid type ${rawSettings[field].runtimeType}. Expected ${requiredFields[field]}.',
+        Messages.fieldHasInvalidType(
+          field,
+          rawSettings[field].runtimeType,
+          requiredFields[field],
+        ),
       );
       return false;
     }
@@ -268,4 +274,18 @@ bool validatedClonifySettings([bool isSilent = true]) {
   }
 
   return true;
+}
+
+/// GetClonifySettings file as a ClonifySettings object.
+/// This function reads the `clonify_settings.yaml` file and returns a map of settings
+/// as a ClonifySettings object.
+ClonifySettings getClonifySettings() {
+  final settingsFile = File(Constants.clonifySettingsFilePath);
+  if (!settingsFile.existsSync()) {
+    throw Exception(Messages.clonifySettingsFileNotFound);
+  }
+
+  final content = settingsFile.readAsStringSync();
+  final yaml.YamlMap rawSettings = yaml.loadYaml(content);
+  return ClonifySettings.fromYaml(rawSettings);
 }
