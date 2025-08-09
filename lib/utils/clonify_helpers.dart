@@ -48,6 +48,16 @@ final ClonifySettings clonifySettings = getClonifySettings();
 /// Sanitizes a command argument to prevent command injection.
 /// Only allows alphanumeric, dash, underscore, dot, and slash.
 String sanitizeArg(String arg) {
+  //⛔ ❌ Error during build commands: Invalid argument(s): Unsafe argument detected: flutter_native_splash:create
+  final List<String> skipSanitization = [
+    'flutter_native_splash:create',
+    'flutter_launcher_icons:generate',
+    'flutter_launcher_icons',
+    'intl_utils:generate',
+  ];
+  if (skipSanitization.contains(arg)) {
+    return arg;
+  }
   final safe = RegExp(r'^[\w\-.\/]+$');
   if (!safe.hasMatch(arg)) {
     throw ArgumentError('Unsafe argument detected: $arg');
