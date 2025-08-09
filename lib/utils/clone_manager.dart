@@ -3,10 +3,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:clonify/constants.dart';
-import 'package:clonify/models/clonify_settings_model.dart';
 import 'package:clonify/models/config_model.dart';
 import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
-import 'package:clonify/src/clonify_core.dart';
 import 'package:clonify/utils/asset_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:clonify/utils/firebase_manager.dart';

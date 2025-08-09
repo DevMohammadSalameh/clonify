@@ -195,7 +195,7 @@ Map<String, String> _promptBasicSettings() {
 
 /// Prompts for assets settings, including launcher icon and splash screen selection.
 ///
-/// Returns a list<String> with the names of the assets to be cloned.
+/// Returns a list of Strings with the names of the assets to be cloned.
 /// The launcher icon asset will be the first in the list.
 /// The splash screen asset (if any) will be the second in the list.
 (List<String>, bool) _promptCloneAssetsSettings() {
@@ -506,7 +506,7 @@ Map<String, dynamic>? _parseYamlSettings(String content) {
   try {
     rawSettings = yaml.loadYaml(content);
   } catch (e) {
-    logger.e(Messages.failedToParseClonifySettings(e));
+    logger.e(Messages.failedToReadOrParseClonifySettings(e));
     return null;
   }
 
