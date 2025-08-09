@@ -3,6 +3,8 @@
 import 'dart:io';
 import 'dart:convert';
 
+import 'package:clonify/models/clonify_settings_model.dart';
+import 'package:clonify/src/clonify_core.dart';
 import 'package:clonify/utils/clone_manager.dart';
 import 'package:logger/logger.dart';
 
@@ -40,6 +42,8 @@ final Logger logger = Logger(
   filter: ProductionFilter(),
   printer: PrettyPrinter(methodCount: 0, noBoxingByDefault: true),
 );
+
+final ClonifySettings clonifySettings = getClonifySettings();
 
 /// Sanitizes a command argument to prevent command injection.
 /// Only allows alphanumeric, dash, underscore, dot, and slash.
@@ -157,15 +161,15 @@ String promptUser(
 }) {
   if (skip == true) {
     logger.i(
-      '$promptMessage (Default: $defaultValue) >>| Skipping with (${skipValue ?? defaultValue})...',
+      '$promptMessage >>| Skipping with (${skipValue ?? defaultValue})...',
     );
 
     return skipValue ?? defaultValue;
   }
   final answer = prompt(
-    '$promptMessage (Default: $defaultValue) [Enter for default]:',
+    '$promptMessage ${defaultValue.isNotEmpty ? '(Default: $defaultValue) [Enter for default]' : ''}:',
   );
-  if (answer.isEmpty) {
+  if (answer.isEmpty && defaultValue.isNotEmpty) {
     return defaultValue;
   }
   if (validator != null && !validator(answer)) {

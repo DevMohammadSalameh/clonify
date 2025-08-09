@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'clonify_helpers.dart';
 
+/// Replaces the assets in the assets directory in the rood with the assets from the clone directory.
 void replaceAssets(String clientId) {
   try {
     final sourceDir = Directory('./clonify/clones/$clientId/assets');
@@ -24,7 +25,6 @@ void replaceAssets(String clientId) {
     }
     final String splitBy = Platform.isWindows ? '\\' : '/';
     for (final file in sourceDir.listSync()) {
-      // logger.i('Copying ${file.path} to ${targetDir.path}');
       if (file is File) {
         final targetFile = File(
           '${targetDir.path}/${file.path.split(splitBy).last}',
@@ -44,12 +44,12 @@ void createAssetsDirectory(String clientId) {
   final assetsDir = Directory('./clonify/clones/$clientId/assets');
   assetsDir.createSync(recursive: true);
   //copy the assets from the original project to the clone
-  final List<String> assets = [
-    'android12splashScreen.png',
-    'launcherIcon.png',
-    'splashScreen.png',
-    'cloneLogo.png',
-  ];
+  // final List<String> assets = [
+  //   'android12splashScreen.png',
+  //   'launcherIcon.png',
+  //   'splashScreen.png',
+  //   'cloneLogo.png',
+  // ];
 
   final sourceDir = Directory('./assets/images');
   final targetDir = Directory('./clonify/clones/$clientId/assets');
@@ -63,7 +63,7 @@ void createAssetsDirectory(String clientId) {
 
   targetDir.createSync(recursive: true);
 
-  for (final asset in assets) {
+  for (final asset in clonifySettings.assets) {
     final sourceFile = File('${sourceDir.path}/$asset');
     final targetFile = File('${targetDir.path}/$asset');
     sourceFile.copySync(targetFile.path);

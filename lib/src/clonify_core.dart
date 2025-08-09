@@ -111,7 +111,7 @@ bool _ensureClonifyDirectory() {
 Map<String, dynamic> _promptFirebaseSettings() {
   final bool enableFirebase =
       promptUser('Do you want to enable Firebase? (y/n)', 'n') == 'y';
-  
+
   String firebaseSettingsFilePath = '';
   if (enableFirebase) {
     firebaseSettingsFilePath = promptUser(
@@ -130,11 +130,8 @@ Map<String, dynamic> _promptFirebaseSettings() {
       },
     );
   }
-  
-  return {
-    'enabled': enableFirebase,
-    'settingsFile': firebaseSettingsFilePath,
-  };
+
+  return {'enabled': enableFirebase, 'settingsFile': firebaseSettingsFilePath};
 }
 
 /// Prompts for Fastlane configuration settings.
@@ -161,11 +158,8 @@ Map<String, dynamic> _promptFastlaneSettings() {
       },
     );
   }
-  
-  return {
-    'enabled': enableFastlane,
-    'settingsFile': fastlaneSettingsFilePath,
-  };
+
+  return {'enabled': enableFastlane, 'settingsFile': fastlaneSettingsFilePath};
 }
 
 /// Prompts for basic project settings.
@@ -183,7 +177,7 @@ Map<String, String> _promptBasicSettings() {
       return true;
     },
   );
-  
+
   final String defaultColor = promptUser(
     'Enter default app color (hex format, e.g., #FFFFFF):',
     '#FFFFFF',
@@ -195,11 +189,93 @@ Map<String, String> _promptBasicSettings() {
       return false;
     },
   );
-  
-  return {
-    'companyName': companyName,
-    'defaultColor': defaultColor,
-  };
+
+  return {'companyName': companyName, 'defaultColor': defaultColor};
+}
+
+/// Prompts for assets settings.
+///
+/// Returns a list<String> with the names of the assets to be cloned.
+List<String> _promptCloneAssetsSettings() {
+  final sourceDir = Directory('./assets/images');
+
+  if (!sourceDir.existsSync()) {
+    throw FileSystemException(
+      'Assets directory does not exist',
+      sourceDir.path,
+    );
+  }
+
+  final List<String> allAssets = sourceDir
+      .listSync()
+      .whereType<File>()
+      .map((file) => file.path.split('/').last)
+      .toList();
+
+  final String method = promptUser(
+    'How do you want to select assets?\n'
+        '1. Pick each asset interactively\n'
+        '2. Enter asset names separated by commas\n'
+        'Enter 1 or 2:',
+    '1',
+    validator: (value) => value == '1' || value == '2',
+  );
+
+  if (method == '1') {
+    final List<String> selectedAssets = [];
+    for (final assetName in allAssets) {
+      final bool cloneAsset =
+          promptUser(
+            'Does this asset need to be cloned: $assetName? (y/n)',
+            'n',
+          ) ==
+          'y';
+      if (cloneAsset) {
+        selectedAssets.add(assetName);
+      }
+    }
+    return selectedAssets;
+  } else {
+    while (true) {
+      final input = promptUser(
+        'Enter the asset names you want to clone, separated by commas (e.g., asset1.png,asset2.jpg):',
+        '',
+        validator: (value) => value.trim().isNotEmpty,
+      );
+      final List<String> enteredAssets = input
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+
+      final List<String> missingAssets = enteredAssets
+          .where((asset) => !allAssets.contains(asset))
+          .toList();
+
+      final Set<String> duplicates = {};
+      final Set<String> seen = {};
+      for (final asset in enteredAssets) {
+        if (!seen.add(asset)) {
+          duplicates.add(asset);
+        }
+      }
+
+      if (missingAssets.isEmpty && duplicates.isEmpty) {
+        return enteredAssets;
+      } else {
+        if (missingAssets.isNotEmpty) {
+          logger.e(
+            'The following assets do not exist: ${missingAssets.join(', ')}. Please try again.',
+          );
+        }
+        if (duplicates.isNotEmpty) {
+          logger.e(
+            'Duplicate asset names found: ${duplicates.join(', ')}. Please enter each asset only once.',
+          );
+        }
+      }
+    }
+  }
 }
 
 /// Creates the settings file with the provided configurations.
@@ -210,11 +286,12 @@ bool _createSettingsFile(
   Map<String, dynamic> firebaseConfig,
   Map<String, dynamic> fastlaneConfig,
   Map<String, String> basicConfig,
+  List<String> cloneAssets,
 ) {
   try {
     settingsFile.createSync(recursive: true);
     _createdPaths.add(settingsFile.path);
-    
+
     settingsFile.writeAsStringSync('''
 # Clonify Settings
 firebase:
@@ -227,8 +304,11 @@ fastlane:
 company_name: "${basicConfig['companyName']}"
 
 default_color: "${basicConfig['defaultColor']}"
+
+clone_assets:
+  - ${cloneAssets.join('\n  - ')}
 ''');
-    
+
     logger.i(
       '✅ Created default clonify_settings.yaml at ${settingsFile.path}.',
     );
@@ -266,9 +346,16 @@ Future<void> initClonify() async {
       final firebaseConfig = _promptFirebaseSettings();
       final fastlaneConfig = _promptFastlaneSettings();
       final basicConfig = _promptBasicSettings();
-      
+      final List<String> cloneAssetsConfig = _promptCloneAssetsSettings();
+
       // Step 3: Create settings file
-      if (!_createSettingsFile(settingsFile, firebaseConfig, fastlaneConfig, basicConfig)) {
+      if (!_createSettingsFile(
+        settingsFile,
+        firebaseConfig,
+        fastlaneConfig,
+        basicConfig,
+        cloneAssetsConfig,
+      )) {
         _cleanupCreatedPaths();
         return;
       }
@@ -278,7 +365,7 @@ Future<void> initClonify() async {
       );
       validatedClonifySettings(isSilent: false);
     }
-    
+
     // Clear tracking list on successful completion
     _createdPaths.clear();
   } catch (e) {
@@ -340,8 +427,8 @@ Map<String, dynamic>? _parseYamlSettings(String content) {
 /// Returns true if all required fields are valid, otherwise false.
 bool _validateRequiredFields(Map<String, dynamic> rawSettings) {
   const requiredFields = {
-    'firebase': yaml.YamlMap,
-    'fastlane': yaml.YamlMap,
+    'firebase': Map<String, dynamic>,
+    'fastlane': Map<String, dynamic>,
     'company_name': String,
     'default_color': String,
   };
@@ -351,13 +438,24 @@ bool _validateRequiredFields(Map<String, dynamic> rawSettings) {
       logger.e(Messages.missingRequiredField(field));
       return false;
     }
-    if (rawSettings[field] == null ||
-        rawSettings[field].runtimeType != requiredFields[field]) {
+
+    final expectedType = requiredFields[field];
+    if (expectedType == String && rawSettings[field] is! String) {
       logger.e(
         Messages.fieldHasInvalidType(
           field,
           rawSettings[field].runtimeType,
-          requiredFields[field],
+          String,
+        ),
+      );
+      return false;
+    }
+    if (expectedType == (Map<String, dynamic>) && rawSettings[field] is! Map) {
+      logger.e(
+        Messages.fieldHasInvalidType(
+          field,
+          rawSettings[field].runtimeType,
+          Map<String, dynamic>,
         ),
       );
       return false;

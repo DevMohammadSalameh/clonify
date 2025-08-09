@@ -2,29 +2,32 @@ import 'package:yaml/yaml.dart';
 
 class ClonifySettings {
   final bool firebaseEnabled;
-  final String firebaseSettingsFile;
+  final String firebaseSettingsFilePath;
   final bool fastlaneEnabled;
-  final String fastlaneSettingsFile;
+  final String fastlaneSettingsFilePath;
   final String companyName;
   final String defaultColor;
+  final List<String> assets;
 
   ClonifySettings({
     required this.firebaseEnabled,
-    required this.firebaseSettingsFile,
+    required this.firebaseSettingsFilePath,
     required this.fastlaneEnabled,
-    required this.fastlaneSettingsFile,
+    required this.fastlaneSettingsFilePath,
     required this.companyName,
     required this.defaultColor,
+    required this.assets,
   });
 
   factory ClonifySettings.fromYaml(YamlMap yaml) {
     return ClonifySettings(
       firebaseEnabled: yaml['firebase']['enabled'] ?? false,
-      firebaseSettingsFile: yaml['firebase']['settings_file'] ?? '',
+      firebaseSettingsFilePath: yaml['firebase']['settings_file'] ?? '',
       fastlaneEnabled: yaml['fastlane']['enabled'] ?? false,
-      fastlaneSettingsFile: yaml['fastlane']['settings_file'] ?? '',
+      fastlaneSettingsFilePath: yaml['fastlane']['settings_file'] ?? '',
       companyName: yaml['company_name'] ?? '',
       defaultColor: yaml['default_color'] ?? '#FFFFFF',
+      assets: List<String>.from(yaml['clone_assets'] ?? []),
     );
   }
 }

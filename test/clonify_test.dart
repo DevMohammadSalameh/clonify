@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:test/test.dart';
 import 'package:clonify/src/clonify_core.dart';
 
@@ -160,17 +161,23 @@ fastlane:
 company_name: "TestCompany"
 default_color: "#ABCDEF"
 ''');
-      final settings = getClonifySettings();
-      expect(settings.companyName, equals("TestCompany"));
-      expect(settings.defaultColor, equals("#ABCDEF"));
-      expect(settings.firebaseEnabled, isTrue);
-      expect(settings.firebaseSettingsFile, contains("firebase.json"));
-      expect(settings.fastlaneEnabled, isFalse);
-      expect(settings.fastlaneSettingsFile, contains("fastlane.json"));
+
+      expect(clonifySettings.companyName, equals("TestCompany"));
+      expect(clonifySettings.defaultColor, equals("#ABCDEF"));
+      expect(clonifySettings.firebaseEnabled, isTrue);
+      expect(
+        clonifySettings.firebaseSettingsFilePath,
+        contains("firebase.json"),
+      );
+      expect(clonifySettings.fastlaneEnabled, isFalse);
+      expect(
+        clonifySettings.fastlaneSettingsFilePath,
+        contains("fastlane.json"),
+      );
     });
 
     test('throws if settings file does not exist', () {
-      expect(() => getClonifySettings(), throwsException);
+      expect(() => clonifySettings, throwsException);
     });
   });
 }

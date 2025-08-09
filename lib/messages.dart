@@ -1,3 +1,5 @@
+import 'package:clonify/constants.dart';
+
 abstract class Messages {
   static const String toolDescription =
       'A CLI tool that helps you manage your flutter project clones.';
@@ -17,12 +19,24 @@ abstract class Messages {
       '❌ clonify_settings.yaml does not contain a valid map.';
   static String missingRequiredField(String field) =>
       '❌ Missing required field: $field';
-  //'❌ Field "$field" has invalid type ${rawSettings[field].runtimeType}. Expected ${requiredFields[field]}.'
-
   static String fieldHasInvalidType(
     String field,
     Type runtimeType,
     Type? expectedType,
   ) =>
       '❌ Field "$field" has invalid type [$runtimeType]. Expected $expectedType';
+
+  static String configNotFoundForClientId(String clientId) =>
+      '❌ Config file not found for client ID: $clientId';
+
+  static String failedToReadOrParseConfigFile(
+    String configFilePath,
+    Object e,
+  ) => '❌ Failed to read or parse $configFilePath: $e';
+
+  static String failedToReadOrParsePubspecFile(Object e) =>
+      '❌ Failed to read or parse ${Constants.pubspecFilePath}: $e';
+
+  static String pleaseVerifyBundleIdAndAppNameInXcodeProject =
+      '❌ Please verify the Bundle ID and App Name in the Xcode project.';
 }

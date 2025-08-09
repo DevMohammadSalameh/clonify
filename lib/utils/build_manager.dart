@@ -1,63 +1,108 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clonify/constants.dart';
+import 'package:clonify/messages.dart';
 import 'package:clonify/models/commands_calls_models/build_command_model.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:yaml/yaml.dart' as yaml;
 
 Future<void> buildApps(BuildCommandModel buildModel) async {
-  final configFilePath = './clonify/clones/${buildModel.clientId}/config.json';
-  const pubspecFilePath = './pubspec.yaml';
-
-  // Check if config.json exists
-  final configFile = File(configFilePath);
-  if (!configFile.existsSync()) {
-    logger.e('❌ Config file not found for client ID: ${buildModel.clientId}');
+  final buildMetadata = await _loadBuildMetadata(buildModel.clientId!);
+  if (buildMetadata == null) {
     return;
   }
 
-  // Parse config.json to get the packageName
-  String packageName;
-  String appName;
-  try {
-    final configContent = jsonDecode(configFile.readAsStringSync());
-    packageName = configContent['packageName'] ?? 'Unknown Package Name';
-    appName = configContent['appName'] ?? 'Unknown App Name';
-  } catch (e) {
-    logger.e('❌ Failed to read or parse $configFilePath: $e');
-    return;
-  }
+  final packageName = buildMetadata['packageName']!;
+  final appName = buildMetadata['appName']!;
+  final version = buildMetadata['version']!;
 
-  // Read pubspec.yaml to get the version
-  String version;
-  try {
-    final pubspecContent = File(pubspecFilePath).readAsStringSync();
-    final pubspecMap = yaml.loadYaml(pubspecContent);
-    version = pubspecMap['version'] ?? 'Unknown Version';
-  } catch (e) {
-    logger.e('❌ Failed to read or parse $pubspecFilePath: $e');
-    return;
-  }
-
-  // Update prompt message with packageName, appName, and version
-  final answer = prompt(
-    ' Have you verified the Bundle ID ($packageName) and App Name ($appName) in the Xcode project, with the version [$version]? (y/n):',
-    skip: buildModel.skipBuildCheck,
-    skipValue: 'y',
-  );
-  if (answer.toLowerCase() != 'y') {
-    logger.e(
-      '❌ Please verify the Bundle ID and App Name in the Xcode project.',
-    );
+  if (!_promptUserForConfirmation(
+    packageName: packageName,
+    appName: appName,
+    version: version,
+    skipBuildCheck: buildModel.skipBuildCheck,
+  )) {
     return;
   }
 
   logger.i('🚀 Building apps for client ID: ${buildModel.clientId}');
 
-  // Start a stopwatch to track total build time
   final stopwatch = Stopwatch()..start();
 
-  // Periodically display a loading message with the elapsed time
+  try {
+    await _runFlutterBuildCommands(
+      buildModel: buildModel,
+      version: version,
+      stopwatch: stopwatch,
+    );
+
+    logger.i(
+      '✅ Apps built successfully for client ID: ${buildModel.clientId} in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.',
+    );
+  } catch (e) {
+    // Error is already logged in _runFlutterBuildCommands
+  } finally {
+    stopwatch.stop();
+  }
+}
+
+Future<Map<String, String>?> _loadBuildMetadata(String clientId) async {
+  final configFilePath = Constants.configFilePath(clientId);
+
+  final configFile = File(configFilePath);
+  if (!configFile.existsSync()) {
+    logger.e(Messages.configNotFoundForClientId(clientId));
+    return null;
+  }
+
+  String packageName;
+  String appName;
+  try {
+    final configContent = jsonDecode(configFile.readAsStringSync());
+    packageName = configContent['packageName'];
+    appName = configContent['appName'];
+  } catch (e) {
+    logger.e(Messages.failedToReadOrParseConfigFile(configFilePath, e));
+    return null;
+  }
+
+  String version;
+  try {
+    final pubspecContent = File(Constants.pubspecFilePath).readAsStringSync();
+    final pubspecMap = yaml.loadYaml(pubspecContent);
+    version = pubspecMap['version'];
+  } catch (e) {
+    logger.e(Messages.failedToReadOrParsePubspecFile(e));
+    return null;
+  }
+
+  return {'packageName': packageName, 'appName': appName, 'version': version};
+}
+
+bool _promptUserForConfirmation({
+  required String packageName,
+  required String appName,
+  required String version,
+  required bool skipBuildCheck,
+}) {
+  final answer = prompt(
+    ' Have you verified the Bundle ID ($packageName) and App Name ($appName) in the Xcode project, with the version [$version]? (y/n):',
+    skip: skipBuildCheck,
+    skipValue: 'y',
+  );
+  if (answer.toLowerCase() != 'y') {
+    logger.e(Messages.pleaseVerifyBundleIdAndAppNameInXcodeProject);
+    return false;
+  }
+  return true;
+}
+
+Future<void> _runFlutterBuildCommands({
+  required BuildCommandModel buildModel,
+  required String version,
+  required Stopwatch stopwatch,
+}) async {
   final progress = Stream.periodic(const Duration(milliseconds: 100), (count) {
     stdout.write(
       '\r🛠 Apps are being built... [${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s]',
@@ -66,7 +111,6 @@ Future<void> buildApps(BuildCommandModel buildModel) async {
   final progressSubscription = progress.listen((_) {});
 
   try {
-    // Run all commands in parallel
     await Future.wait([
       if (buildModel.buildApk)
         runCommand(
@@ -96,7 +140,6 @@ Future<void> buildApps(BuildCommandModel buildModel) async {
         ),
     ]);
 
-    // Stop the progress display
     progressSubscription.cancel();
     stdout.write('\r'); // Clear the line
     logger.i(
@@ -105,16 +148,12 @@ Future<void> buildApps(BuildCommandModel buildModel) async {
     logger.i(
       '✓ You can find the Android app bundle at\n  ${'-' * 10}→ build/app/outputs/bundle/release/app-release.aab',
     );
-    // Display the total build time
-    logger.i(
-      '✅ Apps built successfully for client ID: ${buildModel.clientId} in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.',
-    );
   } catch (e) {
-    // Stop the progress display and print the error
     progressSubscription.cancel();
     stdout.write('\r'); // Clear the line
     logger.e('❌ Error during app build: $e');
+    rethrow;
   } finally {
-    stopwatch.stop();
+    progressSubscription.cancel();
   }
 }

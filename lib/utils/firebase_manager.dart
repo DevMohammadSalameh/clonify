@@ -103,7 +103,7 @@ Future<void> addFirebaseToApp({
   required String packageName,
   bool? skip,
 }) async {
-  const firebaseJsonPath = 'firebase.json';
+  final firebaseJsonPath = clonifySettings.firebaseSettingsFilePath;
 
   try {
     // Step 1: Parse the firebase.json file

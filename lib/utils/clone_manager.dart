@@ -2,8 +2,10 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clonify/models/clonify_settings_model.dart';
 import 'package:clonify/models/config_model.dart';
 import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
+import 'package:clonify/src/clonify_core.dart';
 import 'package:clonify/utils/asset_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:clonify/utils/firebase_manager.dart';
@@ -127,20 +129,20 @@ Map<String, String>? _promptCloneBasicInfo() {
 
     final primaryColor = promptUser(
       'Enter the primary color (e.g., 0xFFFFFFFF):',
-      '0xFF3EA7E1',
+      clonifySettings.defaultColor,
       validator: (value) => RegExp(r'^0x[0-9A-Fa-f]{8}$').hasMatch(value),
     );
 
     final packageName = promptUser(
       'Enter the package name (e.g., com.example.example):',
-      'com.natejsoft.${clientId.toLowerCase()}hr',
+      'com.${clonifySettings.companyName}.${clientId.toLowerCase()}',
       validator: (value) =>
           RegExp(r'^[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z]+$').hasMatch(value),
     );
 
     final appName = promptUser(
       'Enter the app name (e.g., Clone App):',
-      '${toTitleCase(clientId)} HR',
+      toTitleCase(clientId),
       validator: (value) => value.isNotEmpty,
     );
 
@@ -149,11 +151,13 @@ Map<String, String>? _promptCloneBasicInfo() {
       '1.0.0+1',
       validator: (value) => value.isNotEmpty,
     );
-
-    final firebaseProjectId = promptUser(
-      'Enter the Firebase project ID (e.g., my-project-id):',
-      'firebase-$clientId-flutter',
-    );
+    String firebaseProjectId = '';
+    if (clonifySettings.firebaseEnabled) {
+      firebaseProjectId = promptUser(
+        'Enter the Firebase project ID (e.g., my-project-id):',
+        'firebase-$clientId-flutter',
+      );
+    }
 
     return {
       'clientId': clientId,
@@ -176,7 +180,7 @@ bool _createCloneStructure(Map<String, String> config) {
   try {
     final clientId = config['clientId']!;
     final cloneDir = Directory('./clonify/clones/$clientId');
-    
+
     cloneDir.createSync(recursive: true);
     _createdClonePaths.add(cloneDir.path);
 
@@ -209,7 +213,7 @@ Future<bool> _setupCloneServices(Map<String, String> config) async {
     final doRename = prompt(
       'Do you want to rename the app with ${config['appName']} and package with ${config['packageName']}? (y/n):',
     );
-    
+
     if (doRename.toLowerCase() == 'y') {
       await runRenamePackage(
         appName: config['appName']!,
@@ -219,11 +223,13 @@ Future<bool> _setupCloneServices(Map<String, String> config) async {
       logger.i('🚀 Skipping renaming process...');
     }
 
-    await createFirebaseProject(
-      clientId: config['clientId']!,
-      packageName: config['packageName']!,
-      firebaseProjectId: config['firebaseProjectId']!,
-    );
+    if (clonifySettings.firebaseEnabled) {
+      await createFirebaseProject(
+        clientId: config['clientId']!,
+        packageName: config['packageName']!,
+        firebaseProjectId: config['firebaseProjectId']!,
+      );
+    }
 
     createAssetsDirectory(config['clientId']!);
     return true;
@@ -266,7 +272,7 @@ Future<void> createClone() async {
     logger.i(
       '🚀 Run "clonify configure --clientId ${config['clientId']}" to generate this clone.',
     );
-    
+
     // Clear tracking list on successful completion
     _createdClonePaths.clear();
   } catch (e) {
@@ -289,17 +295,19 @@ Future<bool> _performInitialSetup(
       appName: configJson['appName'],
       packageName: configJson['packageName'],
     );
-    
+
     if (callModel.isDebug) {
       return true; // Early return for debug mode
     }
-    
+
     // Step 2: Create Firebase project and enable FCM
-    await addFirebaseToApp(
-      packageName: configJson['packageName'],
-      firebaseProjectId: configJson['firebaseProjectId'],
-      skip: callModel.skipAll || callModel.skipFirebaseConfigure,
-    );
+    if (clonifySettings.firebaseEnabled) {
+      await addFirebaseToApp(
+        packageName: configJson['packageName'],
+        firebaseProjectId: configJson['firebaseProjectId'],
+        skip: callModel.skipAll || callModel.skipFirebaseConfigure,
+      );
+    }
 
     // Step 3: Replace assets
     replaceAssets(callModel.clientId!);
@@ -336,7 +344,7 @@ Future<String?> _handleVersionManagement(
   if (yamlVersion == null) return null;
 
   String configVersion = configJson['version'] ?? '';
-  
+
   // Handle missing config version
   if (configVersion.isEmpty) {
     configVersion = promptUser(
@@ -371,7 +379,7 @@ Future<String?> _handleVersionManagement(
     skip: callModel.skipVersionUpdate,
     skipValue: callModel.autoUpdate ? 'y' : 'No',
   );
-  
+
   if (changeVersionAnswer.toLowerCase() == 'y') {
     final newVersion = promptUser(
       'Enter the new version number:',
@@ -387,7 +395,7 @@ Future<String?> _handleVersionManagement(
     ).writeAsString(jsonEncode(configJson));
     return newVersion;
   }
-  
+
   return configVersion;
 }
 
@@ -445,7 +453,7 @@ Future<Map<String, dynamic>?> configureApp(
     if (!await _performInitialSetup(callModel, configJson)) {
       return null;
     }
-    
+
     if (callModel.isDebug) {
       return {}; // Return empty map for debug mode
     }
