@@ -41,6 +41,16 @@ final Logger logger = Logger(
   printer: PrettyPrinter(methodCount: 0, noBoxingByDefault: true),
 );
 
+/// Sanitizes a command argument to prevent command injection.
+/// Only allows alphanumeric, dash, underscore, dot, and slash.
+String sanitizeArg(String arg) {
+  final safe = RegExp(r'^[\w\-.\/]+$');
+  if (!safe.hasMatch(arg)) {
+    throw ArgumentError('Unsafe argument detected: $arg');
+  }
+  return arg;
+}
+
 Future<void> runCommand(
   String command,
   List<String> args, {
@@ -49,11 +59,19 @@ Future<void> runCommand(
   String? loadingMessage,
   String? workingDirectory,
 }) async {
+  // Sanitize command and arguments
+  final sanitizedCommand = sanitizeArg(command);
+  final sanitizedArgs = args.map(sanitizeArg).toList();
+  final sanitizedWorkingDirectory = workingDirectory != null
+      ? sanitizeArg(workingDirectory)
+      : null;
+
   if (showLoading) {
     final stopwatch = Stopwatch()..start();
-    String fullCommand = '$command ${args.join(" ")}';
+    String fullCommand = '$sanitizedCommand ${sanitizedArgs.join(" ")}';
     if (fullCommand.length > 50) {
-      fullCommand = '$command ${args.join(" ").substring(0, 50)}...';
+      fullCommand =
+          '$sanitizedCommand ${sanitizedArgs.join(" ").substring(0, 50)}...';
     }
     final progress = Stream.periodic(const Duration(milliseconds: 100), (
       count,
@@ -70,10 +88,10 @@ Future<void> runCommand(
 
     try {
       final result = await Process.run(
-        command,
-        args,
+        sanitizedCommand,
+        sanitizedArgs,
         runInShell: true,
-        workingDirectory: workingDirectory,
+        workingDirectory: sanitizedWorkingDirectory,
       );
       progressSubscription.cancel(); // Stop the progress indicator
       stdout.write('\r'); // Clear the line
@@ -87,7 +105,7 @@ Future<void> runCommand(
         );
       } else {
         throw Exception(
-          '❌ Command failed: $command ${args.join(" ")}\nError: ${result.stderr}',
+          '❌ Command failed: $sanitizedCommand ${sanitizedArgs.join(" ")}\nError: ${result.stderr}',
         );
       }
     } catch (e) {
@@ -98,17 +116,17 @@ Future<void> runCommand(
   } else {
     try {
       final result = await Process.run(
-        command,
-        args,
+        sanitizedCommand,
+        sanitizedArgs,
         runInShell: true,
-        workingDirectory: workingDirectory,
+        workingDirectory: sanitizedWorkingDirectory,
       );
 
       if (result.exitCode == 0) {
         logger.i('\r${successMessage ?? '✅ Command completed successfully.'}');
       } else {
         throw Exception(
-          '❌ Command failed: $command ${args.join(" ")}\nError: ${result.stderr}',
+          '❌ Command failed: $sanitizedCommand ${sanitizedArgs.join(" ")}\nError: ${result.stderr}',
         );
       }
     } catch (e) {
