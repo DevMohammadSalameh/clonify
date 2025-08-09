@@ -8,6 +8,8 @@ class ClonifySettings {
   final String companyName;
   final String defaultColor;
   final List<String> assets;
+  final String launcherIconAsset;
+  final String? splashScreenAsset;
 
   ClonifySettings({
     required this.firebaseEnabled,
@@ -17,6 +19,8 @@ class ClonifySettings {
     required this.companyName,
     required this.defaultColor,
     required this.assets,
+    required this.launcherIconAsset,
+    this.splashScreenAsset,
   });
 
   factory ClonifySettings.fromYaml(YamlMap yaml) {
@@ -28,6 +32,8 @@ class ClonifySettings {
       companyName: yaml['company_name'] ?? '',
       defaultColor: yaml['default_color'] ?? '#FFFFFF',
       assets: List<String>.from(yaml['clone_assets'] ?? []),
+      launcherIconAsset: yaml['launcher_icon_asset'] ?? '',
+      splashScreenAsset: yaml['splash_screen_asset'] ?? '',
     );
   }
 }

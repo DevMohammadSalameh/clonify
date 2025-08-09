@@ -193,10 +193,12 @@ Map<String, String> _promptBasicSettings() {
   return {'companyName': companyName, 'defaultColor': defaultColor};
 }
 
-/// Prompts for assets settings.
+/// Prompts for assets settings, including launcher icon and splash screen selection.
 ///
 /// Returns a list<String> with the names of the assets to be cloned.
-List<String> _promptCloneAssetsSettings() {
+/// The launcher icon asset will be the first in the list.
+/// The splash screen asset (if any) will be the second in the list.
+(List<String>, bool) _promptCloneAssetsSettings() {
   final sourceDir = Directory('./assets/images');
 
   if (!sourceDir.existsSync()) {
@@ -206,13 +208,61 @@ List<String> _promptCloneAssetsSettings() {
     );
   }
 
-  final List<String> allAssets = sourceDir
+  final List<String> allAssets = _getAllAssets(sourceDir);
+
+  if (allAssets.isEmpty) {
+    logger.e('No assets found in ${sourceDir.path}.');
+    return ([], false);
+  }
+
+  // Step 1: Select assets to clone
+  List<String> selectedAssets = [];
+  final method = _selectAssetSelectionMethod();
+  if (method == '1') {
+    selectedAssets = _pickAssetsInteractively(allAssets);
+  } else {
+    selectedAssets = _pickAssetsByInput(allAssets);
+  }
+
+  if (selectedAssets.isEmpty) {
+    logger.e('No assets selected for cloning.');
+    return ([], false);
+  }
+
+  // Step 2: Select launcher icon asset
+  final launcherAsset = _selectLauncherIconAsset(selectedAssets);
+
+  // Remove launcher asset from list to avoid duplicate
+  selectedAssets.remove(launcherAsset);
+
+  // Step 3: Ask for splash screen asset (optional)
+  final splashAsset = _selectSplashScreenAsset(selectedAssets);
+
+  // Remove splash asset from list to avoid duplicate
+  if (splashAsset != null) {
+    selectedAssets.remove(splashAsset);
+  }
+
+  // Build the final list: launcher icon first, splash screen second (if any), then the rest
+  final List<String> orderedAssets = [launcherAsset];
+  if (splashAsset != null) {
+    orderedAssets.add(splashAsset);
+  }
+  orderedAssets.addAll(selectedAssets);
+
+  return (orderedAssets, splashAsset != null);
+}
+
+List<String> _getAllAssets(Directory sourceDir) {
+  return sourceDir
       .listSync()
       .whereType<File>()
       .map((file) => file.path.split('/').last)
       .toList();
+}
 
-  final String method = promptUser(
+String _selectAssetSelectionMethod() {
+  return promptUser(
     'How do you want to select assets?\n'
         '1. Pick each asset interactively\n'
         '2. Enter asset names separated by commas\n'
@@ -220,62 +270,109 @@ List<String> _promptCloneAssetsSettings() {
     '1',
     validator: (value) => value == '1' || value == '2',
   );
+}
 
-  if (method == '1') {
-    final List<String> selectedAssets = [];
-    for (final assetName in allAssets) {
-      final bool cloneAsset =
-          promptUser(
-            'Does this asset need to be cloned: $assetName? (y/n)',
-            'n',
-          ) ==
-          'y';
-      if (cloneAsset) {
-        selectedAssets.add(assetName);
-      }
+List<String> _pickAssetsInteractively(List<String> assets) {
+  final selected = <String>[];
+  for (final asset in assets) {
+    final clone =
+        promptUser('Does this asset need to be cloned: $asset? (y/n)', 'n') ==
+        'y';
+    if (clone) selected.add(asset);
+  }
+  return selected;
+}
+
+List<String> _pickAssetsByInput(List<String> assets) {
+  while (true) {
+    final input = promptUser(
+      'Enter the asset names you want to clone, separated by commas (e.g., asset1.png,asset2.jpg):',
+      '',
+      validator: (value) => value.trim().isNotEmpty,
+    );
+    final entered = input
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .toList();
+
+    final missing = entered.where((a) => !assets.contains(a)).toList();
+    final duplicates = <String>{};
+    final seen = <String>{};
+    for (final asset in entered) {
+      if (!seen.add(asset)) duplicates.add(asset);
     }
-    return selectedAssets;
-  } else {
-    while (true) {
-      final input = promptUser(
-        'Enter the asset names you want to clone, separated by commas (e.g., asset1.png,asset2.jpg):',
-        '',
-        validator: (value) => value.trim().isNotEmpty,
+
+    if (missing.isEmpty && duplicates.isEmpty) {
+      return entered;
+    }
+    if (missing.isNotEmpty) {
+      logger.e(
+        'The following assets do not exist: ${missing.join(', ')}. Please try again.',
       );
-      final List<String> enteredAssets = input
-          .split(',')
-          .map((e) => e.trim())
-          .where((e) => e.isNotEmpty)
-          .toList();
-
-      final List<String> missingAssets = enteredAssets
-          .where((asset) => !allAssets.contains(asset))
-          .toList();
-
-      final Set<String> duplicates = {};
-      final Set<String> seen = {};
-      for (final asset in enteredAssets) {
-        if (!seen.add(asset)) {
-          duplicates.add(asset);
-        }
-      }
-
-      if (missingAssets.isEmpty && duplicates.isEmpty) {
-        return enteredAssets;
-      } else {
-        if (missingAssets.isNotEmpty) {
-          logger.e(
-            'The following assets do not exist: ${missingAssets.join(', ')}. Please try again.',
-          );
-        }
-        if (duplicates.isNotEmpty) {
-          logger.e(
-            'Duplicate asset names found: ${duplicates.join(', ')}. Please enter each asset only once.',
-          );
-        }
-      }
+    }
+    if (duplicates.isNotEmpty) {
+      logger.e(
+        'Duplicate asset names found: ${duplicates.join(', ')}. Please enter each asset only once.',
+      );
     }
   }
+}
+
+void _printAssetList(List<String> assets) {
+  for (int i = 0; i < assets.length; i++) {
+    print('  ${i + 1}. ${assets[i]}');
+  }
+}
+
+String _selectLauncherIconAsset(List<String> selectedAssets) {
+  print('\nSelect the launcher icon asset from the list below:');
+  _printAssetList(selectedAssets);
+
+  int launcherIndex = -1;
+  while (launcherIndex < 0 || launcherIndex >= selectedAssets.length) {
+    final input = promptUser(
+      'Enter the number for the launcher icon asset:',
+      '',
+      validator: (value) {
+        final idx = int.tryParse(value);
+        return idx != null && idx > 0 && idx <= selectedAssets.length;
+      },
+    );
+    launcherIndex = int.parse(input) - 1;
+  }
+  return selectedAssets[launcherIndex];
+}
+
+String? _selectSplashScreenAsset(List<String> selectedAssets) {
+  print(
+    '\nSelect the splash screen asset from the list below (or enter 0 for none):',
+  );
+  _printAssetList(selectedAssets);
+  print('  0. No splash screen asset');
+  int splashIndex = -2;
+  String? splashAsset;
+  while (splashIndex < -1 || splashIndex > selectedAssets.length - 1) {
+    final input = promptUser(
+      'Enter the number for the splash screen asset (or 0 for none):',
+      '0',
+      validator: (value) {
+        final idx = int.tryParse(value);
+        return idx != null && idx >= 0 && idx <= selectedAssets.length;
+      },
+    );
+    splashIndex = int.parse(input) - 1;
+    if (splashIndex == -1) {
+      logger.i(
+        'No splash screen asset selected. You can set it manually in the clonify settings file later.',
+      );
+      break;
+    } else {
+      splashAsset = selectedAssets[splashIndex];
+      break;
+    }
+  }
+  return splashAsset;
 }
 
 /// Creates the settings file with the provided configurations.
@@ -287,6 +384,7 @@ bool _createSettingsFile(
   Map<String, dynamic> fastlaneConfig,
   Map<String, String> basicConfig,
   List<String> cloneAssets,
+  bool isThereASplashScreen,
 ) {
   try {
     settingsFile.createSync(recursive: true);
@@ -307,6 +405,10 @@ default_color: "${basicConfig['defaultColor']}"
 
 clone_assets:
   - ${cloneAssets.join('\n  - ')}
+
+launcher_icon_asset: "${cloneAssets[0]}"
+
+${isThereASplashScreen ? 'splash_screen_asset: "${cloneAssets[1]}"' : ''}
 ''');
 
     logger.i(
@@ -346,7 +448,8 @@ Future<void> initClonify() async {
       final firebaseConfig = _promptFirebaseSettings();
       final fastlaneConfig = _promptFastlaneSettings();
       final basicConfig = _promptBasicSettings();
-      final List<String> cloneAssetsConfig = _promptCloneAssetsSettings();
+      final (List<String>, bool) cloneAssetsConfig =
+          _promptCloneAssetsSettings();
 
       // Step 3: Create settings file
       if (!_createSettingsFile(
@@ -354,7 +457,8 @@ Future<void> initClonify() async {
         firebaseConfig,
         fastlaneConfig,
         basicConfig,
-        cloneAssetsConfig,
+        cloneAssetsConfig.$1,
+        cloneAssetsConfig.$2,
       )) {
         _cleanupCreatedPaths();
         return;
