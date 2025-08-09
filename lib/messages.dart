@@ -13,8 +13,8 @@ abstract class Messages {
       'Failed to upload the clone for client ID "$clientId": $error';
   static String clonifySettingsFileNotFound =
       '❌  clonify_settings.yaml not found. Please run "clonify init".';
-  static String failedToParseClonifySettings(Object error) =>
-      '❌ Failed to parse clonify_settings.yaml: $error';
+  static String failedToReadOrParseClonifySettings(Object error) =>
+      '❌ Failed to read or parse clonify_settings.yaml: $error';
   static String clonifySettingsDoesNotContainAValidMap =
       '❌ clonify_settings.yaml does not contain a valid map.';
   static String missingRequiredField(String field) =>

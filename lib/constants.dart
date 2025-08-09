@@ -7,4 +7,29 @@ abstract class Constants {
   static configFilePath(String clientId) =>
       './clonify/clones/$clientId/config.json';
   static const String pubspecFilePath = './pubspec.yaml';
+
+  static const String flutterLauncherIconsYaml = '''
+dev_dependencies:
+  flutter_launcher_icons: "^0.13.1"
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  remove_alpha_ios: true
+  image_path: ""
+  adaptive_icon_background: "#ffffff"
+  adaptive_icon_foreground: ""
+  min_sdk_android: 21
+''';
+
+  static const String flutterNativeSplashYaml = '''
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: ""
+  android_12:
+    image: 
+  web: false
+  ios_content_mode: scaleToFill
+  fullscreen: true
+''';
 }

@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:clonify/constants.dart';
 import 'package:clonify/models/clonify_settings_model.dart';
 import 'package:clonify/models/config_model.dart';
 import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
@@ -402,18 +403,90 @@ Future<String?> _handleVersionManagement(
 /// Runs Flutter build commands and generates configuration.
 ///
 /// Returns true if successful, false otherwise.
-Future<bool> _runBuildCommands(Map<String, dynamic> configJson) async {
+Future<bool> _configureLauncherIconsAndSplashScreen(
+  Map<String, dynamic> configJson,
+) async {
   try {
+    const flutterLauncherIconsPath = 'flutter_launcher_icons.yaml';
+    const flutterNativeSplashPath = 'flutter_native_splash.yaml';
+
+    // Step 1: Load and parse the YAML files
+    final launcherIconsConfigFile = File(flutterLauncherIconsPath);
+    final nativeSplashConfigFile = File(flutterNativeSplashPath);
+
+    // Create the config files if it does not exist
+    if (!launcherIconsConfigFile.existsSync()) {
+      launcherIconsConfigFile.createSync(recursive: true);
+      launcherIconsConfigFile.writeAsStringSync(
+        Constants.flutterLauncherIconsYaml,
+      );
+      logger.i(
+        '✅ Created $flutterLauncherIconsPath. you can modify it for customization.',
+      );
+    }
+    if (!nativeSplashConfigFile.existsSync()) {
+      nativeSplashConfigFile.createSync(recursive: true);
+      nativeSplashConfigFile.writeAsStringSync(
+        Constants.flutterNativeSplashYaml,
+      );
+      logger.i(
+        '✅ Created $flutterNativeSplashPath. you can modify it for customization.',
+      );
+    }
+    final launcherIconsYamlContent = launcherIconsConfigFile.readAsStringSync();
+    final launcherIconsYamlEditor = YamlEditor(launcherIconsYamlContent);
+    final nativeSplashYamlContent = nativeSplashConfigFile.readAsStringSync();
+    final nativeSplashYamlEditor = YamlEditor(nativeSplashYamlContent);
+
+    // Step 2: Update YAML files with new app name and package name
+    try {
+      launcherIconsYamlEditor.update([
+        'flutter_launcher_icons',
+        'image_path',
+      ], clonifySettings.launcherIconAsset);
+      launcherIconsYamlEditor.update([
+        'flutter_launcher_icons',
+        'adaptive_icon_foreground',
+      ], clonifySettings.launcherIconAsset);
+      launcherIconsConfigFile.writeAsStringSync(
+        launcherIconsYamlEditor.toString(),
+      );
+      logger.i('✅ Updated $flutterLauncherIconsPath with launcher icon asset');
+    } catch (e) {
+      logger.e('❌ Error updating $flutterLauncherIconsPath: $e');
+    }
+    if (clonifySettings.splashScreenAsset != null) {
+      try {
+        nativeSplashYamlEditor.update([
+          'flutter_native_splash',
+          'image',
+        ], clonifySettings.splashScreenAsset);
+        nativeSplashConfigFile.writeAsStringSync(
+          nativeSplashYamlEditor.toString(),
+        );
+        logger.i('✅ Updated $flutterNativeSplashPath with splash screen asset');
+      } catch (e) {
+        logger.e('❌ Error updating $flutterNativeSplashPath: $e');
+      }
+    } else {
+      logger.i(
+        'No splash screen asset provided. Skipping update of $flutterNativeSplashPath',
+      );
+    }
+
+    // Step 3: Run build commands
     await runCommand('dart', [
       'run',
       'flutter_launcher_icons',
     ], successMessage: '✅ Flutter launcher icons generated successfully!');
 
-    await runCommand(
-      'dart',
-      ['run', 'flutter_native_splash:create'],
-      successMessage: '✅ Flutter native splash screen created successfully!',
-    );
+    if (clonifySettings.splashScreenAsset != null) {
+      await runCommand(
+        'dart',
+        ['run', 'flutter_native_splash:create'],
+        successMessage: '✅ Flutter native splash screen created successfully!',
+      );
+    }
 
     await runCommand('dart', [
       'run',
@@ -465,7 +538,7 @@ Future<Map<String, dynamic>?> configureApp(
     }
 
     // Step 3: Run build commands
-    if (!await _runBuildCommands(configJson)) {
+    if (!await _configureLauncherIconsAndSplashScreen(configJson)) {
       return null;
     }
 
