@@ -8,6 +8,7 @@ library;
 import 'dart:io';
 import 'package:clonify/commands/clonify_command_runner.dart';
 import 'package:clonify/custom_exceptions.dart';
+import 'package:clonify/utils/clonify_helpers.dart';
 
 /// This function is responsible for running the clonify command with the provided arguments.
 /// It handles any custom exceptions that may occur during the execution of the command.
@@ -21,10 +22,10 @@ Future<void> main(List<String> arguments) async {
     final clonifyCommandRunner = ClonifyCommandRunner();
     await clonifyCommandRunner.run(arguments);
   } on CustomException catch (err) {
-    print(err.toString());
+    logger.e(err.message);
     exitCode = 1;
   } catch (e) {
-    print(e);
-    exitCode = 64; // Command-line usage error
+    logger.f(e);
+    exitCode = 64;
   }
 }

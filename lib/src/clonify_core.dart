@@ -36,8 +36,8 @@ Future<String?> getClientIdFromArgsOrLast(List<String> args) async {
       getArgumentValue(args, '--clientId');
   if (getArgumentValue(args, '--clientId') != null) {
     // I added this case because i have typed it wrong multiple times
-    print(
-      ' [!] Typo in argument name. Use "--clientId" instead of "--clientId" next time.',
+    logger.w(
+      'Typo in argument name. Use "--clientId" instead of "--clientId" next time.',
     );
   }
 
@@ -74,7 +74,7 @@ Future<void> initClonify() async {
   final clonifyDir = Directory('./clonify');
   if (!clonifyDir.existsSync()) {
     clonifyDir.createSync(recursive: true);
-    print('✅ Created clonify directory at ${clonifyDir.path}.');
+    logger.i('✅ Created clonify directory at ${clonifyDir.path}.');
   }
 
   final settingsFile = File('./clonify/clonify_settings.yaml');
@@ -90,11 +90,11 @@ Future<void> initClonify() async {
         '',
         validator: (value) {
           if (value.isEmpty) {
-            print('❌ Firebase settings file path cannot be empty.');
+            logger.e('❌ Firebase settings file path cannot be empty.');
             return false;
           }
           if (!File(value).existsSync()) {
-            print('❌ Firebase settings file does not exist at $value.');
+            logger.e('❌ Firebase settings file does not exist at $value.');
             return false;
           }
           return true;
@@ -111,10 +111,10 @@ Future<void> initClonify() async {
         '',
         validator: (value) {
           if (value.isEmpty) {
-            print('❌ Fastlane settings file path cannot be empty.');
+            logger.e('❌ Fastlane settings file path cannot be empty.');
             return false;
           } else if (!File(value).existsSync()) {
-            print('❌ Fastlane settings file does not exist at $value.');
+            logger.e('❌ Fastlane settings file does not exist at $value.');
             return false;
           }
           return true;
@@ -126,7 +126,7 @@ Future<void> initClonify() async {
       '',
       validator: (value) {
         if (value.isEmpty) {
-          print('❌ Company name cannot be empty.');
+          logger.e('❌ Company name cannot be empty.');
           return false;
         }
         return true;
@@ -140,7 +140,7 @@ Future<void> initClonify() async {
         if (RegExp(r'^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$').hasMatch(value)) {
           return true;
         }
-        print('Invalid hex color format. Use #FFFFFF or #FFF.');
+        logger.e('Invalid hex color format. Use #FFFFFF or #FFF.');
         return false;
       },
     );
@@ -158,9 +158,13 @@ company_name: "$companyName"
 
 default_color: "$defaultColor"
 ''');
-    print('✅ Created default clonify_settings.yaml at ${settingsFile.path}.');
+    logger.i(
+      '✅ Created default clonify_settings.yaml at ${settingsFile.path}.',
+    );
   } else {
-    print('ℹ️ clonify_settings.yaml already exists at ${settingsFile.path}.');
+    logger.i(
+      'ℹ️ clonify_settings.yaml already exists at ${settingsFile.path}.',
+    );
     validatedClonifySettings(isSilent: false);
   }
 }
@@ -184,13 +188,13 @@ default_color: "$defaultColor"
 bool validatedClonifySettings({bool isSilent = true}) {
   final settingsFile = File(Constants.clonifySettingsFilePath);
   if (!settingsFile.existsSync()) {
-    print(Messages.clonifySettingsFileNotFound);
+    logger.e(Messages.clonifySettingsFileNotFound);
     return false;
   }
 
   final content = settingsFile.readAsStringSync();
   if (content.isEmpty) {
-    print(Messages.clonifySettingsFileNotFound);
+    logger.e(Messages.clonifySettingsFileNotFound);
     return false;
   }
 
@@ -199,7 +203,7 @@ bool validatedClonifySettings({bool isSilent = true}) {
   try {
     rawSettings = yaml.loadYaml(content);
   } catch (e) {
-    print(Messages.failedToParseClonifySettings(e));
+    logger.e(Messages.failedToParseClonifySettings(e));
     return false;
   }
 
@@ -212,7 +216,7 @@ bool validatedClonifySettings({bool isSilent = true}) {
           : value;
     });
   } else {
-    print(Messages.clonifySettingsDoesNotContainAValidMap);
+    logger.e(Messages.clonifySettingsDoesNotContainAValidMap);
     return false;
   }
   // Required fields and their types
@@ -225,12 +229,12 @@ bool validatedClonifySettings({bool isSilent = true}) {
 
   for (final field in requiredFields.keys) {
     if (!rawSettings.containsKey(field)) {
-      print(Messages.missingRequiredField(field));
+      logger.e(Messages.missingRequiredField(field));
       return false;
     }
     if (rawSettings[field] == null ||
         rawSettings[field].runtimeType != requiredFields[field]) {
-      print(
+      logger.e(
         Messages.fieldHasInvalidType(
           field,
           rawSettings[field].runtimeType,
@@ -246,19 +250,19 @@ bool validatedClonifySettings({bool isSilent = true}) {
     final serviceSettings = rawSettings[service];
     if (!serviceSettings.containsKey('enabled') ||
         serviceSettings['enabled'] is! bool) {
-      print('❌ "$service.enabled" must be a boolean.');
+      logger.e('❌ "$service.enabled" must be a boolean.');
       return false;
     }
     if (!serviceSettings.containsKey('settings_file') ||
         serviceSettings['settings_file'] is! String) {
-      print('❌ "$service.settings_file" must be a string.');
+      logger.e('❌ "$service.settings_file" must be a string.');
       return false;
     }
   }
 
   // Check company_name
   if ((rawSettings['company_name'] as String).trim().isEmpty) {
-    print('❌ "company_name" cannot be empty.');
+    logger.e('❌ "company_name" cannot be empty.');
     return false;
   }
 
@@ -266,11 +270,11 @@ bool validatedClonifySettings({bool isSilent = true}) {
   final color = rawSettings['default_color'] as String;
   final hexColorRegExp = RegExp(r'^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$');
   if (!hexColorRegExp.hasMatch(color)) {
-    print('❌ "default_color" must be a valid hex color (e.g., #FFFFFF).');
+    logger.e('❌ "default_color" must be a valid hex color (e.g., #FFFFFF).');
     return false;
   }
   if (!isSilent) {
-    print('✅ clonify_settings.yaml is valid.');
+    logger.i('✅ clonify_settings.yaml is valid.');
   }
 
   return true;

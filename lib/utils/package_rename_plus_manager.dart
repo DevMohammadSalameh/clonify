@@ -26,7 +26,7 @@ package_rename_config:
     app_name: ""
     bundle_name: ""
 ''');
-    print('✅ Created default $renameConfigFilePath.');
+    logger.i('✅ Created default $renameConfigFilePath.');
   }
   final yamlContent = renameConfigFile.readAsStringSync();
   final yamlEditor = YamlEditor(yamlContent);
@@ -51,7 +51,7 @@ package_rename_config:
     ], packageName);
 
     renameConfigFile.writeAsStringSync(yamlEditor.toString());
-    print(
+    logger.i(
       '✅ Updated $renameConfigFilePath with app name "$appName" and package name "$packageName".',
     );
   } catch (e) {
@@ -65,6 +65,6 @@ package_rename_config:
       'package_rename_plus',
     ], successMessage: '✅ Successfully renamed the package and app.');
   } catch (e) {
-    print('❌ Error during package renaming process: $e');
+    logger.e('❌ Error during package renaming process: $e');
   }
 }

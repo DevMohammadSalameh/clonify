@@ -12,7 +12,7 @@ Future<void> buildApps(BuildCommandModel buildModel) async {
   // Check if config.json exists
   final configFile = File(configFilePath);
   if (!configFile.existsSync()) {
-    print('❌ Config file not found for client ID: ${buildModel.clientId}');
+    logger.e('❌ Config file not found for client ID: ${buildModel.clientId}');
     return;
   }
 
@@ -24,7 +24,7 @@ Future<void> buildApps(BuildCommandModel buildModel) async {
     packageName = configContent['packageName'] ?? 'Unknown Package Name';
     appName = configContent['appName'] ?? 'Unknown App Name';
   } catch (e) {
-    print('❌ Failed to read or parse $configFilePath: $e');
+    logger.e('❌ Failed to read or parse $configFilePath: $e');
     return;
   }
 
@@ -35,7 +35,7 @@ Future<void> buildApps(BuildCommandModel buildModel) async {
     final pubspecMap = yaml.loadYaml(pubspecContent);
     version = pubspecMap['version'] ?? 'Unknown Version';
   } catch (e) {
-    print('❌ Failed to read or parse $pubspecFilePath: $e');
+    logger.e('❌ Failed to read or parse $pubspecFilePath: $e');
     return;
   }
 
@@ -46,11 +46,13 @@ Future<void> buildApps(BuildCommandModel buildModel) async {
     skipValue: 'y',
   );
   if (answer.toLowerCase() != 'y') {
-    print('❌ Please verify the Bundle ID and App Name in the Xcode project.');
+    logger.e(
+      '❌ Please verify the Bundle ID and App Name in the Xcode project.',
+    );
     return;
   }
 
-  print('🚀 Building apps for client ID: ${buildModel.clientId}');
+  logger.i('🚀 Building apps for client ID: ${buildModel.clientId}');
 
   // Start a stopwatch to track total build time
   final stopwatch = Stopwatch()..start();
@@ -97,21 +99,21 @@ Future<void> buildApps(BuildCommandModel buildModel) async {
     // Stop the progress display
     progressSubscription.cancel();
     stdout.write('\r'); // Clear the line
-    print(
+    logger.i(
       '✓ You can find the iOS app archive at\n  ${'-' * 10}→ build/ios/archive/Runner.xcarchive',
     );
-    print(
+    logger.i(
       '✓ You can find the Android app bundle at\n  ${'-' * 10}→ build/app/outputs/bundle/release/app-release.aab',
     );
     // Display the total build time
-    print(
+    logger.i(
       '✅ Apps built successfully for client ID: ${buildModel.clientId} in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.',
     );
   } catch (e) {
     // Stop the progress display and print the error
     progressSubscription.cancel();
     stdout.write('\r'); // Clear the line
-    print('❌ Error during app build: $e');
+    logger.e('❌ Error during app build: $e');
   } finally {
     stopwatch.stop();
   }

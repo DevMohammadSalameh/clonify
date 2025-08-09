@@ -2,14 +2,12 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:clonify/models/commands_calls_models/build_command_model.dart';
 import 'package:clonify/models/config_model.dart';
 import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
 import 'package:clonify/utils/asset_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:clonify/utils/firebase_manager.dart';
 import 'package:clonify/utils/package_rename_plus_manager.dart';
-import 'package:clonify/utils/upload_manager.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 // ignore: depend_on_referenced_packages
 import 'package:yaml/yaml.dart' as yaml;
@@ -19,7 +17,7 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   final generatedDir = Directory('./lib/generated');
   if (!generatedDir.existsSync()) {
     generatedDir.createSync(recursive: true);
-    print('Created "lib/generated" directory.');
+    logger.i('Created "lib/generated" directory.');
   }
 
   // 2. Create 'clone_configs.dart' file
@@ -88,11 +86,11 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   // Close the file stream
   sink.close();
 
-  print('Generated clone_configs.dart file.');
+  logger.i('Generated clone_configs.dart file.');
 }
 
 Future<void> createClone() async {
-  print('🛠 Creating a new project clone...');
+  logger.i('🛠 Creating a new project clone...');
 
   // Step 1: Prompt user for inputs
   final clientId = prompt(
@@ -146,7 +144,7 @@ Future<void> createClone() async {
 }
 ''');
 
-  print('✅ Config file created at: ${configFile.path}');
+  logger.i('✅ Config file created at: ${configFile.path}');
 
   // Step 3: Create Firebase project and configure
   try {
@@ -156,7 +154,7 @@ Future<void> createClone() async {
     if (doRename.toLowerCase() == 'y') {
       await runRenamePackage(appName: appName, packageName: packageName);
     } else {
-      print('🚀 Skipping renaming process...');
+      logger.i('🚀 Skipping renaming process...');
     }
 
     await createFirebaseProject(
@@ -167,20 +165,20 @@ Future<void> createClone() async {
 
     createAssetsDirectory(clientId);
 
-    print('🎉 Clone successfully created for $clientId!');
-    print(
+    logger.i('🎉 Clone successfully created for $clientId!');
+    logger.i(
       '🚀 Run "clonify configure --clientId $clientId" to generate this clone.',
     );
-    // print('Dont forget to add the assets to the assets folder');
+    // logger.i('Dont forget to add the assets to the assets folder');
   } catch (e) {
-    print('❌ Error during clone creation: $e');
+    logger.e('❌ Error during clone creation: $e');
   }
 }
 
 Future<Map<String, dynamic>?> configureApp(
   ConfigureCommandModel callModel,
 ) async {
-  print('🚀 Starting cloning process for client: ${callModel.clientId}');
+  logger.i('🚀 Starting cloning process for client: ${callModel.clientId}');
 
   try {
     final Map<String, dynamic> configJson = await parseConfigFile(
@@ -214,7 +212,7 @@ Future<Map<String, dynamic>?> configureApp(
       final pubspecMap = yaml.loadYaml(pubspecContent);
       yamlVersion = pubspecMap['version'] ?? 'Unknown Version';
     } catch (e) {
-      print('❌ Failed to read or parse $pubspecFilePath: $e');
+      logger.e('❌ Failed to read or parse $pubspecFilePath: $e');
       return null;
     }
 
@@ -287,13 +285,13 @@ Future<Map<String, dynamic>?> configureApp(
 
       generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
     } catch (e) {
-      print('❌ Error during Flutter launcher icons generation: $e');
+      logger.e('❌ Error during Flutter launcher icons generation: $e');
     }
 
-    print('✅ Successfully cloned app for ${callModel.clientId}!');
+    logger.i('✅ Successfully cloned app for ${callModel.clientId}!');
     return configJson; // Return the parsed configuration
   } catch (e) {
-    print('❌ Error during cloning: $e');
+    logger.e('❌ Error during cloning: $e');
     rethrow;
   }
 }
@@ -304,14 +302,14 @@ Future<void> updateYamlVersionInPubspec(String newVersion) async {
   final yamlEditor = YamlEditor(pubspecContent);
   yamlEditor.update(['version'], newVersion);
   File(pubspecFilePath).writeAsStringSync(yamlEditor.toString());
-  print('✅ Updated version in pubspec.yaml to $newVersion');
+  logger.i('✅ Updated version in pubspec.yaml to $newVersion');
 }
 
 Future<void> cleanupPartialClone(String clientId) async {
   final cloneDir = Directory('./clonify/clones/$clientId');
   if (cloneDir.existsSync()) {
     cloneDir.deleteSync(recursive: true);
-    print('🧹 Partial clone cleaned up for $clientId.');
+    logger.i('🧹 Partial clone cleaned up for $clientId.');
   }
 }
 
@@ -333,18 +331,18 @@ Future<void> getCurrentCloneConfig() async {
 
     // Check and print the results
     if (appNameResult.stderr.toString().isNotEmpty) {
-      print('❌ Error getting app name: ${appNameResult.stderr}');
+      logger.e('❌ Error getting app name: ${appNameResult.stderr}');
     } else {
-      print('App Name:\n${appNameResult.stdout}');
+      logger.i('App Name:\n${appNameResult.stdout}');
     }
 
     if (bundleIdResult.stderr.toString().isNotEmpty) {
-      print('❌ Error getting bundle ID: ${bundleIdResult.stderr}');
+      logger.e('❌ Error getting bundle ID: ${bundleIdResult.stderr}');
     } else {
-      print('Bundle ID:\n${bundleIdResult.stdout}');
+      logger.i('Bundle ID:\n${bundleIdResult.stdout}');
     }
   } catch (e) {
-    print('❌ Error getting current clone config: $e');
+    logger.e('❌ Error getting current clone config: $e');
   }
 }
 
@@ -361,19 +359,19 @@ Future<Map<String, dynamic>> parseConfigFile(String clientId) async {
   final content = await configFile.readAsString();
   final config = jsonDecode(content) as Map<String, dynamic>;
 
-  print('📄 Loaded configuration:');
-  print('App Name: ${config['appName']}');
-  print('Primary Color: ${config['primaryColor']}');
-  // print('Base URL: ${config['baseUrl']}');
+  logger.i('📄 Loaded configuration:');
+  logger.i('App Name: ${config['appName']}');
+  logger.i('Primary Color: ${config['primaryColor']}');
+  // logger.i('Base URL: ${config['baseUrl']}');
 
   return config;
 }
 
 void listClients() {
-  print('📋 Listing all Currently Available clients...');
+  logger.i('📋 Listing all Currently Available clients...');
   final dir = Directory('./clonify/clones');
   if (!dir.existsSync()) {
-    print('No clients found.');
+    logger.i('No clients found.');
     return;
   }
 
@@ -416,34 +414,34 @@ void listClients() {
           });
         } catch (e) {
           // Handle JSON parsing error
-          print('❌ Error parsing config file: $e');
+          logger.e('❌ Error parsing config file: $e');
         }
       }
     }
   }
 
   if (clientsData.isEmpty) {
-    print('No clients found.');
+    logger.i('No clients found.');
     return;
   }
 
   // Print Table Header
-  print(
+  logger.i(
     '\n+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+',
   );
-  print(
+  logger.i(
     '| ${'Client ID'.padRight(clientIdWidth)}|'
     ' ${'App Name'.padRight(appNameWidth)}|'
     ' ${'Firebase Project ID'.padRight(firebaseProjectIdWidth)}|'
     ' ${'Version'.padRight(versionWidth)}|',
   );
-  print(
+  logger.i(
     '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+',
   );
 
   // Print Table Rows
   for (final client in clientsData) {
-    print(
+    logger.i(
       '| ${client['clientId']!.padRight(clientIdWidth)}|'
       ' ${client['appName']!.padRight(appNameWidth)}|'
       ' ${client['firebaseProjectId']!.padRight(firebaseProjectIdWidth)}|'
@@ -451,7 +449,7 @@ void listClients() {
     );
   }
 
-  print(
+  logger.i(
     '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+',
   );
 }

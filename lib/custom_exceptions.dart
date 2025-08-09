@@ -3,6 +3,7 @@
 /// Author: Mohammad Salameh
 /// Created Date: 25.09.2024
 /// Description: This file defines custom exceptions for the clonify project.
+library;
 
 /// [CustomException] is a base class for exceptions in the platform file editors.
 /// Attributes:

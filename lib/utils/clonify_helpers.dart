@@ -4,6 +4,7 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:clonify/utils/clone_manager.dart';
+import 'package:logger/logger.dart';
 
 // Future<void> runParallelCommands(
 //   List<Future<void> Function()> commands,
@@ -27,13 +28,18 @@ import 'package:clonify/utils/clone_manager.dart';
 //     return commands[index]().whenComplete(() {
 //       progressSubscription.cancel();
 //       stdout.write('\r'); // Clear the line
-//       print(
+//       logger.i(
 //           "✅ ${loadingMessages[index]} completed in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.");
 //       stopwatch.stop();
 //     });
 //   });
 //   await Future.wait(tasks); // Wait for all commands to finish
 // }
+
+final Logger logger = Logger(
+  filter: ProductionFilter(),
+  printer: PrettyPrinter(methodCount: 0, noBoxingByDefault: true),
+);
 
 Future<void> runCommand(
   String command,
@@ -74,7 +80,7 @@ Future<void> runCommand(
 
       if (result.exitCode == 0) {
         stopwatch.stop();
-        print(
+        logger.i(
           successMessage != null
               ? "$successMessage ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s"
               : '✅ Command completed in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s.',
@@ -87,7 +93,7 @@ Future<void> runCommand(
     } catch (e) {
       progressSubscription.cancel();
       stdout.write('\r'); // Clear the line
-      print(e);
+      logger.e(e);
     }
   } else {
     try {
@@ -99,14 +105,14 @@ Future<void> runCommand(
       );
 
       if (result.exitCode == 0) {
-        print('\r${successMessage ?? '✅ Command completed successfully.'}');
+        logger.i('\r${successMessage ?? '✅ Command completed successfully.'}');
       } else {
         throw Exception(
           '❌ Command failed: $command ${args.join(" ")}\nError: ${result.stderr}',
         );
       }
     } catch (e) {
-      print(e);
+      logger.e(e);
     }
   }
 }
@@ -116,10 +122,10 @@ String toTitleCase(String text) {
 }
 
 String prompt(String message, {String? skipValue, bool? skip}) {
-  stdout.write('$message ');
+  logger.i('$message ');
   if (skip == true) {
-    print('>>| Skipping with (${skipValue ?? ''})...');
-    return skipValue ?? '';
+    logger.i('>>| Skipping with (${skipValue ?? ''})...');
+    return skipValue!;
   }
   return stdin.readLineSync() ?? '';
 }
@@ -132,7 +138,7 @@ String promptUser(
   String? skipValue,
 }) {
   if (skip == true) {
-    print(
+    logger.i(
       '$promptMessage (Default: $defaultValue) >>| Skipping with (${skipValue ?? defaultValue})...',
     );
 
@@ -145,7 +151,7 @@ String promptUser(
     return defaultValue;
   }
   if (validator != null && !validator(answer)) {
-    print('❌ Invalid input. Please try again.');
+    logger.e('❌ Invalid input. Please try again.');
     return promptUser(promptMessage, defaultValue, validator: validator);
   }
   return answer;
@@ -164,104 +170,104 @@ String newLineArrow([int tabs = 3]) {
 }
 
 void printUsage() {
-  print('Clonify CLI - A tool for managing Flutter app clones');
-  print('');
-  print('Usage: clonify <command> [options]');
-  print('');
+  logger.i('Clonify CLI - A tool for managing Flutter app clones');
+  logger.i('');
+  logger.i('Usage: clonify <command> [options]');
+  logger.i('');
 
-  print('Commands:');
-  print(
+  logger.i('Commands:');
+  logger.i(
     '  create                                              Create a new clone.',
   );
-  print(
+  logger.i(
     '  configure | con | config | c [--clientId <id>]      Configure the app for the specified client ID.',
   );
-  print(
+  logger.i(
     '  clean | clear [--clientId <id>]                     Clean up a partial clone for the specified client ID.',
   );
-  print(
+  logger.i(
     '  build | b [--clientId <id>]                         Build the clone for the specified client ID.',
   );
-  print(
+  logger.i(
     '  upload | up | u [--clientId <id>]                   Upload the clone for the specified client ID.',
   );
-  print(
+  logger.i(
     '  list | ls                                           List all available clones.',
   );
-  print(
+  logger.i(
     '  which | current | who                               Get the current clone configuration.',
   );
-  print(
+  logger.i(
     '  help | -h | --help                                  Print this help message.',
   );
-  print('');
+  logger.i('');
 
-  print('Options:');
-  print('  The following options can be used with specific commands:');
-  print('');
+  logger.i('Options:');
+  logger.i('  The following options can be used with specific commands:');
+  logger.i('');
 
-  print('  For "configure" command:');
-  print(
+  logger.i('  For "configure" command:');
+  logger.i(
     '    --clientId | -id <id>                             Specify the client ID for the command.',
   );
-  print(
+  logger.i(
     '    --skip-all | -SA                                  Skip all user prompts.',
   );
-  print(
+  logger.i(
     '    --auto-update | -AU                               Auto update the clone version.',
   );
-  print(
+  logger.i(
     '    --skip-firebase-configure | -SF                   Skip the Firebase configuration.',
   );
-  print(
+  logger.i(
     '    --skip-version | -SV                              Skip config file empty version check.',
   );
-  print(
+  logger.i(
     '    --skip-pub-update | -SPU                          Auto update pub version.',
   );
-  print(
+  logger.i(
     '    --skip-version-update | -SVU                      Skip the config version update prompt unless --auto-update is used.',
   );
-  print('');
+  logger.i('');
 
-  print('  For "build" command:');
-  print(
+  logger.i('  For "build" command:');
+  logger.i(
     '    --clientId | -id <id>                             Specify the client ID for the command.',
   );
-  print(
+  logger.i(
     '    --skip-all | -SA                                  Skip all user prompts and build both Android and iOS clones.',
   );
-  print(
+  logger.i(
     '    --skip-build-check | -SBC                         Skip the confirmation check before building.',
   );
-  print(
+  logger.i(
     '    --upload-all | -UALL                              Build and upload both Android and iOS clones.',
   );
-  print(
+  logger.i(
     '    --upload-android | -UA                            Upload the Android clone after building.',
   );
-  print(
+  logger.i(
     '    --upload-ios | -UI                                Upload the iOS clone after building.',
   );
-  print('');
+  logger.i('');
 
-  print('Note:');
-  print(
+  logger.i('Note:');
+  logger.i(
     '  - For commands that accept --clientId, if it is not provided, the last configured client ID will be used if available.',
   );
-  print(
+  logger.i(
     '  - Options can be combined, but some may conflict (e.g., --skip-all and --upload-all).',
   );
-  print('');
+  logger.i('');
 
-  print('Examples:');
-  print('  clonify create');
-  print('  clonify configure --clientId <id> --skip-all');
-  print('  clonify clean --clientId <id>');
-  print('  clonify build --clientId <id> --skip-build-check');
-  print('  clonify upload --clientId <id> --upload-all');
-  print('  clonify list');
-  print('  clonify which');
+  logger.i('Examples:');
+  logger.i('  clonify create');
+  logger.i('  clonify configure --clientId <id> --skip-all');
+  logger.i('  clonify clean --clientId <id>');
+  logger.i('  clonify build --clientId <id> --skip-build-check');
+  logger.i('  clonify upload --clientId <id> --upload-all');
+  logger.i('  clonify list');
+  logger.i('  clonify which');
 }
 
 String? getArgumentValue(List<String> args, String key) {
@@ -321,21 +327,21 @@ Future<String> getVersionFromConfig(String clientId) async {
   try {
     final configFile = File(configFilePath);
     if (!configFile.existsSync()) {
-      print('❌ Config file not found.');
+      logger.e('❌ Config file not found.');
       return '';
     }
 
     final configJson = await parseConfigFile('config');
     if (configJson['version'] == null) {
       // If version is not found, update the version in config.json
-      print('❌ Version not found in config.json.');
+      logger.e('❌ Version not found in config.json.');
       final newVersion = promptUser('Enter the version number:', '1.0.0+1');
       configJson['version'] = newVersion;
       configFile.writeAsStringSync(jsonEncode(configJson));
     }
     return configJson['version'] ?? '';
   } catch (e) {
-    print('❌ Failed to read or parse config.json: $e');
+    logger.e('❌ Failed to read or parse config.json: $e');
     return '';
   }
 }

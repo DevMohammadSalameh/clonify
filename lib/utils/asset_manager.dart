@@ -1,7 +1,8 @@
 // Assets Section
 
-
 import 'dart:io';
+
+import 'clonify_helpers.dart';
 
 void replaceAssets(String clientId) {
   try {
@@ -10,26 +11,31 @@ void replaceAssets(String clientId) {
 
     if (!sourceDir.existsSync()) {
       throw FileSystemException(
-          'Source Assets directory does not exist', sourceDir.path);
+        'Source Assets directory does not exist',
+        sourceDir.path,
+      );
     }
 
     if (!targetDir.existsSync()) {
       throw FileSystemException(
-          'Target Assets directory does not exist', targetDir.path);
+        'Target Assets directory does not exist',
+        targetDir.path,
+      );
     }
     final String splitBy = Platform.isWindows ? '\\' : '/';
     for (final file in sourceDir.listSync()) {
-      // print('Copying ${file.path} to ${targetDir.path}');
+      // logger.i('Copying ${file.path} to ${targetDir.path}');
       if (file is File) {
-        final targetFile =
-            File('${targetDir.path}/${file.path.split(splitBy).last}');
+        final targetFile = File(
+          '${targetDir.path}/${file.path.split(splitBy).last}',
+        );
         file.copySync(targetFile.path);
       }
     }
 
-    print('✅ Assets replaced successfully.');
+    logger.i('✅ Assets replaced successfully.');
   } catch (e) {
-    print('❌ Error during asset replacement: $e');
+    logger.e('❌ Error during asset replacement: $e');
   }
 }
 
@@ -50,7 +56,9 @@ void createAssetsDirectory(String clientId) {
 
   if (!sourceDir.existsSync()) {
     throw FileSystemException(
-        'Assets directory does not exist', sourceDir.path);
+      'Assets directory does not exist',
+      sourceDir.path,
+    );
   }
 
   targetDir.createSync(recursive: true);
@@ -61,6 +69,7 @@ void createAssetsDirectory(String clientId) {
     sourceFile.copySync(targetFile.path);
   }
 
-  print(
-      '[!] Dont forget to replace the assets in the clone assets with the original assets');
+  logger.i(
+    '[!] Dont forget to replace the assets in the clone assets with the original assets',
+  );
 }

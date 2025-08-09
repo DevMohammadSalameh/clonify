@@ -3,14 +3,12 @@ import 'dart:io';
 
 import 'package:clonify/constants.dart';
 import 'package:clonify/custom_exceptions.dart';
-import 'package:clonify/utils/build_manager.dart';
-import 'package:clonify/utils/clone_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:yaml/yaml.dart';
 // // 🚀 Upload the app to the App Store
 
 // Future<void> uploadToAppStore(String clientId, List<String> args) async {
-//   print('🚀 Uploading app for client: $clientId');
+//   logger.i('🚀 Uploading app for client: $clientId');
 
 //   const iosDir = './build/ios';
 //   const androidAppBundleDir = './build/app/outputs/bundle/release';
@@ -19,7 +17,7 @@ import 'package:yaml/yaml.dart';
 
 //   final appIdentifier = await _getAppBundleId(clientId);
 //   if (appIdentifier.isEmpty) {
-//     print('❌ Error: Could not determine bundle ID for client "$clientId".');
+//     logger.e('❌ Error: Could not determine bundle ID for client "$clientId".');
 //     return;
 //   }
 
@@ -54,12 +52,12 @@ import 'package:yaml/yaml.dart';
 // // ✅ Validate directories before uploading
 // void _validateBuildsDir(String clientId, String iosDir, String appBundleDir) {
 //   if (!Directory(iosDir).existsSync()) {
-//     print('❌ Error: iOS project for client "$clientId" not found.');
+//     logger.e('❌ Error: iOS project for client "$clientId" not found.');
 //     exit(1);
 //   }
 
 //   if (!Directory(appBundleDir).existsSync()) {
-//     print('❌ Error: Android project for client "$clientId" not found.');
+//     logger.e('❌ Error: Android project for client "$clientId" not found.');
 //     exit(1);
 //   }
 // }
@@ -68,7 +66,7 @@ import 'package:yaml/yaml.dart';
 // Future<bool> _validateBuildFiles(
 //     String filePath, String fileType, String clientId) async {
 //   if (!File(filePath).existsSync()) {
-//     print('❌ Error: $fileType file not found. Build the app first.');
+//     logger.e('❌ Error: $fileType file not found. Build the app first.');
 //     final answer =
 //         promptUser('Do you want to build the $fileType? (y/n):', 'Y');
 //     if (answer.toLowerCase() == 'y') {
@@ -111,7 +109,7 @@ import 'package:yaml/yaml.dart';
 //   if (exitCode == 0) {
 //     print('✅ Successfully uploaded to the App Store!');
 //   } else {
-//     print('❌ Upload failed with exit code $exitCode.');
+//     logger.e('❌ Upload failed with exit code $exitCode.');
 //   }
 // }
 
@@ -142,21 +140,21 @@ import 'package:yaml/yaml.dart';
 //   try {
 //     final configFile = File(configFilePath);
 //     if (!configFile.existsSync()) {
-//       print('❌ Config file not found.');
+//       logger.e('❌ Config file not found.');
 //       return '';
 //     }
 
 //     final configJson = await parseConfigFile('config');
 //     if (configJson['version'] == null) {
 //       // If version is not found, update the version in config.json
-//       print('❌ Version not found in config.json.');
+//       logger.e('❌ Version not found in config.json.');
 //       final newVersion = promptUser('Enter the version number:', '1.0.0+1');
 //       configJson['version'] = newVersion;
 //       configFile.writeAsStringSync(jsonEncode(configJson));
 //     }
 //     return configJson['version'] ?? '';
 //   } catch (e) {
-//     print('❌ Failed to read or parse config.json: $e');
+//     logger.e('❌ Failed to read or parse config.json: $e');
 //     return '';
 //   }
 // }
@@ -169,7 +167,7 @@ import 'package:yaml/yaml.dart';
 //   try {
 //     final pubspecFile = File(pubspecFilePath);
 //     if (!pubspecFile.existsSync()) {
-//       print('❌ pubspec.yaml file not found.');
+//       logger.e('❌ pubspec.yaml file not found.');
 //       return;
 //     }
 
@@ -178,7 +176,7 @@ import 'package:yaml/yaml.dart';
 //     pubspecFile.writeAsStringSync(yamlEditor.toString());
 //     print('✅ Updated version to $newVersion in pubspec.yaml.');
 //   } catch (e) {
-//     print('❌ Error updating pubspec.yaml: $e');
+//     logger.e('❌ Error updating pubspec.yaml: $e');
 //   }
 // }
 
@@ -220,7 +218,7 @@ Future<void> uploadApps(
   // Check if config.json exists
   final configFile = File(configFilePath);
   if (!configFile.existsSync()) {
-    print('❌ Config file not found for client ID: $clientId');
+    logger.e('❌ Config file not found for client ID: $clientId');
     return;
   }
 
@@ -230,7 +228,7 @@ Future<void> uploadApps(
     final configContent = jsonDecode(configFile.readAsStringSync());
     packageName = configContent['packageName'] ?? 'Unknown Package Name';
   } catch (e) {
-    print('❌ Failed to read or parse $configFilePath: $e');
+    logger.e('❌ Failed to read or parse $configFilePath: $e');
     return;
   }
 
@@ -241,7 +239,7 @@ Future<void> uploadApps(
     final pubspecMap = loadYaml(pubspecContent);
     version = pubspecMap['version'] ?? 'Unknown Version';
   } catch (e) {
-    print('❌ Failed to read or parse $pubspecFilePath: $e');
+    logger.e('❌ Failed to read or parse $pubspecFilePath: $e');
     return;
   }
 
@@ -320,7 +318,7 @@ Future<void> updateFastlaneFiles({
   ) async {
     final file = File(filePath);
     if (!file.existsSync()) {
-      print('❌ Fastlane file not found: $filePath');
+      logger.e('❌ Fastlane file not found: $filePath');
       return;
     }
 
@@ -330,7 +328,7 @@ Future<void> updateFastlaneFiles({
     });
 
     file.writeAsStringSync(content);
-    print('✅ Updated $filePath');
+    logger.i('✅ Updated $filePath');
   }
 
   // Define replacement mappings
@@ -357,7 +355,7 @@ Future<void> updateFastlaneFiles({
 
 //   final appIdentifier = await getAppBundleId(clientId);
 //   if (appIdentifier.isEmpty) {
-//     print('❌ Error: Could not determine bundle ID for client "$clientId".');
+//     logger.e('❌ Error: Could not determine bundle ID for client "$clientId".');
 //     return;
 //   }
 
@@ -373,7 +371,7 @@ Future<void> updateFastlaneFiles({
 //   // =
 //   // '/Users/safeersoft/development/flutter_projects/natejsoft_hr_app/clonify/doc/fastlane_settings.json';
 //   if (apiKeyPath.isEmpty) {
-//     print('❌ Error: APPSTORE_API_KEY_PATH environment variable is not set.');
+//     logger.e('❌ Error: APPSTORE_API_KEY_PATH environment variable is not set.');
 //     return;
 //   }
 
@@ -415,6 +413,6 @@ Future<void> updateFastlaneFiles({
 //   if (exitCode == 0) {
 //     print('✅ Successfully uploaded to the App Store!');
 //   } else {
-//     print('❌ Upload failed with exit code $exitCode.');
+//     logger.e('❌ Upload failed with exit code $exitCode.');
 //   }
 // }
