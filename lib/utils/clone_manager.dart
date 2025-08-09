@@ -89,111 +89,211 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   logger.i('Generated clone_configs.dart file.');
 }
 
-Future<void> createClone() async {
-  logger.i('🛠 Creating a new project clone...');
+/// Tracks created directories and files for cleanup on cancellation.
+final List<String> _createdClonePaths = [];
 
-  // Step 1: Prompt user for inputs
-  final clientId = prompt(
-    'Enter Clone ID. This ID will be used to identify your project:',
-  );
+/// Cleans up created clone files and directories.
+void _cleanupCloneCreation() {
+  for (final path in _createdClonePaths.reversed) {
+    try {
+      final entity = FileSystemEntity.typeSync(path);
+      switch (entity) {
+        case FileSystemEntityType.file:
+          File(path).deleteSync();
+          logger.i('🧹 Cleaned up file: $path');
+          break;
+        case FileSystemEntityType.directory:
+          Directory(path).deleteSync(recursive: true);
+          logger.i('🧹 Cleaned up directory: $path');
+          break;
+        default:
+          break;
+      }
+    } catch (e) {
+      logger.w('⚠️ Could not clean up $path: $e');
+    }
+  }
+  _createdClonePaths.clear();
+}
 
-  final primaryColor = promptUser(
-    'Enter the primary color (e.g., 0xFFFFFFFF):',
-    '0xFF3EA7E1',
-    validator: (value) => RegExp(r'^0x[0-9A-Fa-f]{8}$').hasMatch(value),
-  );
+/// Prompts for clone basic information.
+///
+/// Returns a map with clone configuration or null if cancelled.
+Map<String, String>? _promptCloneBasicInfo() {
+  try {
+    final clientId = prompt(
+      'Enter Clone ID. This ID will be used to identify your project:',
+    );
 
-  final packageName = promptUser(
-    'Enter the package name (e.g., com.example.example):',
-    // 'com.${clientId.toLowerCase()}.${clientId.toLowerCase()}hr',
-    'com.natejsoft.${clientId.toLowerCase()}hr',
-    validator: (value) =>
-        RegExp(r'^[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z]+$').hasMatch(value),
-  );
+    final primaryColor = promptUser(
+      'Enter the primary color (e.g., 0xFFFFFFFF):',
+      '0xFF3EA7E1',
+      validator: (value) => RegExp(r'^0x[0-9A-Fa-f]{8}$').hasMatch(value),
+    );
 
-  final appName = promptUser(
-    'Enter the app name (e.g., Clone App):',
-    '${toTitleCase(clientId)} HR',
-    validator: (value) => value.isNotEmpty,
-  );
+    final packageName = promptUser(
+      'Enter the package name (e.g., com.example.example):',
+      'com.natejsoft.${clientId.toLowerCase()}hr',
+      validator: (value) =>
+          RegExp(r'^[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z]+$').hasMatch(value),
+    );
 
-  final version = promptUser(
-    'Enter the app version (e.g., 1.0.0+1):',
-    '1.0.0+1',
-    validator: (value) => value.isNotEmpty,
-  );
+    final appName = promptUser(
+      'Enter the app name (e.g., Clone App):',
+      '${toTitleCase(clientId)} HR',
+      validator: (value) => value.isNotEmpty,
+    );
 
-  final cloneDir = Directory('./clonify/clones/$clientId');
-  cloneDir.createSync(recursive: true);
+    final version = promptUser(
+      'Enter the app version (e.g., 1.0.0+1):',
+      '1.0.0+1',
+      validator: (value) => value.isNotEmpty,
+    );
 
-  final firebaseProjectId = promptUser(
-    'Enter the Firebase project ID (e.g., my-project-id):',
-    'firebase-$clientId-flutter',
-  );
+    final firebaseProjectId = promptUser(
+      'Enter the Firebase project ID (e.g., my-project-id):',
+      'firebase-$clientId-flutter',
+    );
 
-  final configFile = File('${cloneDir.path}/config.json');
+    return {
+      'clientId': clientId,
+      'primaryColor': primaryColor,
+      'packageName': packageName,
+      'appName': appName,
+      'version': version,
+      'firebaseProjectId': firebaseProjectId,
+    };
+  } catch (e) {
+    logger.e('❌ Error during input collection: $e');
+    return null;
+  }
+}
 
-  await configFile.writeAsString('''
+/// Creates the clone directory and config file.
+///
+/// Returns true if successful, false otherwise.
+bool _createCloneStructure(Map<String, String> config) {
+  try {
+    final clientId = config['clientId']!;
+    final cloneDir = Directory('./clonify/clones/$clientId');
+    
+    cloneDir.createSync(recursive: true);
+    _createdClonePaths.add(cloneDir.path);
+
+    final configFile = File('${cloneDir.path}/config.json');
+    configFile.writeAsStringSync('''
 {
-  "clientId": "$clientId",
-  "packageName": "$packageName",
-  "appName": "$appName",
-  "primaryColor": "$primaryColor",
-  "firebaseProjectId": "$firebaseProjectId",
-  "version": "$version"
+  "clientId": "${config['clientId']}",
+  "packageName": "${config['packageName']}",
+  "appName": "${config['appName']}",
+  "primaryColor": "${config['primaryColor']}",
+  "firebaseProjectId": "${config['firebaseProjectId']}",
+  "version": "${config['version']}"
 }
 ''');
+    _createdClonePaths.add(configFile.path);
 
-  logger.i('✅ Config file created at: ${configFile.path}');
+    logger.i('✅ Config file created at: ${configFile.path}');
+    return true;
+  } catch (e) {
+    logger.e('❌ Failed to create clone structure: $e');
+    return false;
+  }
+}
 
-  // Step 3: Create Firebase project and configure
+/// Handles the rename and Firebase setup process.
+///
+/// Returns true if successful, false otherwise.
+Future<bool> _setupCloneServices(Map<String, String> config) async {
   try {
     final doRename = prompt(
-      'Do you want to rename the app with $appName and package with $packageName? (y/n):',
+      'Do you want to rename the app with ${config['appName']} and package with ${config['packageName']}? (y/n):',
     );
+    
     if (doRename.toLowerCase() == 'y') {
-      await runRenamePackage(appName: appName, packageName: packageName);
+      await runRenamePackage(
+        appName: config['appName']!,
+        packageName: config['packageName']!,
+      );
     } else {
       logger.i('🚀 Skipping renaming process...');
     }
 
     await createFirebaseProject(
-      clientId: clientId,
-      packageName: packageName,
-      firebaseProjectId: firebaseProjectId,
+      clientId: config['clientId']!,
+      packageName: config['packageName']!,
+      firebaseProjectId: config['firebaseProjectId']!,
     );
 
-    createAssetsDirectory(clientId);
-
-    logger.i('🎉 Clone successfully created for $clientId!');
-    logger.i(
-      '🚀 Run "clonify configure --clientId $clientId" to generate this clone.',
-    );
-    // logger.i('Dont forget to add the assets to the assets folder');
+    createAssetsDirectory(config['clientId']!);
+    return true;
   } catch (e) {
-    logger.e('❌ Error during clone creation: $e');
+    logger.e('❌ Error during service setup: $e');
+    return false;
   }
 }
 
-Future<Map<String, dynamic>?> configureApp(
-  ConfigureCommandModel callModel,
-) async {
-  logger.i('🚀 Starting cloning process for client: ${callModel.clientId}');
+/// Creates a new project clone with cancellation support.
+///
+/// If the user cancels during the process, any created directories
+/// and files will be automatically cleaned up.
+Future<void> createClone() async {
+  logger.i('🛠 Creating a new project clone...');
 
   try {
-    final Map<String, dynamic> configJson = await parseConfigFile(
-      callModel.clientId!,
-    );
+    // Step 1: Collect clone configuration
+    final config = _promptCloneBasicInfo();
+    if (config == null) {
+      logger.w('⚠️ Clone creation cancelled by user');
+      _cleanupCloneCreation();
+      return;
+    }
 
+    // Step 2: Create directory structure and config file
+    if (!_createCloneStructure(config)) {
+      _cleanupCloneCreation();
+      return;
+    }
+
+    // Step 3: Setup services (rename, Firebase, assets)
+    if (!await _setupCloneServices(config)) {
+      _cleanupCloneCreation();
+      return;
+    }
+
+    // Success!
+    logger.i('🎉 Clone successfully created for ${config['clientId']}!');
+    logger.i(
+      '🚀 Run "clonify configure --clientId ${config['clientId']}" to generate this clone.',
+    );
+    
+    // Clear tracking list on successful completion
+    _createdClonePaths.clear();
+  } catch (e) {
+    logger.e('❌ Error during clone creation: $e');
+    _cleanupCloneCreation();
+    rethrow;
+  }
+}
+
+/// Handles the initial setup steps (renaming and Firebase).
+///
+/// Returns true if successful, false otherwise.
+Future<bool> _performInitialSetup(
+  ConfigureCommandModel callModel,
+  Map<String, dynamic> configJson,
+) async {
+  try {
     // Step 1: Rename app name and package
     await runRenamePackage(
       appName: configJson['appName'],
       packageName: configJson['packageName'],
     );
+    
     if (callModel.isDebug) {
-      final Map<String, dynamic> temp = {};
-      return temp;
+      return true; // Early return for debug mode
     }
+    
     // Step 2: Create Firebase project and enable FCM
     await addFirebaseToApp(
       packageName: configJson['packageName'],
@@ -203,93 +303,166 @@ Future<Map<String, dynamic>?> configureApp(
 
     // Step 3: Replace assets
     replaceAssets(callModel.clientId!);
+    return true;
+  } catch (e) {
+    logger.e('❌ Error during initial setup: $e');
+    return false;
+  }
+}
 
-    // Step 4: Check and update version
-    const pubspecFilePath = './pubspec.yaml';
-    String yamlVersion;
-    try {
-      final pubspecContent = File(pubspecFilePath).readAsStringSync();
-      final pubspecMap = yaml.loadYaml(pubspecContent);
-      yamlVersion = pubspecMap['version'] ?? 'Unknown Version';
-    } catch (e) {
-      logger.e('❌ Failed to read or parse $pubspecFilePath: $e');
+/// Gets the current version from pubspec.yaml.
+///
+/// Returns the version string or null if an error occurs.
+String? _getCurrentPubspecVersion() {
+  const pubspecFilePath = './pubspec.yaml';
+  try {
+    final pubspecContent = File(pubspecFilePath).readAsStringSync();
+    final pubspecMap = yaml.loadYaml(pubspecContent);
+    return pubspecMap['version'] ?? 'Unknown Version';
+  } catch (e) {
+    logger.e('❌ Failed to read or parse $pubspecFilePath: $e');
+    return null;
+  }
+}
+
+/// Handles version management logic.
+///
+/// Returns the final version or null if process should be cancelled.
+Future<String?> _handleVersionManagement(
+  ConfigureCommandModel callModel,
+  Map<String, dynamic> configJson,
+) async {
+  final yamlVersion = _getCurrentPubspecVersion();
+  if (yamlVersion == null) return null;
+
+  String configVersion = configJson['version'] ?? '';
+  
+  // Handle missing config version
+  if (configVersion.isEmpty) {
+    configVersion = promptUser(
+      'Config file does not have a version parameter. Enter a new version or use the default (1.0.0+1):',
+      '1.0.0+1',
+      validator: (value) => RegExp(r'^\d+\.\d+\.\d+\+\d+$').hasMatch(value),
+      skipValue: '1.0.0+1',
+      skip: callModel.skipAll || callModel.skipVersionUpdate,
+    );
+    configJson['version'] = configVersion;
+    await File(
+      './clonify/clones/${callModel.clientId}/config.json',
+    ).writeAsString(jsonEncode(configJson));
+  }
+
+  // Sync pubspec version with config
+  if (yamlVersion != configVersion) {
+    final updateYamlVersionAnswer = prompt(
+      'Version in pubspec.yaml ($yamlVersion) is different from config file ($configVersion). Do you want to update pubspec.yaml with the config version? (y/n):',
+      skip: callModel.skipAll || callModel.skipPubUpdate,
+      skipValue: 'y',
+    );
+
+    if (updateYamlVersionAnswer.toLowerCase() == 'y') {
+      await updateYamlVersionInPubspec(configVersion);
+    }
+  }
+
+  // Handle version updates
+  final changeVersionAnswer = prompt(
+    'Do you want to update the version number ($configVersion)? (y/n):',
+    skip: callModel.skipVersionUpdate,
+    skipValue: callModel.autoUpdate ? 'y' : 'No',
+  );
+  
+  if (changeVersionAnswer.toLowerCase() == 'y') {
+    final newVersion = promptUser(
+      'Enter the new version number:',
+      configVersion,
+      validator: (value) => RegExp(r'^\d+\.\d+\.\d+\+\d+$').hasMatch(value),
+      skipValue: versionNumberIncrementor(configVersion),
+      skip: callModel.autoUpdate,
+    );
+    await updateYamlVersionInPubspec(newVersion);
+    configJson['version'] = newVersion;
+    await File(
+      './clonify/clones/${callModel.clientId}/config.json',
+    ).writeAsString(jsonEncode(configJson));
+    return newVersion;
+  }
+  
+  return configVersion;
+}
+
+/// Runs Flutter build commands and generates configuration.
+///
+/// Returns true if successful, false otherwise.
+Future<bool> _runBuildCommands(Map<String, dynamic> configJson) async {
+  try {
+    await runCommand('dart', [
+      'run',
+      'flutter_launcher_icons',
+    ], successMessage: '✅ Flutter launcher icons generated successfully!');
+
+    await runCommand(
+      'dart',
+      ['run', 'flutter_native_splash:create'],
+      successMessage: '✅ Flutter native splash screen created successfully!',
+    );
+
+    await runCommand('dart', [
+      'run',
+      'intl_utils:generate',
+    ], successMessage: '✅ Intl utils generated successfully!');
+
+    generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
+    return true;
+  } catch (e) {
+    logger.e('❌ Error during build commands: $e');
+    return false;
+  }
+}
+
+/// Configures an application clone with cancellation support.
+///
+/// This function performs the complete configuration process including:
+/// - Renaming app and package
+/// - Setting up Firebase
+/// - Replacing assets
+/// - Managing versions
+/// - Running build commands
+///
+/// Returns the configuration JSON if successful, null if cancelled or failed.
+Future<Map<String, dynamic>?> configureApp(
+  ConfigureCommandModel callModel,
+) async {
+  logger.i('🚀 Starting cloning process for client: ${callModel.clientId}');
+
+  try {
+    // Parse configuration file
+    final Map<String, dynamic> configJson = await parseConfigFile(
+      callModel.clientId!,
+    );
+
+    // Step 1: Perform initial setup (rename, Firebase, assets)
+    if (!await _performInitialSetup(callModel, configJson)) {
+      return null;
+    }
+    
+    if (callModel.isDebug) {
+      return {}; // Return empty map for debug mode
+    }
+
+    // Step 2: Handle version management
+    final finalVersion = await _handleVersionManagement(callModel, configJson);
+    if (finalVersion == null) {
       return null;
     }
 
-    String configVersion = configJson['version'] ?? '';
-    if (configVersion.isEmpty) {
-      configVersion = promptUser(
-        'Config file does not have a version parameter. Enter a new version or use the default (1.0.0+1):',
-        '1.0.0+1',
-        validator: (value) => RegExp(r'^\d+\.\d+\.\d+\+\d+$').hasMatch(value),
-        skipValue: '1.0.0+1',
-        skip: callModel.skipAll || callModel.skipVersionUpdate,
-      );
-      configJson['version'] = configVersion;
-      await File(
-        './clonify/clones/${callModel.clientId}/config.json',
-      ).writeAsString(jsonEncode(configJson));
-    }
-
-    if (yamlVersion != configVersion) {
-      final String updateYamlVersionAnswer = prompt(
-        'Version in pubspec.yaml ($yamlVersion) is different from config file ($configVersion). Do you want to update pubspec.yaml with the config version? (y/n):',
-        skip: callModel.skipAll || callModel.skipPubUpdate,
-        skipValue: 'y',
-      );
-
-      if (updateYamlVersionAnswer.toLowerCase() == 'y') {
-        await updateYamlVersionInPubspec(configVersion);
-      }
-    }
-
-    final changeVersionAnswer = prompt(
-      'Do you want to update the version number ($configVersion)? (y/n):',
-      skip: callModel.skipVersionUpdate,
-      skipValue: callModel.autoUpdate ? 'y' : 'No',
-    );
-    if (changeVersionAnswer.toLowerCase() == 'y') {
-      final newVersion = promptUser(
-        'Enter the new version number:',
-        configVersion,
-        validator: (value) => RegExp(r'^\d+\.\d+\.\d+\+\d+$').hasMatch(value),
-        skipValue: versionNumberIncrementor(configVersion),
-        skip: callModel.autoUpdate,
-      );
-      await updateYamlVersionInPubspec(newVersion);
-      configJson['version'] = newVersion;
-      await File(
-        './clonify/clones/${callModel.clientId}/config.json',
-      ).writeAsString(jsonEncode(configJson));
-    }
-
-    // Step 5: run flutter_launcher_icons
-    try {
-      await runCommand('dart', [
-        'run',
-        'flutter_launcher_icons',
-      ], successMessage: '✅ Flutter launcher icons generated successfully!');
-
-      // Step 6: run flutter_native_splash
-      await runCommand(
-        'dart',
-        ['run', 'flutter_native_splash:create'],
-        successMessage: '✅ Flutter native splash screen created successfully!',
-      );
-
-      // Step 7: run intl_utils:generate
-      await runCommand('dart', [
-        'run',
-        'intl_utils:generate',
-      ], successMessage: '✅ Intl utils generated successfully!');
-
-      generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
-    } catch (e) {
-      logger.e('❌ Error during Flutter launcher icons generation: $e');
+    // Step 3: Run build commands
+    if (!await _runBuildCommands(configJson)) {
+      return null;
     }
 
     logger.i('✅ Successfully cloned app for ${callModel.clientId}!');
-    return configJson; // Return the parsed configuration
+    return configJson;
   } catch (e) {
     logger.e('❌ Error during cloning: $e');
     rethrow;
