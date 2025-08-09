@@ -441,11 +441,11 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
       launcherIconsYamlEditor.update([
         'flutter_launcher_icons',
         'image_path',
-      ], clonifySettings.launcherIconAsset);
+      ], "assets/images/${clonifySettings.launcherIconAsset}");
       launcherIconsYamlEditor.update([
         'flutter_launcher_icons',
         'adaptive_icon_foreground',
-      ], clonifySettings.launcherIconAsset);
+      ], "assets/images/${clonifySettings.launcherIconAsset}");
       launcherIconsConfigFile.writeAsStringSync(
         launcherIconsYamlEditor.toString(),
       );
@@ -458,7 +458,7 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
         nativeSplashYamlEditor.update([
           'flutter_native_splash',
           'image',
-        ], clonifySettings.splashScreenAsset);
+        ], "assets/images/${clonifySettings.splashScreenAsset}");
         nativeSplashConfigFile.writeAsStringSync(
           nativeSplashYamlEditor.toString(),
         );
