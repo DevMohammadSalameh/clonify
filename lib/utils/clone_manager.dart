@@ -524,6 +524,7 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
 Future<Map<String, dynamic>?> configureApp(
   ConfigureCommandModel callModel,
 ) async {
+  saveLastClientId(callModel.clientId!);
   logger.i('🚀 Starting cloning process for client: ${callModel.clientId}');
 
   try {
