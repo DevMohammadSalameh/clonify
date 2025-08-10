@@ -192,6 +192,7 @@ class BuildCommand extends ClientIdCommand {
       ClonifyCommandFlags.skipAll.name,
       // abbr: ClonifyCommandFlags.skipAll.abbr,
       help: ClonifyCommandFlags.skipAll.help,
+      defaultsTo: false,
     );
     argParser.addFlag(
       ClonifyCommandFlags.buildAab.name,
