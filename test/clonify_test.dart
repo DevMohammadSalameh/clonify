@@ -2,7 +2,27 @@ import 'dart:io';
 
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:test/test.dart';
+import 'package:args/command_runner.dart';
+import 'package:args/args.dart';
 import 'package:clonify/src/clonify_core.dart';
+import 'package:clonify/commands/clonify_command_runner.dart';
+import 'package:clonify/models/commands_calls_models/build_command_model.dart';
+import 'package:clonify/utils/build_manager.dart';
+
+// Mock functions for testing
+String? mockLastClientId;
+String? mockPromptAnswer;
+bool buildAppsCalled = false;
+BuildCommandModel? capturedBuildModel;
+
+Future<String?> getLastClientId() async => mockLastClientId;
+
+String prompt(String message) => mockPromptAnswer!;
+
+Future<void> buildApps(BuildCommandModel buildModel) async {
+  buildAppsCalled = true;
+  capturedBuildModel = buildModel;
+}
 
 void main() {
   group('validatedClonifySettings', () {
@@ -105,6 +125,111 @@ company_name: "TestCompany"
 default_color: "#ABCDEF"
 ''');
       expect(validatedClonifySettings(), isTrue);
+    });
+  });
+
+  group('BuildCommand', () {
+    late CommandRunner runner;
+    late BuildCommand buildCommand;
+
+    setUp(() {
+      runner = ClonifyCommandRunner();
+      buildCommand = BuildCommand();
+      runner.addCommand(buildCommand);
+      buildAppsCalled = false;
+      capturedBuildModel = null;
+      mockLastClientId = null;
+      mockPromptAnswer = null;
+    });
+
+    test('calls buildApps with clientId when provided', () async {
+      await runner.run(['--client-id', 'testClientId']);
+      expect(buildAppsCalled, isTrue);
+      expect(capturedBuildModel?.clientId, 'testClientId');
+      expect(capturedBuildModel?.buildAab, isTrue);
+      expect(capturedBuildModel?.buildApk, isFalse);
+      expect(capturedBuildModel?.buildIpa, isTrue);
+      expect(capturedBuildModel?.skipBuildCheck, isFalse);
+      expect(capturedBuildModel?.skipAll, isFalse);
+    });
+
+    test(
+      'calls buildApps with lastClientId if available and confirmed',
+      () async {
+        mockLastClientId = 'lastUsedClientId';
+        mockPromptAnswer = 'y';
+        await runner.run([]);
+        expect(buildAppsCalled, isTrue);
+        expect(capturedBuildModel?.clientId, 'lastUsedClientId');
+      },
+    );
+
+    test(
+      'does not call buildApps if lastClientId is available but not confirmed',
+      () async {
+        mockLastClientId = 'lastUsedClientId';
+        mockPromptAnswer = 'n';
+        await runner.run([]);
+        expect(buildAppsCalled, isFalse);
+      },
+    );
+
+    test(
+      'does not call buildApps if no clientId and no lastClientId',
+      () async {
+        mockLastClientId = null;
+        await runner.run([]);
+        expect(buildAppsCalled, isFalse);
+      },
+    );
+
+    test('calls buildApps with correct flags when provided', () async {
+      await runner.run([
+        '--client-id',
+        'testClientId',
+        '--build-apk',
+        '--no-build-aab',
+        '--no-build-ipa',
+        '--skip-build-check',
+        '--skip-all',
+      ]);
+      expect(buildAppsCalled, isTrue);
+      expect(capturedBuildModel?.clientId, 'testClientId');
+      expect(capturedBuildModel?.buildAab, isFalse);
+      expect(capturedBuildModel?.buildApk, isTrue);
+      expect(capturedBuildModel?.buildIpa, isFalse);
+      expect(capturedBuildModel?.skipBuildCheck, isTrue);
+      expect(capturedBuildModel?.skipAll, true);
+    });
+
+    test('buildAab defaults to true when not specified', () async {
+      await runner.run(['--client-id', 'testClientId']);
+      expect(buildAppsCalled, isTrue);
+      expect(capturedBuildModel?.buildAab, isTrue);
+    });
+
+    test('buildApk defaults to false when not specified', () async {
+      await runner.run(['--client-id', 'testClientId']);
+      expect(buildAppsCalled, isTrue);
+      expect(capturedBuildModel?.buildApk, isFalse);
+    });
+
+    test('buildIpa defaults to true when not specified', () async {
+      await runner.run(['--client-id', 'testClientId']);
+      expect(buildAppsCalled, isTrue);
+      expect(capturedBuildModel?.buildIpa, isTrue);
+    });
+
+    test('skipBuildCheck defaults to false when not specified', () async {
+      await runner.run(['--client-id', 'testClientId']);
+      expect(buildAppsCalled, isTrue);
+      expect(capturedBuildModel?.skipBuildCheck, isFalse);
+    });
+
+    test('skipAll defaults to false when not specified', () async {
+      await runner.run(['--client-id', 'testClientId']);
+      expect(buildAppsCalled, isTrue);
+      expect(capturedBuildModel?.skipAll, isFalse);
     });
   });
 

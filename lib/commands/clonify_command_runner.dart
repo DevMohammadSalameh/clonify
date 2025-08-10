@@ -234,10 +234,19 @@ class BuildCommand extends ClientIdCommand {
       argResults!,
     );
 
-    if (buildModel.clientId != null) {
-      await buildApps(buildModel);
+    if (buildModel.clientId == null) {
+      final lastClientId = await getLastClientId();
+      if (lastClientId != null && !(buildModel.skipAll)) {
+        final answer = prompt(Messages.useLastClientIdMessage(lastClientId));
+        if (answer.toLowerCase() == 'y') {
+          buildModel.clientId = lastClientId;
+          await buildApps(buildModel);
+          return;
+        }
+      }
     } else {
-      throw CustomException(Messages.clientIdRequiredForBuilding);
+      await buildApps(buildModel);
+      // throw CustomException(Messages.clientIdRequiredForBuilding);
     }
   }
 }

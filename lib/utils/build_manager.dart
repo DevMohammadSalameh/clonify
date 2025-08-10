@@ -17,13 +17,17 @@ Future<void> buildApps(BuildCommandModel buildModel) async {
   final appName = buildMetadata['appName']!;
   final version = buildMetadata['version']!;
 
-  if (!_promptUserForConfirmation(
-    packageName: packageName,
-    appName: appName,
-    version: version,
-    skipBuildCheck: buildModel.skipBuildCheck,
-  )) {
-    return;
+  if (buildModel.buildIpa ||
+      !buildModel.skipBuildCheck ||
+      !buildModel.skipAll) {
+    if (!_promptUserForConfirmation(
+      packageName: packageName,
+      appName: appName,
+      version: version,
+      skipBuildCheck: buildModel.skipBuildCheck,
+    )) {
+      return;
+    }
   }
 
   logger.i('🚀 Building apps for client ID: ${buildModel.clientId}');
@@ -104,6 +108,9 @@ Future<void> _runFlutterBuildCommands({
   required Stopwatch stopwatch,
 }) async {
   final progress = Stream.periodic(const Duration(milliseconds: 100), (count) {
+    logger.i(
+      'Building these apps : ${buildModel.buildApk ? '\n- APK' : ''} ${buildModel.buildAab ? '\n- AAB' : ''} ${buildModel.buildIpa ? '\n- IPA' : ''}',
+    );
     stdout.write(
       '\r🛠 Apps are being built... [${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s]',
     );
@@ -142,12 +149,16 @@ Future<void> _runFlutterBuildCommands({
 
     progressSubscription.cancel();
     stdout.write('\r'); // Clear the line
-    logger.i(
-      '✓ You can find the iOS app archive at\n  ${'-' * 10}→ build/ios/archive/Runner.xcarchive',
-    );
-    logger.i(
-      '✓ You can find the Android app bundle at\n  ${'-' * 10}→ build/app/outputs/bundle/release/app-release.aab',
-    );
+    if (buildModel.buildIpa) {
+      logger.i(
+        '✓ You can find the iOS app archive at\n  ${'-' * 10}→ build/ios/archive/Runner.xcarchive',
+      );
+    }
+    if (buildModel.buildAab) {
+      logger.i(
+        '✓ You can find the Android app bundle at\n  ${'-' * 10}→ build/app/outputs/bundle/release/app-release.aab',
+      );
+    }
   } catch (e) {
     progressSubscription.cancel();
     stdout.write('\r'); // Clear the line

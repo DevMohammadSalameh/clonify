@@ -26,8 +26,10 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   final sink = file.openWrite();
 
   // 3. Write 'CloneConfigs' class
-  sink.writeln('// Auto-generated file. Do not edit manually.');
-  sink.writeln("import 'package:flutter/material.dart';\n");
+  sink.writeln(
+    '// Auto-generated file. any changes will be overwritten. edit clone config instead.',
+  );
+  // sink.writeln("import 'package:flutter/material.dart';\n");
   sink.writeln('abstract class CloneConfigs {');
 
   // 3.1. Write colors
@@ -87,7 +89,9 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   // Close the file stream
   sink.close();
 
-  logger.i('Generated clone_configs.dart file.');
+  logger.i(
+    'Generated clone_configs.dart file. You can find it in lib/generated/clone_configs.dart',
+  );
 }
 
 /// Tracks created directories and files for cleanup on cancellation.
@@ -126,6 +130,12 @@ Map<String, String>? _promptCloneBasicInfo() {
       'Enter Clone ID. This ID will be used to identify your project:',
     );
 
+    final baseUrl = promptUser(
+      'Enter the base URL (e.g., https://example.com):',
+      'https://example.com',
+      validator: (value) => Uri.parse(value).isAbsolute,
+    );
+
     final primaryColor = promptUser(
       'Enter the primary color (e.g., 0xFFFFFFFF):',
       clonifySettings.defaultColor,
@@ -160,6 +170,7 @@ Map<String, String>? _promptCloneBasicInfo() {
 
     return {
       'clientId': clientId,
+      'baseUrl': baseUrl,
       'primaryColor': primaryColor,
       'packageName': packageName,
       'appName': appName,
@@ -189,6 +200,7 @@ bool _createCloneStructure(Map<String, String> config) {
   "clientId": "${config['clientId']}",
   "packageName": "${config['packageName']}",
   "appName": "${config['appName']}",
+  "baseUrl": "${config['baseUrl']}",
   "primaryColor": "${config['primaryColor']}",
   "firebaseProjectId": "${config['firebaseProjectId']}",
   "version": "${config['version']}"
