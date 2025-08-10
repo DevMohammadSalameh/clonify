@@ -33,7 +33,7 @@ class ClonifySettings {
       defaultColor: yaml['default_color'] ?? '#FFFFFF',
       assets: List<String>.from(yaml['clone_assets'] ?? []),
       launcherIconAsset: yaml['launcher_icon_asset'] ?? '',
-      splashScreenAsset: yaml['splash_screen_asset'] ?? '',
+      splashScreenAsset: yaml['splash_screen_asset'],
     );
   }
 }
