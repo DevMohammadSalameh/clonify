@@ -244,6 +244,7 @@ class BuildCommand extends ClientIdCommand {
           return;
         }
       }
+      throw CustomException(Messages.clientIdRequiredForBuilding);
     } else {
       await buildApps(buildModel);
       // throw CustomException(Messages.clientIdRequiredForBuilding);
