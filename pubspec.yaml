@@ -1,7 +1,17 @@
 name: clonify
-description: Helps you manage your flutter project clones.
-version: 1.0.0
-repository: https://github.com/DevMohammadSalameh/clonify.git
+description: A powerful CLI tool for managing multiple Flutter project clones with different configurations, branding, and Firebase projects. Perfect for white-label apps.
+version: 0.1.0
+homepage: https://github.com/DevMohammadSalameh/clonify
+repository: https://github.com/DevMohammadSalameh/clonify
+issue_tracker: https://github.com/DevMohammadSalameh/clonify/issues
+
+topics:
+  - cli
+  - flutter
+  - white-label
+  - multi-tenant
+  - clone
+  - configuration
 
 environment:
   sdk: ^3.8.1
@@ -22,3 +32,8 @@ dependencies:
 dev_dependencies:
   lints: ^5.0.0
   test: ^1.24.0
+  mockito: ^5.4.4
+  build_runner: ^2.4.13
+
+executables:
+  clonify:

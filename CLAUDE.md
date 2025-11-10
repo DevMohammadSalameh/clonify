@@ -10,6 +10,7 @@ Clonify is a Dart command-line tool for managing Flutter project clones. It enab
 
 ### Setup & Dependencies
 - **Install dependencies**: `dart pub get`
+- **Install globally**: `dart pub global activate --source path .`
 - **Build executable**: `dart compile exe bin/clonify.dart`
 
 ### Code Quality

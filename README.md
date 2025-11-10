@@ -1,2 +1,395 @@
-A sample command-line application with an entrypoint in `bin/`, library code
-in `lib/`, and example unit test in `test/`.
+# Clonify
+
+A powerful command-line tool for managing multiple Flutter project clones with different configurations, branding, and Firebase projects. Perfect for white-label applications or managing multiple client-specific versions of the same Flutter app.
+
+## Features
+
+- 🎨 Manage multiple app variants from a single codebase
+- 🔥 Optional Firebase integration per clone
+- 📱 Auto-generate launcher icons and splash screens
+- 📦 Rename packages and app names per clone
+- 🏗️ Build multiple platforms (Android APK/AAB, iOS IPA)
+- 🚀 Optional Fastlane integration for app store uploads
+- 💾 Configuration persistence for easy switching between clones
+
+## Installation
+
+### Prerequisites
+
+- Dart SDK (^3.8.1)
+- Flutter SDK (for building apps)
+- Firebase CLI (optional, for Firebase features)
+- Fastlane (optional, for upload features)
+
+### Install Globally
+
+Install clonify globally to use it from anywhere:
+
+```bash
+# From pub.dev (once published)
+dart pub global activate clonify
+
+# Or install from source
+git clone https://github.com/DevMohammadSalameh/clonify.git
+cd clonify
+dart pub global activate --source path .
+```
+
+Make sure your PATH includes the Dart global bin directory:
+- macOS/Linux: `~/.pub-cache/bin`
+- Windows: `%LOCALAPPDATA%\Pub\Cache\bin`
+
+Verify installation:
+```bash
+clonify --help
+```
+
+## Quick Start
+
+### 1. Initialize Clonify
+
+Set up your project with global configuration:
+
+```bash
+clonify init
+```
+
+This will prompt you for:
+- Firebase configuration (optional)
+- Fastlane configuration (optional)
+- Company name
+- Default app color
+- Assets to clone (icons, splash screens)
+
+Creates: `./clonify/clonify_settings.yaml`
+
+### 2. Create Your First Clone
+
+Create a new client-specific configuration:
+
+```bash
+clonify create
+```
+
+This will prompt you for:
+- Client ID (unique identifier)
+- Base URL for API
+- Primary color
+- Package name (e.g., `com.company.clienta`)
+- App name
+- Version
+- Firebase project ID (if Firebase enabled)
+
+Creates: `./clonify/clones/{clientId}/config.json` and assets directory
+
+### 3. Configure Your Flutter Project
+
+Apply a clone's configuration to your Flutter project:
+
+```bash
+clonify configure --clientId your_client_id
+
+# Or use the last configured client
+clonify configure
+```
+
+This will:
+- Rename app and package
+- Configure Firebase (if enabled)
+- Update launcher icons and splash screens
+- Sync versions
+- Generate compile-time configuration class
+
+Generates: `lib/generated/clone_configs.dart`
+
+### 4. Build Your App
+
+Build platform-specific artifacts:
+
+```bash
+# Build Android AAB and iOS IPA (default)
+clonify build --clientId your_client_id
+
+# Build specific platforms
+clonify build --clientId your_client_id --buildApk --no-buildAab
+
+# Use last client ID
+clonify build
+```
+
+### 5. List All Clones
+
+View all configured clones:
+
+```bash
+clonify list
+```
+
+## Commands
+
+### `clonify init`
+Initialize Clonify environment with global settings.
+
+**Aliases:** `i`, `initialize`
+
+### `clonify create`
+Create a new Flutter project clone configuration.
+
+**Aliases:** `create-clone`
+
+### `clonify configure [options]`
+Configure the Flutter project for a specific client.
+
+**Aliases:** `con`, `config`, `c`
+
+**Options:**
+- `--clientId <id>` - Client ID to configure (or use last)
+- `--skipAll` - Skip all user prompts
+- `--autoUpdate` - Automatically increment version
+- `--isDebug` - Run in debug mode
+- `--skipFirebaseConfigure` - Skip Firebase configuration
+- `--skipPubUpdate` - Skip pubspec.yaml updates
+- `--skipVersionUpdate` - Skip version updates
+
+### `clonify build [options]`
+Build the Flutter project clone.
+
+**Aliases:** `b`
+
+**Options:**
+- `--clientId <id>` - Client ID to build (or use last)
+- `--skipAll` - Skip all user prompts
+- `--buildAab` - Build Android App Bundle (default: true)
+- `--buildApk` - Build Android APK (default: false)
+- `--buildIpa` - Build iOS IPA (default: true)
+- `--skipBuildCheck` - Skip pre-build checks
+
+### `clonify upload [options]`
+Upload builds to app stores via Fastlane.
+
+**Aliases:** `up`, `u`
+
+**Options:**
+- `--clientId <id>` - Client ID to upload
+- `--skipAll` - Skip all prompts
+- `--skipAndroidUploadCheck` - Skip Android upload verification
+- `--skipIOSUploadCheck` - Skip iOS upload verification
+
+### `clonify list`
+List all configured clones.
+
+**Aliases:** `l`, `list-clones`, `ls`
+
+### `clonify which`
+Display the current clone configuration.
+
+**Aliases:** `w`, `current`, `who`
+
+### `clonify clean [options]`
+Clean up a partial or broken clone.
+
+**Aliases:** `clear`
+
+**Options:**
+- `--clientId <id>` - Client ID to clean (required)
+
+## Configuration Files
+
+### Global Settings: `./clonify/clonify_settings.yaml`
+
+```yaml
+firebase:
+  enabled: true
+  settings_file: "path/to/firebase.json"
+
+fastlane:
+  enabled: false
+  settings_file: ""
+
+company_name: "Your Company"
+default_color: "#FFFFFF"
+
+clone_assets:
+  - icon.png
+  - splash.png
+  - logo.png
+
+launcher_icon_asset: "icon.png"
+splash_screen_asset: "splash.png"
+```
+
+### Per-Clone Config: `./clonify/clones/{clientId}/config.json`
+
+```json
+{
+  "clientId": "client_a",
+  "packageName": "com.company.clienta",
+  "appName": "Client A App",
+  "baseUrl": "https://api.client-a.com",
+  "primaryColor": "0xFF6200EE",
+  "firebaseProjectId": "firebase-client-a",
+  "version": "1.0.0+1",
+  "colors": [
+    {
+      "name": "primaryBlue",
+      "color": "6200EE"
+    }
+  ],
+  "linearGradients": [
+    {
+      "name": "primaryGradient",
+      "colors": ["6200EE", "03DAC6"],
+      "begin": "topLeft",
+      "end": "bottomRight",
+      "transform": "0"
+    }
+  ]
+}
+```
+
+### Generated Config: `lib/generated/clone_configs.dart`
+
+```dart
+abstract class CloneConfigs {
+  static const String clientId = "client_a";
+  static const String baseUrl = "https://api.client-a.com";
+  static const String version = "1.0.0+1";
+  static const String primaryColor = "0xFF6200EE";
+  static const primaryBlue = Color(0xFF6200EE);
+  static const primaryGradient = LinearGradient(...);
+}
+```
+
+Use in your Flutter app:
+```dart
+import 'package:your_app/generated/clone_configs.dart';
+
+// Access configuration
+final baseUrl = CloneConfigs.baseUrl;
+final clientId = CloneConfigs.clientId;
+final primaryColor = CloneConfigs.primaryBlue;
+```
+
+## Workflow Example
+
+### Managing Multiple Clients
+
+```bash
+# Initial setup (one time)
+clonify init
+
+# Create client A
+clonify create
+# Enter: client_a, com.company.clienta, etc.
+
+# Create client B
+clonify create
+# Enter: client_b, com.company.clientb, etc.
+
+# Work on client A
+clonify configure --clientId client_a
+clonify build --clientId client_a
+
+# Switch to client B
+clonify configure --clientId client_b
+clonify build --clientId client_b
+
+# List all clients
+clonify list
+```
+
+## Optional Features
+
+### Firebase Integration
+
+Firebase is **optional**. To use Firebase:
+
+1. Enable during `clonify init`
+2. Provide path to `firebase.json`
+3. During clone creation, provide Firebase project ID
+4. Clonify will create Firebase project and configure Flutterfire
+
+To skip Firebase:
+- Set `firebase.enabled: false` in settings
+- Use `--skipFirebaseConfigure` flag
+
+### Fastlane Integration
+
+Fastlane is **optional**. To use Fastlane:
+
+1. Enable during `clonify init`
+2. Provide path to Fastlane settings
+3. Use `clonify upload` to deploy to stores
+
+## Development
+
+### Run Tests
+
+```bash
+dart test
+```
+
+### Run Linter
+
+```bash
+dart analyze
+```
+
+### Format Code
+
+```bash
+dart format .
+```
+
+### Build Executable
+
+```bash
+dart compile exe bin/clonify.dart
+```
+
+## Requirements
+
+- Dart SDK ^3.8.1
+- Flutter SDK (for building apps)
+- Firebase CLI (optional, if using Firebase features)
+- Fastlane (optional, if using upload features)
+- Xcode (for iOS builds on macOS)
+- Android SDK (for Android builds)
+
+## Contributing
+
+Contributions are welcome! Please read the contributing guidelines before submitting PRs.
+
+## Version
+
+Current version: **0.1.0** (Pre-release)
+
+This is a pre-release version. The API may change in future releases. Feedback and bug reports are welcome!
+
+## License
+
+**GPL v3** (GNU General Public License v3.0) - see [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2024 Mohammad Salameh
+
+**What this means:**
+- ✅ Free to use for any purpose (including commercial projects)
+- ✅ Free to modify and study the code
+- ✅ Can sell applications built WITH this tool
+- ❌ Cannot sell this tool itself as closed-source software
+- ⚠️ If you distribute modified versions, you MUST share the source code under GPL v3
+
+Full license: https://www.gnu.org/licenses/gpl-3.0.txt
+
+## Author
+
+**Mohammad Salameh**
+
+- GitHub: [@DevMohammadSalameh](https://github.com/DevMohammadSalameh)
+- Repository: https://github.com/DevMohammadSalameh/clonify
+- Issues: https://github.com/DevMohammadSalameh/clonify/issues
+
+## Acknowledgments
+
+- Built with ❤️ for the Flutter community
+- Inspired by the need for efficient white-label app management
