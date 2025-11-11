@@ -54,18 +54,24 @@ class ClonifyCommandRunner extends CommandRunner<void> {
       return;
     }
 
-    // if the command is not init call validatedClonifySettings(isSilent: true);
-    if (args.isEmpty ||
-        args.first == ClonifyCommands.init.name ||
-        args.first == ClonifyCommands.list.name) {
-      return super.run(args);
-    } else {
+    List<String> commandsToSkipValidation = [
+      ClonifyCommands.init.name,
+      ClonifyCommands.list.name,
+    ];
+
+    final shouldSkipValidation =
+        args.isEmpty ||
+        args.contains('--help') ||
+        args.contains('-h') ||
+        (args.isNotEmpty && commandsToSkipValidation.contains(args.first));
+
+    if (!shouldSkipValidation) {
       // Validate clonify settings before running any other command
       if (!validatedClonifySettings(isSilent: true)) {
         throw CustomException('Validation Failed !');
       }
-      return super.run(args);
     }
+    return super.run(args);
   }
 }
 
