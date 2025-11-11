@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:clonify/constants.dart';
 import 'package:clonify/messages.dart';
 import 'package:clonify/models/clonify_settings_model.dart';
+import 'package:clonify/models/custom_field_model.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 // ignore: depend_on_referenced_packages
 import 'package:yaml/yaml.dart' as yaml;
@@ -193,11 +194,12 @@ Map<String, String> _promptBasicSettings() {
   return {'companyName': companyName, 'defaultColor': defaultColor};
 }
 
-/// Prompts for assets settings, including launcher icon and splash screen selection.
+/// Prompts for assets settings with direct questions about specific asset needs.
 ///
 /// Returns a list of Strings with the names of the assets to be cloned.
 /// The launcher icon asset will be the first in the list.
 /// The splash screen asset (if any) will be the second in the list.
+/// The logo asset (if any) will be the third in the list.
 (List<String>, bool) _promptCloneAssetsSettings() {
   final sourceDir = Directory('./assets/images');
 
@@ -208,20 +210,56 @@ Map<String, String> _promptBasicSettings() {
     );
   }
 
-  final List<String> allAssets = _getAllAssets(sourceDir);
+  final List<String> selectedAssets = [];
 
-  if (allAssets.isEmpty) {
-    logger.e('No assets found in ${sourceDir.path}.');
-    return ([], false);
+  // Ask about launcher icon
+  final needsLauncherIcon = promptUser(
+    '\nDoes your app need a custom launcher icon? (y/n)',
+    'y',
+  ).toLowerCase() == 'y';
+
+  if (needsLauncherIcon) {
+    final launcherIconFile = promptUser(
+      'Enter the launcher icon filename (e.g., icon.png):',
+      'icon.png',
+      validator: (value) => value.trim().isNotEmpty,
+    );
+    selectedAssets.add(launcherIconFile);
+  } else {
+    // Launcher icon is required, use default
+    logger.w('Using default launcher icon filename: icon.png');
+    selectedAssets.add('icon.png');
   }
 
-  // Step 1: Select assets to clone
-  List<String> selectedAssets = [];
-  final method = _selectAssetSelectionMethod();
-  if (method == '1') {
-    selectedAssets = _pickAssetsInteractively(allAssets);
-  } else {
-    selectedAssets = _pickAssetsByInput(allAssets);
+  // Ask about splash screen
+  final needsSplashScreen = promptUser(
+    'Does your app need a custom splash screen? (y/n)',
+    'n',
+  ).toLowerCase() == 'y';
+
+  String? splashScreenFile;
+  if (needsSplashScreen) {
+    splashScreenFile = promptUser(
+      'Enter the splash screen filename (e.g., splash.png):',
+      'splash.png',
+      validator: (value) => value.trim().isNotEmpty,
+    );
+    selectedAssets.add(splashScreenFile);
+  }
+
+  // Ask about logo asset
+  final needsLogo = promptUser(
+    'Does your app need a logo asset? (y/n)',
+    'n',
+  ).toLowerCase() == 'y';
+
+  if (needsLogo) {
+    final logoFile = promptUser(
+      'Enter the logo filename (e.g., logo.png):',
+      'logo.png',
+      validator: (value) => value.trim().isNotEmpty,
+    );
+    selectedAssets.add(logoFile);
   }
 
   if (selectedAssets.isEmpty) {
@@ -229,150 +267,86 @@ Map<String, String> _promptBasicSettings() {
     return ([], false);
   }
 
-  // Step 2: Select launcher icon asset
-  final launcherAsset = _selectLauncherIconAsset(selectedAssets);
-
-  // Remove launcher asset from list to avoid duplicate
-  selectedAssets.remove(launcherAsset);
-
-  // Step 3: Ask for splash screen asset (optional)
-  final splashAsset = _selectSplashScreenAsset(selectedAssets);
-
-  // Remove splash asset from list to avoid duplicate
-  if (splashAsset != null) {
-    selectedAssets.remove(splashAsset);
-  }
-
-  // Build the final list: launcher icon first, splash screen second (if any), then the rest
-  final List<String> orderedAssets = [launcherAsset];
-  if (splashAsset != null) {
-    orderedAssets.add(splashAsset);
-  }
-  orderedAssets.addAll(selectedAssets);
-
-  return (orderedAssets, splashAsset != null);
+  logger.i('Selected assets: ${selectedAssets.join(', ')}');
+  return (selectedAssets, needsSplashScreen);
 }
 
-List<String> _getAllAssets(Directory sourceDir) {
-  return sourceDir
-      .listSync()
-      .whereType<File>()
-      .map((file) => file.path.split('/').last)
-      .toList();
-}
+/// Prompts for custom configuration fields.
+///
+/// Returns a list of CustomField objects.
+List<CustomField> _promptCustomFields() {
+  final fields = <CustomField>[];
 
-String _selectAssetSelectionMethod() {
-  return promptUser(
-    'How do you want to select assets?\n'
-        '1. Pick each asset interactively\n'
-        '2. Enter asset names separated by commas\n'
-        'Enter 1 or 2:',
-    '1',
-    validator: (value) => value == '1' || value == '2',
+  final wantsCustomFields = promptUser(
+    '\nDo you want to add custom configuration fields? (y/n)',
+    'n',
+  ).toLowerCase() == 'y';
+
+  if (!wantsCustomFields) {
+    logger.i('No custom fields added.');
+    return fields;
+  }
+
+  logger.i(
+    '\nYou can now add custom fields that will be required for each clone.',
   );
-}
+  logger.i('Supported types: string, int, bool, double');
 
-List<String> _pickAssetsInteractively(List<String> assets) {
-  final selected = <String>[];
-  for (final asset in assets) {
-    final clone =
-        promptUser('Does this asset need to be cloned: $asset? (y/n)', 'n') ==
-        'y';
-    if (clone) selected.add(asset);
-  }
-  return selected;
-}
-
-List<String> _pickAssetsByInput(List<String> assets) {
   while (true) {
-    final input = promptUser(
-      'Enter the asset names you want to clone, separated by commas (e.g., asset1.png,asset2.jpg):',
-      '',
-      validator: (value) => value.trim().isNotEmpty,
-    );
-    final entered = input
-        .split(',')
-        .map((e) => e.trim())
-        .where((e) => e.isNotEmpty)
-        .toList();
-
-    final missing = entered.where((a) => !assets.contains(a)).toList();
-    final duplicates = <String>{};
-    final seen = <String>{};
-    for (final asset in entered) {
-      if (!seen.add(asset)) duplicates.add(asset);
-    }
-
-    if (missing.isEmpty && duplicates.isEmpty) {
-      return entered;
-    }
-    if (missing.isNotEmpty) {
-      logger.e(
-        'The following assets do not exist: ${missing.join(', ')}. Please try again.',
-      );
-    }
-    if (duplicates.isNotEmpty) {
-      logger.e(
-        'Duplicate asset names found: ${duplicates.join(', ')}. Please enter each asset only once.',
-      );
-    }
-  }
-}
-
-void _printAssetList(List<String> assets) {
-  for (int i = 0; i < assets.length; i++) {
-    print('  ${i + 1}. ${assets[i]}');
-  }
-}
-
-String _selectLauncherIconAsset(List<String> selectedAssets) {
-  print('\nSelect the launcher icon asset from the list below:');
-  _printAssetList(selectedAssets);
-
-  int launcherIndex = -1;
-  while (launcherIndex < 0 || launcherIndex >= selectedAssets.length) {
-    final input = promptUser(
-      'Enter the number for the launcher icon asset:',
+    print('\n');
+    final fieldName = promptUser(
+      'Enter field name (e.g., socketUrl, apiKey):',
       '',
       validator: (value) {
-        final idx = int.tryParse(value);
-        return idx != null && idx > 0 && idx <= selectedAssets.length;
+        if (value.trim().isEmpty) {
+          logger.e('❌ Field name cannot be empty.');
+          return false;
+        }
+        if (fields.any((f) => f.name == value.trim())) {
+          logger.e('❌ Field name "$value" already exists.');
+          return false;
+        }
+        return true;
       },
     );
-    launcherIndex = int.parse(input) - 1;
-  }
-  return selectedAssets[launcherIndex];
-}
 
-String? _selectSplashScreenAsset(List<String> selectedAssets) {
-  print(
-    '\nSelect the splash screen asset from the list below (or enter 0 for none):',
-  );
-  _printAssetList(selectedAssets);
-  print('  0. No splash screen asset');
-  int splashIndex = -2;
-  String? splashAsset;
-  while (splashIndex < -1 || splashIndex > selectedAssets.length - 1) {
-    final input = promptUser(
-      'Enter the number for the splash screen asset (or 0 for none):',
-      '0',
+    final typeChoice = promptUser(
+      'Select type:\n'
+          '  1. String\n'
+          '  2. Int\n'
+          '  3. Bool\n'
+          '  4. Double\n'
+          'Enter choice (1-4):',
+      '1',
       validator: (value) {
-        final idx = int.tryParse(value);
-        return idx != null && idx >= 0 && idx <= selectedAssets.length;
+        final choice = int.tryParse(value);
+        return choice != null && choice >= 1 && choice <= 4;
       },
     );
-    splashIndex = int.parse(input) - 1;
-    if (splashIndex == -1) {
-      logger.i(
-        'No splash screen asset selected. You can set it manually in the clonify settings file later.',
-      );
-      break;
-    } else {
-      splashAsset = selectedAssets[splashIndex];
-      break;
+
+    final type = ['string', 'int', 'bool', 'double'][int.parse(typeChoice) - 1];
+
+    final field = CustomField(name: fieldName, type: type);
+    fields.add(field);
+
+    logger.i('✅ Added custom field: $fieldName ($type)');
+
+    final addMore = promptUser(
+      '\nAdd another field? (y/n)',
+      'n',
+    ).toLowerCase() == 'y';
+
+    if (!addMore) break;
+  }
+
+  if (fields.isNotEmpty) {
+    logger.i('\nCustom fields summary:');
+    for (final field in fields) {
+      logger.i('  - ${field.name} (${field.type})');
     }
   }
-  return splashAsset;
+
+  return fields;
 }
 
 /// Creates the settings file with the provided configurations.
@@ -385,17 +359,28 @@ bool _createSettingsFile(
   Map<String, String> basicConfig,
   List<String> cloneAssets,
   bool isThereASplashScreen,
+  List<CustomField> customFields,
 ) {
   try {
     settingsFile.createSync(recursive: true);
     _createdPaths.add(settingsFile.path);
+
+    // Build custom fields YAML section
+    String customFieldsYaml = '';
+    if (customFields.isNotEmpty) {
+      customFieldsYaml = '\ncustom_fields:\n';
+      for (final field in customFields) {
+        customFieldsYaml += '  - name: "${field.name}"\n';
+        customFieldsYaml += '    type: "${field.type}"\n';
+      }
+    }
 
     settingsFile.writeAsStringSync('''
 # Clonify Settings
 firebase:
   enabled: ${firebaseConfig['enabled']}
   settings_file: "${firebaseConfig['enabled'] ? firebaseConfig['settingsFile'] : ''}"
-  
+
 fastlane:
   enabled: ${fastlaneConfig['enabled']}
   settings_file: "${fastlaneConfig['enabled'] ? fastlaneConfig['settingsFile'] : ''}"
@@ -408,7 +393,7 @@ clone_assets:
 
 launcher_icon_asset: "${cloneAssets[0]}"
 
-${isThereASplashScreen ? 'splash_screen_asset: "${cloneAssets[1]}"' : ''}
+${isThereASplashScreen ? 'splash_screen_asset: "${cloneAssets[1]}"' : ''}$customFieldsYaml
 ''');
 
     logger.i(
@@ -450,6 +435,7 @@ Future<void> initClonify() async {
       final basicConfig = _promptBasicSettings();
       final (List<String>, bool) cloneAssetsConfig =
           _promptCloneAssetsSettings();
+      final customFields = _promptCustomFields();
 
       // Step 3: Create settings file
       if (!_createSettingsFile(
@@ -459,6 +445,7 @@ Future<void> initClonify() async {
         basicConfig,
         cloneAssetsConfig.$1,
         cloneAssetsConfig.$2,
+        customFields,
       )) {
         _cleanupCreatedPaths();
         return;

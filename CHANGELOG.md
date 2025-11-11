@@ -19,10 +19,23 @@
 - `clonify which` - Show current clone configuration
 - `clonify clean` - Clean up partial/broken clones
 - `clonify upload` - Upload to app stores (partial implementation)
+- `clonify --version` / `clonify -v` - Display tool version
 
 **Global Installation:**
 - Install globally via `dart pub global activate clonify`
 - Use `clonify` command directly without `dart run`
+
+**Asset Management:**
+- Simplified asset selection during initialization
+- Direct questions for launcher icon, splash screen, and logo
+- No more confusing method selection
+
+**Custom Configuration Fields:**
+- Define custom fields during initialization (e.g., socketUrl, apiKey, feature flags)
+- Support for multiple data types: string, int, bool, double
+- Custom fields are automatically prompted during clone creation
+- Generated as constants in `lib/generated/clone_configs.dart`
+- Type-safe access to custom configuration in Flutter code
 
 **Optional Features:**
 - Firebase integration (fully optional)

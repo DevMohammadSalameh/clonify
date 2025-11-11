@@ -26,7 +26,12 @@ class ClonifyCommandRunner extends CommandRunner<void> {
   /// Constructor for [ClonifyCommandRunner].
   /// It initializes the super class with the name of the command and its description.
   ClonifyCommandRunner() : super(Constants.toolName, Messages.toolDescription) {
-    // argParser.addFlag('version', abbr: 'v', negatable: false);
+    argParser.addFlag(
+      'version',
+      abbr: 'v',
+      negatable: false,
+      help: 'Display the version of Clonify',
+    );
 
     addCommand(InitializeCommand());
     addCommand(CreateCommand());
@@ -39,7 +44,16 @@ class ClonifyCommandRunner extends CommandRunner<void> {
   }
 
   @override
-  Future<void> run(Iterable<String> args) {
+  Future<void> run(Iterable<String> args) async {
+    // Parse arguments to check for version flag
+    final argResults = parse(args);
+
+    // Handle --version flag
+    if (argResults['version'] == true) {
+      print('${Constants.toolName} version ${Constants.version}');
+      return;
+    }
+
     // if the command is not init call validatedClonifySettings(isSilent: true);
     if (args.isEmpty ||
         args.first == ClonifyCommands.init.name ||

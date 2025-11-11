@@ -1,4 +1,5 @@
 import 'package:yaml/yaml.dart';
+import 'package:clonify/models/custom_field_model.dart';
 
 class ClonifySettings {
   final bool firebaseEnabled;
@@ -10,6 +11,7 @@ class ClonifySettings {
   final List<String> assets;
   final String launcherIconAsset;
   final String? splashScreenAsset;
+  final List<CustomField> customFields;
 
   ClonifySettings({
     required this.firebaseEnabled,
@@ -21,9 +23,19 @@ class ClonifySettings {
     required this.assets,
     required this.launcherIconAsset,
     this.splashScreenAsset,
+    this.customFields = const [],
   });
 
   factory ClonifySettings.fromYaml(YamlMap yaml) {
+    // Parse custom fields if they exist
+    List<CustomField> customFields = [];
+    if (yaml['custom_fields'] != null) {
+      final fields = yaml['custom_fields'] as YamlList;
+      customFields = fields
+          .map((field) => CustomField.fromYaml(field as Map<dynamic, dynamic>))
+          .toList();
+    }
+
     return ClonifySettings(
       firebaseEnabled: yaml['firebase']['enabled'] ?? false,
       firebaseSettingsFilePath: yaml['firebase']['settings_file'] ?? '',
@@ -34,6 +46,7 @@ class ClonifySettings {
       assets: List<String>.from(yaml['clone_assets'] ?? []),
       launcherIconAsset: yaml['launcher_icon_asset'] ?? '',
       splashScreenAsset: yaml['splash_screen_asset'],
+      customFields: customFields,
     );
   }
 }

@@ -42,6 +42,7 @@ Make sure your PATH includes the Dart global bin directory:
 Verify installation:
 ```bash
 clonify --help
+clonify --version  # or clonify -v
 ```
 
 ## Quick Start
@@ -59,7 +60,8 @@ This will prompt you for:
 - Fastlane configuration (optional)
 - Company name
 - Default app color
-- Assets to clone (icons, splash screens)
+- Assets selection (launcher icon, splash screen, logo)
+- Custom configuration fields (optional) - define custom fields that will be required for each clone
 
 Creates: `./clonify/clonify_settings.yaml`
 
@@ -79,6 +81,7 @@ This will prompt you for:
 - App name
 - Version
 - Firebase project ID (if Firebase enabled)
+- Custom field values (if custom fields were defined during init)
 
 Creates: `./clonify/clones/{clientId}/config.json` and assets directory
 
@@ -216,6 +219,15 @@ clone_assets:
 
 launcher_icon_asset: "icon.png"
 splash_screen_asset: "splash.png"
+
+# Optional: Custom configuration fields
+custom_fields:
+  - name: "socketUrl"
+    type: "string"
+  - name: "maxRetries"
+    type: "int"
+  - name: "enableDebug"
+    type: "bool"
 ```
 
 ### Per-Clone Config: `./clonify/clones/{clientId}/config.json`
@@ -229,6 +241,9 @@ splash_screen_asset: "splash.png"
   "primaryColor": "0xFF6200EE",
   "firebaseProjectId": "firebase-client-a",
   "version": "1.0.0+1",
+  "socketUrl": "wss://socket.client-a.com",
+  "maxRetries": "5",
+  "enableDebug": "false",
   "colors": [
     {
       "name": "primaryBlue",
@@ -255,6 +270,9 @@ abstract class CloneConfigs {
   static const String baseUrl = "https://api.client-a.com";
   static const String version = "1.0.0+1";
   static const String primaryColor = "0xFF6200EE";
+  static const String socketUrl = "wss://socket.client-a.com";
+  static const int maxRetries = 5;
+  static const bool enableDebug = false;
   static const primaryBlue = Color(0xFF6200EE);
   static const primaryGradient = LinearGradient(...);
 }
@@ -268,6 +286,11 @@ import 'package:your_app/generated/clone_configs.dart';
 final baseUrl = CloneConfigs.baseUrl;
 final clientId = CloneConfigs.clientId;
 final primaryColor = CloneConfigs.primaryBlue;
+
+// Access custom fields
+final socketUrl = CloneConfigs.socketUrl;
+final maxRetries = CloneConfigs.maxRetries;
+final isDebugEnabled = CloneConfigs.enableDebug;
 ```
 
 ## Workflow Example

@@ -63,6 +63,39 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
     '  static const String primaryColor = "${configModel.primaryColor}";',
   );
 
+  // 3.8 Write Custom Fields (if any exist in clonifySettings)
+  if (clonifySettings.customFields.isNotEmpty) {
+    // Read the config file to get custom field values
+    final configPath = './clonify/clones/${configModel.clientId}/config.json';
+    final configFile = File(configPath);
+    if (configFile.existsSync()) {
+      final configJson =
+          jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
+
+      for (final field in clonifySettings.customFields) {
+        final value = configJson[field.name];
+        if (value != null) {
+          // Generate the constant based on type
+          switch (field.type) {
+            case 'int':
+              sink.writeln('  static const int ${field.name} = $value;');
+              break;
+            case 'double':
+              sink.writeln('  static const double ${field.name} = $value;');
+              break;
+            case 'bool':
+              sink.writeln('  static const bool ${field.name} = $value;');
+              break;
+            case 'string':
+            default:
+              sink.writeln('  static const String ${field.name} = "$value";');
+              break;
+          }
+        }
+      }
+    }
+  }
+
   // 4. Access the _assetTargetDirectory and for each file in that directory add its path
   // final assetsDirectory =
   //     Directory('./clonify/clones/${configModel.clientId}/assets');
@@ -168,7 +201,8 @@ Map<String, String>? _promptCloneBasicInfo() {
       );
     }
 
-    return {
+    // Prompt for custom fields if any are defined
+    final configMap = <String, String>{
       'clientId': clientId,
       'baseUrl': baseUrl,
       'primaryColor': primaryColor,
@@ -177,6 +211,34 @@ Map<String, String>? _promptCloneBasicInfo() {
       'version': version,
       'firebaseProjectId': firebaseProjectId,
     };
+
+    if (clonifySettings.customFields.isNotEmpty) {
+      logger.i('\n📋 Custom configuration fields:');
+      for (final field in clonifySettings.customFields) {
+        final value = promptUser(
+          'Enter value for "${field.name}" (type: ${field.type}):',
+          '',
+          validator: (value) {
+            if (value.trim().isEmpty) return false;
+            switch (field.type) {
+              case 'int':
+                return int.tryParse(value) != null;
+              case 'double':
+                return double.tryParse(value) != null;
+              case 'bool':
+                return value.toLowerCase() == 'true' ||
+                    value.toLowerCase() == 'false';
+              case 'string':
+              default:
+                return true;
+            }
+          },
+        );
+        configMap['custom_${field.name}'] = value;
+      }
+    }
+
+    return configMap;
   } catch (e) {
     logger.e('❌ Error during input collection: $e');
     return null;
@@ -194,18 +256,29 @@ bool _createCloneStructure(Map<String, String> config) {
     cloneDir.createSync(recursive: true);
     _createdClonePaths.add(cloneDir.path);
 
+    // Build config JSON dynamically to include custom fields
+    final configJson = <String, dynamic>{
+      'clientId': config['clientId'],
+      'packageName': config['packageName'],
+      'appName': config['appName'],
+      'baseUrl': config['baseUrl'],
+      'primaryColor': config['primaryColor'],
+      'firebaseProjectId': config['firebaseProjectId'],
+      'version': config['version'],
+    };
+
+    // Add custom fields to config
+    for (final key in config.keys) {
+      if (key.startsWith('custom_')) {
+        final fieldName = key.substring(7); // Remove 'custom_' prefix
+        configJson[fieldName] = config[key];
+      }
+    }
+
     final configFile = File('${cloneDir.path}/config.json');
-    configFile.writeAsStringSync('''
-{
-  "clientId": "${config['clientId']}",
-  "packageName": "${config['packageName']}",
-  "appName": "${config['appName']}",
-  "baseUrl": "${config['baseUrl']}",
-  "primaryColor": "${config['primaryColor']}",
-  "firebaseProjectId": "${config['firebaseProjectId']}",
-  "version": "${config['version']}"
-}
-''');
+    configFile.writeAsStringSync(
+      const JsonEncoder.withIndent('  ').convert(configJson),
+    );
     _createdClonePaths.add(configFile.path);
 
     logger.i('✅ Config file created at: ${configFile.path}');

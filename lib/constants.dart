@@ -3,6 +3,7 @@ abstract class Constants {
       './build/ios/ipa/$packageName.ipa';
   static String aabPath = './build/app/outputs/bundle/release/app-release.aab';
   static const String toolName = 'clonify';
+  static const String version = '0.1.0';
   static String clonifySettingsFilePath = './clonify/clonify_settings.yaml';
   static configFilePath(String clientId) =>
       './clonify/clones/$clientId/config.json';
