@@ -1,5 +1,9 @@
 import 'package:clonify/constants.dart';
 
+/// User-facing messages and error strings for the Clonify CLI tool.
+///
+/// This class provides static methods and constants for generating
+/// consistent, user-friendly messages throughout the application.
 abstract class Messages {
   static const String toolDescription =
       'A CLI tool that helps you manage your flutter project clones.';
