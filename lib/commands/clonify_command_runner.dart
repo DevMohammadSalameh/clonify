@@ -6,6 +6,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:args/command_runner.dart';
 import 'package:clonify/constants.dart';
@@ -19,12 +20,23 @@ import 'package:clonify/utils/build_manager.dart';
 import 'package:clonify/utils/clone_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:clonify/utils/upload_manager.dart';
+import 'package:yaml/yaml.dart';
 
-/// [ClonifyCommandRunner] is responsible for running the clonify command in the CLI tool.
-/// It extends the CommandRunner class and overrides some of its methods.
+/// A [CommandRunner] for the Clonify CLI tool.
+///
+/// This class extends [CommandRunner] to provide a command-line interface
+/// for managing Flutter project clones. It registers all available commands
+/// and handles global flags like `--version`.
+///
+/// It also includes logic to conditionally validate Clonify settings
+/// based on the command being executed.
 class ClonifyCommandRunner extends CommandRunner<void> {
-  /// Constructor for [ClonifyCommandRunner].
-  /// It initializes the super class with the name of the command and its description.
+  /// Creates an instance of [ClonifyCommandRunner].
+  ///
+  /// Initializes the command runner with the tool's name and description,
+  /// and registers all subcommands such as [InitializeCommand], [CreateCommand],
+  /// [ConfigureCommand], [BuildCommand], [CleanCommand], [UploadCommand],
+  /// [ListCommand], and [WhichCommand].
   ClonifyCommandRunner() : super(Constants.toolName, Messages.toolDescription) {
     argParser.addFlag(
       'version',
@@ -43,22 +55,64 @@ class ClonifyCommandRunner extends CommandRunner<void> {
     addCommand(WhichCommand());
   }
 
+  /// Reads the version from pubspec.yaml
+  ///
+  /// Attempts to locate and read the version from the package's pubspec.yaml file.
+  /// Searches in the following locations:
+  /// 1. Current directory (for development)
+  /// 2. Script directory (for global activation)
+  /// 3. Parent directories (for running from subdirectories)
+  String _getVersionFromPubspec() {
+    try {
+      // Try current directory first
+      File pubspecFile = File('pubspec.yaml');
+
+      // If not found, try to find it relative to the script location
+      if (!pubspecFile.existsSync()) {
+        final scriptPath = Platform.script.toFilePath();
+        final packageRoot = Directory(scriptPath).parent.parent.path;
+        pubspecFile = File('$packageRoot/pubspec.yaml');
+      }
+
+      // If still not found, try parent directory
+      if (!pubspecFile.existsSync()) {
+        pubspecFile = File('../pubspec.yaml');
+      }
+
+      if (!pubspecFile.existsSync()) {
+        return 'unknown';
+      }
+
+      final pubspecContent = pubspecFile.readAsStringSync();
+      final pubspec = loadYaml(pubspecContent) as YamlMap;
+      return pubspec['version']?.toString() ?? 'unknown';
+    } catch (e) {
+      return 'unknown';
+    }
+  }
+
   @override
   Future<void> run(Iterable<String> args) async {
-    // Parse arguments to check for version flag
+    // Parse arguments
     final argResults = parse(args);
 
     // Handle --version flag
     if (argResults['version'] == true) {
-      print('${Constants.toolName} version ${Constants.version}');
+      final version = _getVersionFromPubspec();
+      print('${Constants.toolName} version $version');
       return;
     }
 
+    // Define commands that do not require Clonify settings validation.
+    // These commands can run even if the clonify_settings.yaml file is not present or invalid.
     List<String> commandsToSkipValidation = [
       ClonifyCommands.init.name,
       ClonifyCommands.list.name,
     ];
 
+    // Determine if validation should be skipped based on arguments.
+    // Validation is skipped for empty arguments (shows help), --help, -h,
+    // or specific commands like 'init' and 'list'.
     final shouldSkipValidation =
         args.isEmpty ||
         args.contains('--help') ||
@@ -66,17 +120,21 @@ class ClonifyCommandRunner extends CommandRunner<void> {
         (args.isNotEmpty && commandsToSkipValidation.contains(args.first));
 
     if (!shouldSkipValidation) {
-      // Validate clonify settings before running any other command
+      // Validate clonify settings before running any other command.
+      // If validation fails, a CustomException is thrown.
       if (!validatedClonifySettings(isSilent: true)) {
         throw CustomException('Validation Failed !');
       }
     }
+    // Execute the command using the superclass's run method.
     return super.run(args);
   }
 }
 
-/// [InitializeCommand] is a class that extends the Command class.
-/// It is responsible for initializing the clonify project.
+/// A command that initializes the Clonify environment.
+///
+/// This command creates the necessary `clonify/` directory and
+/// `clonify_settings.yaml` file if they don't already exist.
 class InitializeCommand extends Command {
   @override
   String get name => ClonifyCommands.init.name;
@@ -93,8 +151,12 @@ class InitializeCommand extends Command {
   }
 }
 
-/// [CreateCommand] is a class that extends the Command class.
-/// It is responsible for creating a new Flutter project clone.
+/// A command that creates a new Flutter project clone.
+///
+/// This command guides the user through a series of prompts to define
+/// the configuration for a new clone, including client ID, app name,
+/// package name, and other settings. It then sets up the directory
+/// structure and configuration files for the new clone.
 class CreateCommand extends Command {
   @override
   String get name => ClonifyCommands.create.name;
@@ -111,8 +173,10 @@ class CreateCommand extends Command {
   }
 }
 
-/// [WhichCommand] is a class that extends the Command class.
-/// It is responsible for displaying the current clone configuration.
+/// A command that displays the currently active clone configuration.
+///
+/// This command retrieves and prints details about the Flutter project
+/// clone that is currently configured or being worked on.
 class WhichCommand extends Command {
   @override
   String get name => ClonifyCommands.which.name;
@@ -129,9 +193,16 @@ class WhichCommand extends Command {
   }
 }
 
-/// [ClientIdCommand] is an abstract class that extends the Command class.
-/// It provides a base for commands that require a client ID option.
+/// An abstract base class for Clonify commands that require a client ID option.
+///
+/// This class provides a common structure for commands that operate on
+/// specific Flutter project clones, identified by a client ID. It automatically
+/// adds the `--client-id` option to the command's argument parser.
 abstract class ClientIdCommand extends Command {
+  /// Creates a [ClientIdCommand] instance.
+  ///
+  /// The [mandatory] parameter determines if the `--client-id` option
+  /// is required for the command. Defaults to `true`.
   ClientIdCommand({bool mandatory = true}) {
     argParser.addOption(
       ClonifyCommandOptions.clientId.name,
@@ -142,9 +213,17 @@ abstract class ClientIdCommand extends Command {
   }
 }
 
-/// [ConfigureCommand] is a class that extends the [ClientIdCommand] class.
-/// It is responsible for configuring the application with the provided client ID and options.
+/// A command that configures a Flutter project clone.
+///
+/// This command applies a specific clone's configuration to the Flutter project.
+/// It supports various options to skip prompts, auto-update versions,
+/// and control Firebase configuration.
 class ConfigureCommand extends ClientIdCommand {
+  /// Creates a [ConfigureCommand] instance.
+  ///
+  /// Initializes the command and adds specific flags for configuration,
+  /// such as `--skip-all`, `--auto-update`, `--is-debug`,
+  /// `--skip-firebase-configure`, `--skip-pub-update`, and `--skip-version-update`.
   ConfigureCommand() : super(mandatory: false) {
     argParser.addFlag(
       ClonifyCommandFlags.skipAll.name,
@@ -184,6 +263,12 @@ class ConfigureCommand extends ClientIdCommand {
   @override
   List<String> get aliases => ClonifyCommands.configure.aliases;
 
+  /// Executes the configure command.
+  ///
+  /// It parses the command-line arguments, retrieves the client ID,
+  /// and then calls the [configureApp] function to apply the configuration.
+  /// If no client ID is provided, it attempts to use the last configured
+  /// client ID, prompting the user for confirmation.
   @override
   Future<void> run() async {
     final configureModel = ConfigureCommandModel.fromArgs(argResults!);
@@ -204,9 +289,16 @@ class ConfigureCommand extends ClientIdCommand {
   }
 }
 
-/// [BuildCommand] is a class that extends the Command class.
-/// It is responsible for building the Flutter project clone apps.
+/// A command that builds the Flutter project clone apps.
+///
+/// This command compiles the configured Flutter project for various platforms
+/// (e.g., Android AAB/APK, iOS IPA) based on the provided client ID and build options.
 class BuildCommand extends ClientIdCommand {
+  /// Creates a [BuildCommand] instance.
+  ///
+  /// Initializes the command and adds specific flags for building,
+  /// such as `--skip-all`, `--build-aab`, `--build-apk`, `--build-ipa`,
+  /// and `--skip-build-check`.
   BuildCommand() : super(mandatory: false) {
     argParser.addFlag(
       ClonifyCommandFlags.skipAll.name,
@@ -249,6 +341,12 @@ class BuildCommand extends ClientIdCommand {
   @override
   List<String> get aliases => ClonifyCommands.build.aliases;
 
+  /// Executes the build command.
+  ///
+  /// It parses the command-line arguments, retrieves the client ID,
+  /// and then calls the [buildApps] function to compile the application.
+  /// If no client ID is provided, it attempts to use the last configured
+  /// client ID, prompting the user for confirmation.
   @override
   Future<void> run() async {
     final BuildCommandModel buildModel = BuildCommandModel.fromArgs(
@@ -273,9 +371,14 @@ class BuildCommand extends ClientIdCommand {
   }
 }
 
-/// [CleanCommand] is a class that extends the Command class.
-/// It is responsible for cleaning up the Flutter project clone.
+/// A command that cleans up a partial or broken Flutter project clone.
+///
+/// This command removes the directory and associated files for a specified
+/// client ID, helping to clear out incomplete or problematic clone setups.
 class CleanCommand extends ClientIdCommand {
+  /// Creates a [CleanCommand] instance.
+  ///
+  /// The `--client-id` option is mandatory for this command.
   CleanCommand() : super(mandatory: true);
 
   @override
@@ -287,6 +390,11 @@ class CleanCommand extends ClientIdCommand {
   @override
   List<String> get aliases => ClonifyCommands.clean.aliases;
 
+  /// Executes the clean command.
+  ///
+  /// It retrieves the client ID from the command-line arguments
+  /// and then calls the [cleanupPartialClone] function to remove
+  /// the associated clone files.
   @override
   Future<void> run() async {
     final clientId = argResults![ClonifyCommandOptions.clientId.name];
@@ -301,9 +409,16 @@ class CleanCommand extends ClientIdCommand {
   }
 }
 
-/// [UploadCommand] is a class that extends the Command class.
-/// It is responsible for uploading the Flutter project clone to the app store and Google Play.
+/// A command that uploads the Flutter project clone to app stores (e.g., Google Play, Apple App Store).
+///
+/// This command facilitates the deployment of a configured Flutter project
+/// by handling the upload process, with options to skip various checks.
 class UploadCommand extends ClientIdCommand {
+  /// Creates an [UploadCommand] instance.
+  ///
+  /// Initializes the command and adds specific flags for controlling the
+  /// upload process, such as `--skip-all`, `--skip-android-upload-check`,
+  /// and `--skip-ios-upload-check`.
   UploadCommand() : super(mandatory: false) {
     argParser.addFlag(
       ClonifyCommandFlags.skipAll.name,
@@ -331,6 +446,11 @@ class UploadCommand extends ClientIdCommand {
   @override
   List<String> get aliases => ClonifyCommands.upload.aliases;
 
+  /// Executes the upload command.
+  ///
+  /// It parses the command-line arguments, retrieves the client ID and
+  /// various skip flags, and then calls the [uploadApps] function to
+  /// initiate the app upload process.
   @override
   Future<void> run() async {
     final clientId = argResults![ClonifyCommandOptions.clientId.name];
@@ -355,8 +475,11 @@ class UploadCommand extends ClientIdCommand {
   }
 }
 
-/// [ListCommand] is a class that extends the Command class.
-/// It is responsible for listing all the available clones.
+/// A command that lists all available Clonify project clones.
+///
+/// This command scans the `clonify/clones` directory and displays
+/// a table of all configured client IDs along with their associated
+/// app names, Firebase project IDs, and versions.
 class ListCommand extends Command {
   @override
   String get name => ClonifyCommands.list.name;
@@ -367,6 +490,10 @@ class ListCommand extends Command {
   @override
   List<String> get aliases => ClonifyCommands.list.aliases;
 
+  /// Executes the list command.
+  ///
+  /// It calls the [listClients] function to retrieve and display
+  /// information about all available clones.
   @override
   Future<void> run() async {
     listClients();
