@@ -571,10 +571,29 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
       );
     }
 
-    await runCommand('dart', [
-      'run',
-      'intl_utils:generate',
-    ], successMessage: '✅ Intl utils generated successfully!');
+    // Check for intl_utils dependency before running the command
+    final pubspecFile = File('./pubspec.yaml');
+    if (pubspecFile.existsSync()) {
+      final pubspecContent = pubspecFile.readAsStringSync();
+      final pubspecYaml = yaml.loadYaml(pubspecContent);
+      final dependencies = pubspecYaml['dependencies'] as yaml.YamlMap?;
+      final devDependencies = pubspecYaml['dev_dependencies'] as yaml.YamlMap?;
+
+      if ((dependencies != null && dependencies.containsKey('intl_utils')) ||
+          (devDependencies != null &&
+              devDependencies.containsKey('intl_utils'))) {
+        await runCommand('dart', [
+          'run',
+          'intl_utils:generate',
+        ], successMessage: '✅ Intl utils generated successfully!');
+      } else {
+        logger.w(
+          '⚠️ `intl_utils` not found in your pubspec.yaml, skipping `intl_utils:generate` command.',
+        );
+      }
+    } else {
+      logger.w('⚠️ pubspec.yaml not found, skipping `intl_utils:generate` command.');
+    }
 
     generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
     return true;
