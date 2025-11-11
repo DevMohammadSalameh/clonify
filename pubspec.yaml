@@ -4,6 +4,7 @@ version: 0.2.1
 homepage: https://github.com/DevMohammadSalameh/clonify
 repository: https://github.com/DevMohammadSalameh/clonify
 issue_tracker: https://github.com/DevMohammadSalameh/clonify/issues
+license: GPL-3.0-or-later
 
 topics:
   - cli
