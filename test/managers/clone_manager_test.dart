@@ -57,13 +57,15 @@ void main() {
       // Setup
       MockFlutterProject.createMockProject(testDir.tempDir);
       final cloneDir = Directory(
-          '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}');
+        '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}',
+      );
       cloneDir.createSync(recursive: true);
 
       // Create invalid config (missing required fields)
       final invalidConfig = {'clientId': TestFixtures.defaultClientId};
-      File('${cloneDir.path}/config.json')
-          .writeAsStringSync(jsonEncode(invalidConfig));
+      File(
+        '${cloneDir.path}/config.json',
+      ).writeAsStringSync(jsonEncode(invalidConfig));
 
       final configPath = '${cloneDir.path}/config.json';
       TestAssertions.assertFileExists(configPath);
@@ -89,11 +91,14 @@ void main() {
 
       // Verify directory structure
       TestAssertions.assertDirectoryExists(
-          '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}');
+        '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}',
+      );
       TestAssertions.assertDirectoryExists(
-          '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}/assets');
+        '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}/assets',
+      );
       TestAssertions.assertFileExists(
-          '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}/config.json');
+        '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}/config.json',
+      );
     });
 
     test('should copy assets to clone directory', () {
@@ -129,17 +134,23 @@ void main() {
 
       // Verify both clones exist
       TestAssertions.assertDirectoryExists(
-          '${testDir.path}/clonify/clones/client_a');
+        '${testDir.path}/clonify/clones/client_a',
+      );
       TestAssertions.assertDirectoryExists(
-          '${testDir.path}/clonify/clones/client_b');
+        '${testDir.path}/clonify/clones/client_b',
+      );
 
       // Verify configs are different
       final configA = jsonDecode(
-          File('${testDir.path}/clonify/clones/client_a/config.json')
-              .readAsStringSync());
+        File(
+          '${testDir.path}/clonify/clones/client_a/config.json',
+        ).readAsStringSync(),
+      );
       final configB = jsonDecode(
-          File('${testDir.path}/clonify/clones/client_b/config.json')
-              .readAsStringSync());
+        File(
+          '${testDir.path}/clonify/clones/client_b/config.json',
+        ).readAsStringSync(),
+      );
 
       expect(configA['clientId'], equals('client_a'));
       expect(configB['clientId'], equals('client_b'));
@@ -173,12 +184,14 @@ abstract class CloneConfigs {
 }
 ''';
 
-      File('${generatedDir.path}/clone_configs.dart')
-          .writeAsStringSync(generatedContent);
+      File(
+        '${generatedDir.path}/clone_configs.dart',
+      ).writeAsStringSync(generatedContent);
 
       // Verify generated file
       TestAssertions.assertFileExists(
-          '${testDir.path}/lib/generated/clone_configs.dart');
+        '${testDir.path}/lib/generated/clone_configs.dart',
+      );
       TestAssertions.assertFileContains(
         '${testDir.path}/lib/generated/clone_configs.dart',
         'abstract class CloneConfigs',
@@ -195,7 +208,8 @@ abstract class CloneConfigs {
 
       // Create config with multiple colors
       final cloneDir = Directory(
-          '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}');
+        '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}',
+      );
       cloneDir.createSync(recursive: true);
 
       final config = TestFixtures.sampleCloneConfig();
@@ -205,12 +219,14 @@ abstract class CloneConfigs {
         {'name': 'errorRed', 'color': 'B00020'},
       ];
 
-      File('${cloneDir.path}/config.json')
-          .writeAsStringSync(jsonEncode(config));
+      File(
+        '${cloneDir.path}/config.json',
+      ).writeAsStringSync(jsonEncode(config));
 
       // Verify config saved correctly
       final savedConfig = jsonDecode(
-          File('${cloneDir.path}/config.json').readAsStringSync());
+        File('${cloneDir.path}/config.json').readAsStringSync(),
+      );
       expect(savedConfig['colors'], hasLength(3));
     });
 
@@ -219,18 +235,23 @@ abstract class CloneConfigs {
       MockFlutterProject.createMockProject(testDir.tempDir);
 
       final cloneDir = Directory(
-          '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}');
+        '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}',
+      );
       cloneDir.createSync(recursive: true);
 
       final config = TestFixtures.sampleCloneConfig();
-      File('${cloneDir.path}/config.json')
-          .writeAsStringSync(jsonEncode(config));
+      File(
+        '${cloneDir.path}/config.json',
+      ).writeAsStringSync(jsonEncode(config));
 
       final savedConfig = jsonDecode(
-          File('${cloneDir.path}/config.json').readAsStringSync());
+        File('${cloneDir.path}/config.json').readAsStringSync(),
+      );
       expect(savedConfig['linearGradients'], hasLength(1));
       expect(
-          savedConfig['linearGradients'][0]['name'], equals('primaryGradient'));
+        savedConfig['linearGradients'][0]['name'],
+        equals('primaryGradient'),
+      );
     });
   });
 
@@ -244,14 +265,17 @@ abstract class CloneConfigs {
       );
 
       // Read pubspec version
-      final pubspecContent =
-          File('${testDir.path}/pubspec.yaml').readAsStringSync();
+      final pubspecContent = File(
+        '${testDir.path}/pubspec.yaml',
+      ).readAsStringSync();
       expect(pubspecContent.contains('version: 1.0.0+1'), isTrue);
 
       // Read config version
-      final config = jsonDecode(File(
-              '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}/config.json')
-          .readAsStringSync());
+      final config = jsonDecode(
+        File(
+          '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}/config.json',
+        ).readAsStringSync(),
+      );
       expect(config['version'], equals('1.0.0+1'));
     });
 
@@ -262,8 +286,10 @@ abstract class CloneConfigs {
       // Update version in pubspec
       final pubspecPath = '${testDir.path}/pubspec.yaml';
       final pubspecContent = File(pubspecPath).readAsStringSync();
-      final updatedContent =
-          pubspecContent.replaceAll('version: 1.0.0+1', 'version: 1.0.1+2');
+      final updatedContent = pubspecContent.replaceAll(
+        'version: 1.0.0+1',
+        'version: 1.0.1+2',
+      );
       File(pubspecPath).writeAsStringSync(updatedContent);
 
       // Verify update
@@ -293,8 +319,11 @@ abstract class CloneConfigs {
         final newVersion =
             '${versionParts[0]}.${versionParts[1]}.${patch + 1}+${buildNumber + 1}';
 
-        expect(newVersion, equals(expected),
-            reason: 'Version increment from $current should be $expected');
+        expect(
+          newVersion,
+          equals(expected),
+          reason: 'Version increment from $current should be $expected',
+        );
       }
     });
   });
@@ -308,8 +337,9 @@ abstract class CloneConfigs {
         TestFixtures.defaultClientId,
       );
 
-      final cloneDir =
-          Directory('${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}');
+      final cloneDir = Directory(
+        '${testDir.path}/clonify/clones/${TestFixtures.defaultClientId}',
+      );
       expect(cloneDir.existsSync(), isTrue);
 
       // Cleanup
@@ -323,8 +353,7 @@ abstract class CloneConfigs {
       // Setup
       MockFlutterProject.createMockProject(testDir.tempDir);
 
-      final cloneDir =
-          Directory('${testDir.path}/clonify/clones/nonexistent');
+      final cloneDir = Directory('${testDir.path}/clonify/clones/nonexistent');
       expect(cloneDir.existsSync(), isFalse);
 
       // Attempt cleanup should not throw
@@ -394,8 +423,7 @@ abstract class CloneConfigs {
       // Setup
       MockFlutterProject.createMockProject(testDir.tempDir);
 
-      final lastClientFile =
-          File('${testDir.path}/clonify/last_client.txt');
+      final lastClientFile = File('${testDir.path}/clonify/last_client.txt');
       expect(lastClientFile.existsSync(), isFalse);
 
       // Should return null or empty when file doesn't exist
@@ -432,11 +460,7 @@ abstract class CloneConfigs {
     });
 
     test('should validate color format', () {
-      final validColors = [
-        '0xFF6200EE',
-        '0xFFFFFFFF',
-        '0xFF000000',
-      ];
+      final validColors = ['0xFF6200EE', '0xFFFFFFFF', '0xFF000000'];
 
       for (final color in validColors) {
         expect(color.startsWith('0xFF'), isTrue);

@@ -26,7 +26,8 @@ void main() {
 
       // Verify settings file exists
       TestAssertions.assertFileExists(
-          '${testDir.path}/clonify/clonify_settings.yaml');
+        '${testDir.path}/clonify/clonify_settings.yaml',
+      );
 
       // Verify content
       TestAssertions.assertFileContains(
@@ -59,11 +60,13 @@ firebase:
   enabled: false
 ''';
 
-      File('${clonifyDir.path}/clonify_settings.yaml')
-          .writeAsStringSync(invalidSettings);
+      File(
+        '${clonifyDir.path}/clonify_settings.yaml',
+      ).writeAsStringSync(invalidSettings);
 
-      final content = File('${clonifyDir.path}/clonify_settings.yaml')
-          .readAsStringSync();
+      final content = File(
+        '${clonifyDir.path}/clonify_settings.yaml',
+      ).readAsStringSync();
 
       // Missing fields
       expect(content.contains('company_name:'), isFalse);
@@ -85,8 +88,11 @@ firebase:
       final hexColorRegex = RegExp(r'^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$');
 
       for (final color in validColors) {
-        expect(hexColorRegex.hasMatch(color), isTrue,
-            reason: '$color should be valid');
+        expect(
+          hexColorRegex.hasMatch(color),
+          isTrue,
+          reason: '$color should be valid',
+        );
       }
     });
 
@@ -103,8 +109,11 @@ firebase:
       final hexColorRegex = RegExp(r'^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$');
 
       for (final color in invalidColors) {
-        expect(hexColorRegex.hasMatch(color), isFalse,
-            reason: '$color should be invalid');
+        expect(
+          hexColorRegex.hasMatch(color),
+          isFalse,
+          reason: '$color should be invalid',
+        );
       }
     });
 
@@ -116,9 +125,9 @@ firebase:
         firebaseEnabled: true,
       );
 
-      final settingsContent =
-          File('${testDir.path}/clonify/clonify_settings.yaml')
-              .readAsStringSync();
+      final settingsContent = File(
+        '${testDir.path}/clonify/clonify_settings.yaml',
+      ).readAsStringSync();
 
       expect(settingsContent.contains('firebase:'), isTrue);
       expect(settingsContent.contains('enabled: true'), isTrue);
@@ -133,9 +142,9 @@ firebase:
         fastlaneEnabled: true,
       );
 
-      final settingsContent =
-          File('${testDir.path}/clonify/clonify_settings.yaml')
-              .readAsStringSync();
+      final settingsContent = File(
+        '${testDir.path}/clonify/clonify_settings.yaml',
+      ).readAsStringSync();
 
       expect(settingsContent.contains('fastlane:'), isTrue);
       expect(settingsContent.contains('enabled: true'), isTrue);
@@ -147,9 +156,9 @@ firebase:
       MockFlutterProject.createMockProject(testDir.tempDir);
       MockFlutterProject.createMockClonifySettings(testDir.tempDir);
 
-      final settingsContent =
-          File('${testDir.path}/clonify/clonify_settings.yaml')
-              .readAsStringSync();
+      final settingsContent = File(
+        '${testDir.path}/clonify/clonify_settings.yaml',
+      ).readAsStringSync();
 
       expect(settingsContent.contains('clone_assets:'), isTrue);
       expect(settingsContent.contains('launcher_icon_asset:'), isTrue);
@@ -162,14 +171,18 @@ firebase:
       final clonifyDir = Directory('${testDir.path}/clonify');
       clonifyDir.createSync(recursive: true);
 
-      final invalidSettings = TestFixtures.sampleClonifySettings()
-          .replaceAll('company_name: "Test Company"', 'company_name: ""');
+      final invalidSettings = TestFixtures.sampleClonifySettings().replaceAll(
+        'company_name: "Test Company"',
+        'company_name: ""',
+      );
 
-      File('${clonifyDir.path}/clonify_settings.yaml')
-          .writeAsStringSync(invalidSettings);
+      File(
+        '${clonifyDir.path}/clonify_settings.yaml',
+      ).writeAsStringSync(invalidSettings);
 
-      final content = File('${clonifyDir.path}/clonify_settings.yaml')
-          .readAsStringSync();
+      final content = File(
+        '${clonifyDir.path}/clonify_settings.yaml',
+      ).readAsStringSync();
 
       expect(content.contains('company_name: ""'), isTrue);
     });
@@ -192,7 +205,8 @@ firebase:
       MockFlutterProject.createMockClonifySettings(testDir.tempDir);
 
       TestAssertions.assertFileExists(
-          '${testDir.path}/clonify/clonify_settings.yaml');
+        '${testDir.path}/clonify/clonify_settings.yaml',
+      );
     });
 
     test('should not overwrite existing clonify_settings.yaml', () {
@@ -217,7 +231,8 @@ firebase:
 
       // Verify all files created
       TestAssertions.assertFileExists(
-          '${testDir.path}/clonify/clonify_settings.yaml');
+        '${testDir.path}/clonify/clonify_settings.yaml',
+      );
       TestAssertions.assertFileExists('${testDir.path}/pubspec.yaml');
       TestAssertions.assertDirectoryExists('${testDir.path}/assets/images');
     });
@@ -308,12 +323,14 @@ firebase:
       MockFlutterProject.createMockProject(testDir.tempDir);
       MockFlutterProject.createMockClonifySettings(testDir.tempDir);
 
-      final settingsContent =
-          File('${testDir.path}/clonify/clonify_settings.yaml')
-              .readAsStringSync();
+      final settingsContent = File(
+        '${testDir.path}/clonify/clonify_settings.yaml',
+      ).readAsStringSync();
 
-      expect(settingsContent.contains('launcher_icon_asset: "icon.png"'),
-          isTrue);
+      expect(
+        settingsContent.contains('launcher_icon_asset: "icon.png"'),
+        isTrue,
+      );
     });
 
     test('should validate splash screen selection', () {
@@ -321,12 +338,14 @@ firebase:
       MockFlutterProject.createMockProject(testDir.tempDir);
       MockFlutterProject.createMockClonifySettings(testDir.tempDir);
 
-      final settingsContent =
-          File('${testDir.path}/clonify/clonify_settings.yaml')
-              .readAsStringSync();
+      final settingsContent = File(
+        '${testDir.path}/clonify/clonify_settings.yaml',
+      ).readAsStringSync();
 
       expect(
-          settingsContent.contains('splash_screen_asset: "splash.png"'), isTrue);
+        settingsContent.contains('splash_screen_asset: "splash.png"'),
+        isTrue,
+      );
     });
 
     test('should handle no splash screen asset', () {
@@ -335,17 +354,19 @@ firebase:
       final clonifyDir = Directory('${testDir.path}/clonify');
       clonifyDir.createSync(recursive: true);
 
-      final settingsWithoutSplash =
-          TestFixtures.sampleClonifySettings().replaceAll(
-        'splash_screen_asset: "splash.png"',
-        '# splash_screen_asset: null',
-      );
+      final settingsWithoutSplash = TestFixtures.sampleClonifySettings()
+          .replaceAll(
+            'splash_screen_asset: "splash.png"',
+            '# splash_screen_asset: null',
+          );
 
-      File('${clonifyDir.path}/clonify_settings.yaml')
-          .writeAsStringSync(settingsWithoutSplash);
+      File(
+        '${clonifyDir.path}/clonify_settings.yaml',
+      ).writeAsStringSync(settingsWithoutSplash);
 
-      final content = File('${clonifyDir.path}/clonify_settings.yaml')
-          .readAsStringSync();
+      final content = File(
+        '${clonifyDir.path}/clonify_settings.yaml',
+      ).readAsStringSync();
 
       expect(content.contains('# splash_screen_asset: null'), isTrue);
     });
@@ -358,11 +379,13 @@ firebase:
       final clonifyDir = Directory('${testDir.path}/clonify');
       clonifyDir.createSync(recursive: true);
 
-      File('${clonifyDir.path}/last_config.json')
-          .writeAsStringSync(TestFixtures.sampleCloneConfig().toString());
+      File(
+        '${clonifyDir.path}/last_config.json',
+      ).writeAsStringSync(TestFixtures.sampleCloneConfig().toString());
 
       TestAssertions.assertFileExists(
-          '${testDir.path}/clonify/last_config.json');
+        '${testDir.path}/clonify/last_config.json',
+      );
     });
 
     test('should retrieve last configuration', () {

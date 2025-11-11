@@ -80,21 +80,28 @@ class MyApp extends StatelessWidget {
 
     // Create mock assets
     final mockImageData = [137, 80, 78, 71, 13, 10, 26, 10]; // PNG header
-    File('${projectDir.path}/assets/images/icon.png')
-        .writeAsBytesSync(mockImageData);
-    File('${projectDir.path}/assets/images/splash.png')
-        .writeAsBytesSync(mockImageData);
-    File('${projectDir.path}/assets/images/logo.png')
-        .writeAsBytesSync(mockImageData);
+    File(
+      '${projectDir.path}/assets/images/icon.png',
+    ).writeAsBytesSync(mockImageData);
+    File(
+      '${projectDir.path}/assets/images/splash.png',
+    ).writeAsBytesSync(mockImageData);
+    File(
+      '${projectDir.path}/assets/images/logo.png',
+    ).writeAsBytesSync(mockImageData);
   }
 
   /// Creates mock clonify settings file
-  static void createMockClonifySettings(Directory projectDir,
-      {bool firebaseEnabled = false, bool fastlaneEnabled = false}) {
+  static void createMockClonifySettings(
+    Directory projectDir, {
+    bool firebaseEnabled = false,
+    bool fastlaneEnabled = false,
+  }) {
     final clonifyDir = Directory('${projectDir.path}/clonify');
     clonifyDir.createSync(recursive: true);
 
-    final settingsContent = '''
+    final settingsContent =
+        '''
 firebase:
   enabled: $firebaseEnabled
   settings_file: "${firebaseEnabled ? './firebase.json' : ''}"
@@ -115,8 +122,9 @@ launcher_icon_asset: "icon.png"
 splash_screen_asset: "splash.png"
 ''';
 
-    File('${projectDir.path}/clonify/clonify_settings.yaml')
-        .writeAsStringSync(settingsContent);
+    File(
+      '${projectDir.path}/clonify/clonify_settings.yaml',
+    ).writeAsStringSync(settingsContent);
   }
 
   /// Creates mock clone configuration
@@ -128,8 +136,7 @@ splash_screen_asset: "splash.png"
     String? baseUrl,
     String? firebaseProjectId,
   }) {
-    final cloneDir =
-        Directory('${projectDir.path}/clonify/clones/$clientId');
+    final cloneDir = Directory('${projectDir.path}/clonify/clones/$clientId');
     cloneDir.createSync(recursive: true);
 
     final assetsDir = Directory('${cloneDir.path}/assets');
@@ -149,7 +156,7 @@ splash_screen_asset: "splash.png"
       'firebaseProjectId': firebaseProjectId ?? 'firebase-$clientId',
       'version': '1.0.0+1',
       'colors': [
-        {'name': 'primaryBlue', 'color': '6200EE'}
+        {'name': 'primaryBlue', 'color': '6200EE'},
       ],
       'linearGradients': [
         {
@@ -157,18 +164,21 @@ splash_screen_asset: "splash.png"
           'colors': ['6200EE', '03DAC6'],
           'begin': 'topLeft',
           'end': 'bottomRight',
-          'transform': '0'
-        }
-      ]
+          'transform': '0',
+        },
+      ],
     };
 
-    File('${cloneDir.path}/config.json')
-        .writeAsStringSync(jsonEncode(configContent));
+    File(
+      '${cloneDir.path}/config.json',
+    ).writeAsStringSync(jsonEncode(configContent));
   }
 
   /// Creates mock build artifacts
-  static void createMockBuildArtifacts(Directory projectDir,
-      String packageName) {
+  static void createMockBuildArtifacts(
+    Directory projectDir,
+    String packageName,
+  ) {
     final aabPath =
         '${projectDir.path}/build/app/outputs/bundle/release/app-release.aab';
     final apkPath =
@@ -183,13 +193,12 @@ splash_screen_asset: "splash.png"
   /// Creates mock firebase.json
   static void createMockFirebaseConfig(Directory projectDir) {
     final firebaseContent = {
-      'projects': {
-        'default': 'test-firebase-project',
-      }
+      'projects': {'default': 'test-firebase-project'},
     };
 
-    File('${projectDir.path}/firebase.json')
-        .writeAsStringSync(jsonEncode(firebaseContent));
+    File(
+      '${projectDir.path}/firebase.json',
+    ).writeAsStringSync(jsonEncode(firebaseContent));
   }
 
   /// Creates mock package_rename_config.yaml
@@ -204,8 +213,9 @@ package_rename_config:
     bundle_name: "com.test.app"
 ''';
 
-    File('${projectDir.path}/package_rename_config.yaml')
-        .writeAsStringSync(renameContent);
+    File(
+      '${projectDir.path}/package_rename_config.yaml',
+    ).writeAsStringSync(renameContent);
   }
 
   /// Creates flutter_launcher_icons.yaml
@@ -217,8 +227,9 @@ flutter_launcher_icons:
   image_path: "assets/images/icon.png"
 ''';
 
-    File('${projectDir.path}/flutter_launcher_icons.yaml')
-        .writeAsStringSync(content);
+    File(
+      '${projectDir.path}/flutter_launcher_icons.yaml',
+    ).writeAsStringSync(content);
   }
 
   /// Creates flutter_native_splash.yaml
@@ -229,8 +240,9 @@ flutter_native_splash:
   image: "assets/images/splash.png"
 ''';
 
-    File('${projectDir.path}/flutter_native_splash.yaml')
-        .writeAsStringSync(content);
+    File(
+      '${projectDir.path}/flutter_native_splash.yaml',
+    ).writeAsStringSync(content);
   }
 }
 
@@ -349,7 +361,7 @@ class TestFixtures {
       'firebaseProjectId': defaultFirebaseProjectId,
       'version': defaultVersion,
       'colors': [
-        {'name': 'primaryBlue', 'color': '6200EE'}
+        {'name': 'primaryBlue', 'color': '6200EE'},
       ],
       'linearGradients': [
         {
@@ -357,9 +369,9 @@ class TestFixtures {
           'colors': ['6200EE', '03DAC6'],
           'begin': 'topLeft',
           'end': 'bottomRight',
-          'transform': '0'
-        }
-      ]
+          'transform': '0',
+        },
+      ],
     };
   }
 
@@ -395,12 +407,9 @@ splash_screen_asset: "splash.png"
       'status': 'success',
       'result': [
         {
-          'user': {
-            'email': 'test@example.com',
-            'id': 'test-user-id',
-          }
-        }
-      ]
+          'user': {'email': 'test@example.com', 'id': 'test-user-id'},
+        },
+      ],
     });
   }
 
@@ -412,8 +421,8 @@ splash_screen_asset: "splash.png"
           'projectId': 'existing-project-1',
           'displayName': 'Existing Project 1',
           'projectOwner': 'test@example.com',
-        }
-      ]
+        },
+      ],
     });
   }
 
@@ -477,27 +486,29 @@ class TestAssertions {
   }
 
   /// Assert file contains text
-  static void assertFileContains(String path, String text,
-      {String? message}) {
+  static void assertFileContains(String path, String text, {String? message}) {
     assertFileExists(path);
     final content = File(path).readAsStringSync();
     if (!content.contains(text)) {
-      throw AssertionError(
-          message ?? 'File $path does not contain "$text"');
+      throw AssertionError(message ?? 'File $path does not contain "$text"');
     }
   }
 
   /// Assert JSON file equals
   static void assertJsonFileEquals(
-      String path, Map<String, dynamic> expected,
-      {String? message}) {
+    String path,
+    Map<String, dynamic> expected, {
+    String? message,
+  }) {
     assertFileExists(path);
     final content = File(path).readAsStringSync();
     final actual = jsonDecode(content);
 
     if (!_deepEquals(actual, expected)) {
-      throw AssertionError(message ??
-          'JSON file $path does not match expected.\nActual: $actual\nExpected: $expected');
+      throw AssertionError(
+        message ??
+            'JSON file $path does not match expected.\nActual: $actual\nExpected: $expected',
+      );
     }
   }
 

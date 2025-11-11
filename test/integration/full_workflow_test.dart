@@ -26,7 +26,8 @@ void main() {
       MockFlutterProject.createMockClonifySettings(testDir.tempDir);
 
       TestAssertions.assertFileExists(
-          '${testDir.path}/clonify/clonify_settings.yaml');
+        '${testDir.path}/clonify/clonify_settings.yaml',
+      );
       TestAssertions.assertDirectoryExists('${testDir.path}/assets/images');
 
       // Step 2: Create a clone
@@ -39,14 +40,18 @@ void main() {
       );
 
       TestAssertions.assertDirectoryExists(
-          '${testDir.path}/clonify/clones/client_production');
+        '${testDir.path}/clonify/clones/client_production',
+      );
       TestAssertions.assertFileExists(
-          '${testDir.path}/clonify/clones/client_production/config.json');
+        '${testDir.path}/clonify/clones/client_production/config.json',
+      );
 
       // Step 3: Verify configuration
-      final config = jsonDecode(File(
-              '${testDir.path}/clonify/clones/client_production/config.json')
-          .readAsStringSync());
+      final config = jsonDecode(
+        File(
+          '${testDir.path}/clonify/clones/client_production/config.json',
+        ).readAsStringSync(),
+      );
 
       expect(config['clientId'], equals('client_production'));
       expect(config['appName'], equals('Test App client_production'));
@@ -55,9 +60,11 @@ void main() {
 
       // Step 4: Verify assets copied
       TestAssertions.assertFileExists(
-          '${testDir.path}/clonify/clones/client_production/assets/icon.png');
+        '${testDir.path}/clonify/clones/client_production/assets/icon.png',
+      );
       TestAssertions.assertFileExists(
-          '${testDir.path}/clonify/clones/client_production/assets/splash.png');
+        '${testDir.path}/clonify/clones/client_production/assets/splash.png',
+      );
     });
 
     test('should handle multiple clients in sequence', () {
@@ -69,18 +76,17 @@ void main() {
       final clients = ['client_a', 'client_b', 'client_c'];
 
       for (final clientId in clients) {
-        MockFlutterProject.createMockCloneConfig(
-          testDir.tempDir,
-          clientId,
-        );
+        MockFlutterProject.createMockCloneConfig(testDir.tempDir, clientId);
       }
 
       // Verify all clients exist
       for (final clientId in clients) {
         TestAssertions.assertDirectoryExists(
-            '${testDir.path}/clonify/clones/$clientId');
+          '${testDir.path}/clonify/clones/$clientId',
+        );
         TestAssertions.assertFileExists(
-            '${testDir.path}/clonify/clones/$clientId/config.json');
+          '${testDir.path}/clonify/clones/$clientId/config.json',
+        );
       }
 
       // List all clones
@@ -114,19 +120,23 @@ void main() {
 
       // Configure for client_dev
       final clonifyDir = Directory('${testDir.path}/clonify');
-      File('${clonifyDir.path}/last_client.txt')
-          .writeAsStringSync('client_dev');
+      File(
+        '${clonifyDir.path}/last_client.txt',
+      ).writeAsStringSync('client_dev');
 
-      var lastClient =
-          File('${clonifyDir.path}/last_client.txt').readAsStringSync();
+      var lastClient = File(
+        '${clonifyDir.path}/last_client.txt',
+      ).readAsStringSync();
       expect(lastClient, equals('client_dev'));
 
       // Switch to client_prod
-      File('${clonifyDir.path}/last_client.txt')
-          .writeAsStringSync('client_prod');
+      File(
+        '${clonifyDir.path}/last_client.txt',
+      ).writeAsStringSync('client_prod');
 
-      lastClient =
-          File('${clonifyDir.path}/last_client.txt').readAsStringSync();
+      lastClient = File(
+        '${clonifyDir.path}/last_client.txt',
+      ).readAsStringSync();
       expect(lastClient, equals('client_prod'));
     });
   });
@@ -148,26 +158,34 @@ void main() {
 
       // Verify all config files exist
       TestAssertions.assertFileExists(
-          '${testDir.path}/flutter_launcher_icons.yaml');
+        '${testDir.path}/flutter_launcher_icons.yaml',
+      );
       TestAssertions.assertFileExists(
-          '${testDir.path}/flutter_native_splash.yaml');
+        '${testDir.path}/flutter_native_splash.yaml',
+      );
       TestAssertions.assertFileExists(
-          '${testDir.path}/package_rename_config.yaml');
+        '${testDir.path}/package_rename_config.yaml',
+      );
     });
 
     test('should create mock build artifacts', () {
       // Setup
       MockFlutterProject.createMockProject(testDir.tempDir);
       MockFlutterProject.createMockBuildArtifacts(
-          testDir.tempDir, 'com.test.app');
+        testDir.tempDir,
+        'com.test.app',
+      );
 
       // Verify build artifacts
       TestAssertions.assertFileExists(
-          '${testDir.path}/build/app/outputs/bundle/release/app-release.aab');
+        '${testDir.path}/build/app/outputs/bundle/release/app-release.aab',
+      );
       TestAssertions.assertFileExists(
-          '${testDir.path}/build/app/outputs/apk/release/app-release.apk');
+        '${testDir.path}/build/app/outputs/apk/release/app-release.apk',
+      );
       TestAssertions.assertFileExists(
-          '${testDir.path}/build/ios/ipa/com.test.app.ipa');
+        '${testDir.path}/build/ios/ipa/com.test.app.ipa',
+      );
     });
 
     test('should verify build metadata from config', () {
@@ -181,8 +199,10 @@ void main() {
       );
 
       final config = jsonDecode(
-          File('${testDir.path}/clonify/clones/build_client/config.json')
-              .readAsStringSync());
+        File(
+          '${testDir.path}/clonify/clones/build_client/config.json',
+        ).readAsStringSync(),
+      );
 
       expect(config['packageName'], equals('com.test.build_client'));
       expect(config['appName'], equals('Test App build_client'));
@@ -204,7 +224,8 @@ void main() {
       TestAssertions.assertFileExists('${testDir.path}/firebase.json');
 
       final firebaseConfig = jsonDecode(
-          File('${testDir.path}/firebase.json').readAsStringSync());
+        File('${testDir.path}/firebase.json').readAsStringSync(),
+      );
       expect(firebaseConfig['projects'], isNotNull);
     });
 
@@ -216,9 +237,9 @@ void main() {
         firebaseEnabled: false,
       );
 
-      final settingsContent =
-          File('${testDir.path}/clonify/clonify_settings.yaml')
-              .readAsStringSync();
+      final settingsContent = File(
+        '${testDir.path}/clonify/clonify_settings.yaml',
+      ).readAsStringSync();
 
       expect(settingsContent.contains('enabled: false'), isTrue);
 
@@ -239,9 +260,11 @@ void main() {
         firebaseProjectId: 'firebase-custom-project',
       );
 
-      final config = jsonDecode(File(
-              '${testDir.path}/clonify/clones/firebase_client/config.json')
-          .readAsStringSync());
+      final config = jsonDecode(
+        File(
+          '${testDir.path}/clonify/clones/firebase_client/config.json',
+        ).readAsStringSync(),
+      );
 
       expect(config['firebaseProjectId'], equals('firebase-firebase_client'));
     });
@@ -254,14 +277,14 @@ void main() {
       MockFlutterProject.createMockClonifySettings(testDir.tempDir);
 
       // Create partial clone (missing config.json)
-      final cloneDir =
-          Directory('${testDir.path}/clonify/clones/partial_clone');
+      final cloneDir = Directory(
+        '${testDir.path}/clonify/clones/partial_clone',
+      );
       cloneDir.createSync(recursive: true);
 
       // Verify directory exists but no config
       expect(cloneDir.existsSync(), isTrue);
-      expect(
-          File('${cloneDir.path}/config.json').existsSync(), isFalse);
+      expect(File('${cloneDir.path}/config.json').existsSync(), isFalse);
 
       // Cleanup partial clone
       cloneDir.deleteSync(recursive: true);
@@ -304,14 +327,18 @@ void main() {
       );
 
       // Read versions
-      final pubspecContent =
-          File('${testDir.path}/pubspec.yaml').readAsStringSync();
-      final config = jsonDecode(File(
-              '${testDir.path}/clonify/clones/version_sync_client/config.json')
-          .readAsStringSync());
+      final pubspecContent = File(
+        '${testDir.path}/pubspec.yaml',
+      ).readAsStringSync();
+      final config = jsonDecode(
+        File(
+          '${testDir.path}/clonify/clones/version_sync_client/config.json',
+        ).readAsStringSync(),
+      );
 
-      final pubspecVersion =
-          RegExp(r'version:\s*(.+)').firstMatch(pubspecContent)?.group(1);
+      final pubspecVersion = RegExp(
+        r'version:\s*(.+)',
+      ).firstMatch(pubspecContent)?.group(1);
       final configVersion = config['version'];
 
       expect(pubspecVersion?.trim(), equals('1.0.0+1'));
@@ -381,13 +408,17 @@ void main() {
 
       for (final env in environments) {
         TestAssertions.assertDirectoryExists(
-            '${testDir.path}/clonify/clones/$env');
+          '${testDir.path}/clonify/clones/$env',
+        );
         TestAssertions.assertFileExists(
-            '${testDir.path}/clonify/clones/$env/config.json');
+          '${testDir.path}/clonify/clones/$env/config.json',
+        );
 
         final config = jsonDecode(
-            File('${testDir.path}/clonify/clones/$env/config.json')
-                .readAsStringSync());
+          File(
+            '${testDir.path}/clonify/clones/$env/config.json',
+          ).readAsStringSync(),
+        );
 
         expect(config['clientId'], equals(env));
         expect(config['packageName'], contains(env));
@@ -411,14 +442,12 @@ void main() {
     test('should copy assets from clone to main project', () {
       // Setup
       MockFlutterProject.createMockProject(testDir.tempDir);
-      MockFlutterProject.createMockCloneConfig(
-        testDir.tempDir,
-        'asset_test',
-      );
+      MockFlutterProject.createMockCloneConfig(testDir.tempDir, 'asset_test');
 
       // Verify source assets exist
-      final cloneAssets =
-          Directory('${testDir.path}/clonify/clones/asset_test/assets');
+      final cloneAssets = Directory(
+        '${testDir.path}/clonify/clones/asset_test/assets',
+      );
       expect(cloneAssets.existsSync(), isTrue);
 
       final assetFiles = cloneAssets.listSync().whereType<File>().toList();
@@ -434,7 +463,8 @@ void main() {
       // Verify assets in main project
       TestAssertions.assertFileExists('${testDir.path}/assets/images/icon.png');
       TestAssertions.assertFileExists(
-          '${testDir.path}/assets/images/splash.png');
+        '${testDir.path}/assets/images/splash.png',
+      );
     });
   });
 }
