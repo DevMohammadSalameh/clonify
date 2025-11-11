@@ -1,3 +1,9 @@
+## 0.2.0 - 2024-11-11 (Pre-release)
+
+- Added `version` command to check the package version.
+- Simplified asset selection process.
+- Implemented a custom fields feature for more flexible project cloning.
+
 ## 0.1.0 - 2024-11-10 (Pre-release)
 
 ### Features
