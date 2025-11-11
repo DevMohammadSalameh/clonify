@@ -7,6 +7,18 @@ import 'package:clonify/models/commands_calls_models/build_command_model.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:yaml/yaml.dart' as yaml;
 
+/// Builds Flutter applications for a specific client ID based on the provided build model.
+///
+/// This function orchestrates the build process for Android (APK/AAB) and iOS (IPA)
+/// platforms. It loads build metadata, prompts the user for confirmation (unless skipped),
+/// and then executes the appropriate `flutter build` commands.
+///
+/// [buildModel] A [BuildCommandModel] containing the client ID and various
+///              flags to control the build process (e.g., `buildApk`, `buildAab`,
+///              `buildIpa`, `skipBuildCheck`, `skipAll`).
+///
+/// Throws an [Exception] if the build metadata cannot be loaded or if any
+/// of the underlying `flutter build` commands fail.
 Future<void> buildApps(BuildCommandModel buildModel) async {
   final buildMetadata = await _loadBuildMetadata(buildModel.clientId!);
   if (buildMetadata == null) {

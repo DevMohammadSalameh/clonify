@@ -6,6 +6,20 @@ import 'clonify_helpers.dart';
 
 import 'dart:convert';
 
+/// Creates a new Firebase project or uses an existing one.
+///
+/// This function guides the user through the process of setting up a Firebase
+/// project for a given client. It checks for a logged-in Firebase user,
+/// lists existing projects, and prompts the user to either use an existing
+/// project or create a new one if a project with the specified [firebaseProjectId]
+/// already exists.
+///
+/// [clientId] The ID of the client for which the Firebase project is being created.
+/// [packageName] The package name of the application.
+/// [firebaseProjectId] The desired Firebase project ID.
+///
+/// Throws an [Exception] if no user is logged in to Firebase CLI, if retrieving
+/// project lists fails, or if the user provides an empty new project ID.
 Future<void> createFirebaseProject({
   required String clientId,
   required String packageName,
@@ -98,6 +112,22 @@ Future<void> createFirebaseProject({
   }
 }
 
+/// Adds Firebase to a Flutter application using the FlutterFire CLI.
+///
+/// This function configures Firebase for the Android and iOS platforms
+/// of the Flutter application. It first checks the `firebase.json` file
+/// to see if the provided [firebaseProjectId] matches an existing configuration.
+/// If not, it prompts the user for confirmation to proceed.
+///
+/// It then activates the `flutterfire_cli` globally and runs the `flutterfire configure`
+/// command to integrate Firebase with the app.
+///
+/// [firebaseProjectId] The ID of the Firebase project to link with the app.
+/// [packageName] The package name (Android application ID and iOS bundle ID) of the app.
+/// [skip] If `true`, prompts for re-running configuration will be skipped.
+///
+/// Throws an [Exception] if `firebase.json` is not found or invalid,
+/// or if the `flutterfire` commands fail.
 Future<void> addFirebaseToApp({
   required String firebaseProjectId,
   required String packageName,

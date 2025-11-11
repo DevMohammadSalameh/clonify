@@ -5,6 +5,18 @@ import 'dart:io';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 
+/// Runs the `package_rename_plus` tool to rename the application and package.
+///
+/// This function first ensures that a `package_rename_config.yaml` file exists
+/// and is properly configured with the provided [appName] and [packageName]
+/// for both Android and iOS platforms. It then executes the `dart run package_rename_plus`
+/// command to apply these renaming changes to the Flutter project.
+///
+/// [appName] The new application name to set.
+/// [packageName] The new package name (bundle ID) to set.
+///
+/// Throws an [Exception] if updating the `package_rename_config.yaml` file fails
+/// or if the `package_rename_plus` command encounters an error.
 Future<void> runRenamePackage({
   required String appName,
   required String packageName,

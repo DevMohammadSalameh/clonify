@@ -13,6 +13,19 @@ import 'package:yaml_edit/yaml_edit.dart';
 // ignore: depend_on_referenced_packages
 import 'package:yaml/yaml.dart' as yaml;
 
+/// Generates the `clone_configs.dart` file based on the provided [configModel].
+///
+/// This function creates or updates `lib/generated/clone_configs.dart`,
+/// which contains static constants for various configuration parameters
+/// such as colors, gradients, base URL, client ID, version, primary color,
+/// and custom fields. This file allows Flutter applications to access
+/// clone-specific configurations at compile time.
+///
+/// [configModel] The [CloneConfigModel] containing the configuration data
+///                to be written to the generated file.
+///
+/// Throws a [FileSystemException] if the 'generated' directory cannot be created
+/// or the 'clone_configs.dart' file cannot be written.
 Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   // 1. Check if the 'generated' directory exists
   final generatedDir = Directory('./lib/generated');
@@ -323,10 +336,17 @@ Future<bool> _setupCloneServices(Map<String, String> config) async {
   }
 }
 
-/// Creates a new project clone with cancellation support.
+/// Initiates the process of creating a new Flutter project clone.
 ///
-/// If the user cancels during the process, any created directories
-/// and files will be automatically cleaned up.
+/// This function guides the user through collecting basic clone information,
+/// creating the necessary directory structure and configuration files,
+/// and setting up associated services like package renaming and Firebase.
+///
+/// It includes robust cancellation support: if the user cancels at any stage
+/// or an error occurs, any files or directories created during the process
+/// will be automatically cleaned up to maintain a clean state.
+///
+/// Throws an [Exception] if an unhandled error occurs during the clone creation process.
 Future<void> createClone() async {
   logger.i('🛠 Creating a new project clone...');
 
@@ -592,7 +612,9 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
         );
       }
     } else {
-      logger.w('⚠️ pubspec.yaml not found, skipping `intl_utils:generate` command.');
+      logger.w(
+        '⚠️ pubspec.yaml not found, skipping `intl_utils:generate` command.',
+      );
     }
 
     generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
@@ -603,16 +625,27 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
   }
 }
 
-/// Configures an application clone with cancellation support.
+/// Configures an application clone based on a provided [ConfigureCommandModel].
 ///
-/// This function performs the complete configuration process including:
-/// - Renaming app and package
-/// - Setting up Firebase
-/// - Replacing assets
-/// - Managing versions
-/// - Running build commands
+/// This function orchestrates the entire configuration process for a specific
+/// client ID, including:
+/// - Saving the last used client ID.
+/// - Parsing the client's configuration file.
+/// - Performing initial setup steps (package renaming, Firebase integration, asset replacement).
+/// - Managing and updating application versions.
+/// - Running necessary build commands for launcher icons and splash screens.
 ///
-/// Returns the configuration JSON if successful, null if cancelled or failed.
+/// It provides robust error handling and ensures that the process can be
+/// controlled by various flags within the [callModel].
+///
+/// [callModel] A [ConfigureCommandModel] containing the client ID and
+///             various configuration flags.
+///
+/// Returns a `Future<Map<String, dynamic>?>` representing the final
+/// configuration JSON if successful, or `null` if the process is cancelled
+/// or fails at any stage.
+///
+/// Throws an [Exception] if an unhandled error occurs during the configuration process.
 Future<Map<String, dynamic>?> configureApp(
   ConfigureCommandModel callModel,
 ) async {
@@ -653,6 +686,16 @@ Future<Map<String, dynamic>?> configureApp(
   }
 }
 
+/// Updates the 'version' field in the `pubspec.yaml` file.
+///
+/// This function reads the `pubspec.yaml` file, updates its 'version' field
+/// to the [newVersion] using `yaml_edit`, and then writes the modified
+/// content back to the file.
+///
+/// [newVersion] The new version string to set in `pubspec.yaml`.
+///
+/// Throws a [FileSystemException] if the `pubspec.yaml` file cannot be read or written.
+/// Throws a [YamlException] if the `pubspec.yaml` content is invalid.
 Future<void> updateYamlVersionInPubspec(String newVersion) async {
   const pubspecFilePath = './pubspec.yaml';
   final pubspecContent = File(pubspecFilePath).readAsStringSync();
@@ -662,6 +705,15 @@ Future<void> updateYamlVersionInPubspec(String newVersion) async {
   logger.i('✅ Updated version in pubspec.yaml to $newVersion');
 }
 
+/// Cleans up a partial or broken clone by removing its associated directory.
+///
+/// This function deletes the entire directory corresponding to the specified
+/// [clientId] within the `./clonify/clones/` path. This is useful for
+/// removing incomplete or problematic clone setups.
+///
+/// [clientId] The ID of the client whose clone directory should be removed.
+///
+/// Throws a [FileSystemException] if the directory exists but cannot be deleted.
 Future<void> cleanupPartialClone(String clientId) async {
   final cloneDir = Directory('./clonify/clones/$clientId');
   if (cloneDir.existsSync()) {
@@ -670,6 +722,13 @@ Future<void> cleanupPartialClone(String clientId) async {
   }
 }
 
+/// Retrieves and displays the currently active application's name and bundle ID.
+///
+/// This function executes `dart run rename getAppName` and `dart run rename getBundleId`
+/// to fetch the current application name and bundle ID of the Flutter project.
+/// It then prints these details to the console.
+///
+/// Throws an [Exception] if there's an error executing the `rename` commands.
 Future<void> getCurrentCloneConfig() async {
   try {
     // Run 'rename getAppName'
@@ -703,6 +762,18 @@ Future<void> getCurrentCloneConfig() async {
   }
 }
 
+/// Parses the configuration file for a specific client ID.
+///
+/// This function reads the `config.json` file located in the
+/// `./clonify/clones/[clientId]/` directory, decodes its JSON content,
+/// and returns it as a map. It also logs some key configuration details.
+///
+/// [clientId] The ID of the client whose configuration file is to be parsed.
+///
+/// Throws a [FileSystemException] if the configuration file does not exist.
+/// Throws a [FormatException] if the file content is not valid JSON.
+///
+/// Returns a `Future<Map<String, dynamic>>` representing the parsed configuration.
 Future<Map<String, dynamic>> parseConfigFile(String clientId) async {
   final configFile = File('./clonify/clones/$clientId/config.json');
 
@@ -724,6 +795,14 @@ Future<Map<String, dynamic>> parseConfigFile(String clientId) async {
   return config;
 }
 
+/// Lists all currently available Clonify project clones.
+///
+/// This function scans the `./clonify/clones` directory, reads the `config.json`
+/// file for each found client, and then prints a formatted table displaying
+/// the Client ID, App Name, Firebase Project ID, and Version for each clone.
+///
+/// If no clones are found or if there are errors parsing configuration files,
+/// appropriate messages are logged.
 void listClients() {
   logger.i('📋 Listing all Currently Available clients...');
   final dir = Directory('./clonify/clones');

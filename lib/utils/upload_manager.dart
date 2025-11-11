@@ -205,6 +205,23 @@ import 'package:yaml/yaml.dart';
 //   return answer.toLowerCase() == 'y';
 // }
 
+/// Orchestrates the process of uploading Flutter applications to app stores using Fastlane.
+///
+/// This function reads the client's configuration and `pubspec.yaml` to get
+/// necessary details like package name and version. It then prompts the user
+/// (unless skipped) to confirm which platforms (iOS IPA, Android AAB) to upload.
+///
+/// It updates Fastlane configuration files and executes Fastlane upload commands
+/// for the selected platforms.
+///
+/// [clientId] The ID of the client whose apps are to be uploaded.
+/// [skipAll] If `true`, all user prompts will be skipped.
+/// [skipAndroidUploadCheck] If `true`, the prompt for Android upload will be skipped.
+/// [skipIOSUploadCheck] If `true`, the prompt for iOS upload will be skipped.
+///
+/// Throws a [CustomException] if configuration files are not found,
+/// package name or version are empty, or if required build files (IPA/AAB)
+/// do not exist for the selected upload platforms.
 Future<void> uploadApps(
   String clientId, {
 
@@ -305,6 +322,19 @@ Future<void> uploadApps(
   ]);
 }
 
+/// Updates Fastlane configuration files with client-specific details.
+///
+/// This function reads a specified Fastlane file (e.g., `Fastfile`),
+/// and replaces placeholders for bundle ID, app version, and app version code
+/// with the provided values. This ensures that Fastlane builds and uploads
+/// are correctly configured for the specific client.
+///
+/// [fastlanePath] The path to the Fastlane file to be updated.
+/// [bundleId] The application's bundle ID (package name).
+/// [appVersion] The application's version string (e.g., "1.0.0").
+/// [appVersionCode] An optional build number or version code for the application.
+///
+/// Throws a [FileSystemException] if the Fastlane file is not found or cannot be written.
 Future<void> updateFastlaneFiles({
   required String fastlanePath,
   required String bundleId,

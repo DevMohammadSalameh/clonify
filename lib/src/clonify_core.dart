@@ -12,16 +12,41 @@ import 'package:yaml/yaml.dart' as yaml;
 const lastClientFilePath = './clonify/last_client.txt';
 const lastConfigFilePath = './clonify/last_config.json';
 
+/// Saves the last used client ID to a file.
+///
+/// This function writes the provided [clientId] to the `last_client.txt` file
+/// located in the `./clonify/` directory. This allows the CLI to remember
+/// the last active client for convenience.
+///
+/// Throws a [FileSystemException] if the file cannot be written.
 Future<void> saveLastClientId(String clientId) async {
   final file = File(lastClientFilePath);
   await file.writeAsString(clientId);
 }
 
+/// Saves the last used configuration map to a JSON file.
+///
+/// This function serializes the provided [config] map to a JSON string
+/// and writes it to the `last_config.json` file located in the `./clonify/`
+/// directory. This allows the CLI to remember the last active configuration
+/// for convenience.
+///
+/// Throws a [FileSystemException] if the file cannot be written.
 Future<void> saveLastConfig(Map<String, dynamic> config) async {
   final file = File('./clonify/last_config.json');
   await file.writeAsString(jsonEncode(config));
 }
 
+/// Retrieves the last saved configuration map from a JSON file.
+///
+/// This function reads the `last_config.json` file from the `./clonify/`
+/// directory, decodes its JSON content, and returns it as a map.
+///
+/// Returns a `Future<Map<String, dynamic>?>` which is the last saved
+/// configuration, or `null` if the file does not exist.
+///
+/// Throws a [FileSystemException] if the file exists but cannot be read,
+/// or a [FormatException] if the file content is not valid JSON.
 Future<Map<String, dynamic>?> getLastConfig() async {
   final file = File(lastConfigFilePath);
   if (file.existsSync()) {
@@ -30,6 +55,19 @@ Future<Map<String, dynamic>?> getLastConfig() async {
   return null;
 }
 
+/// Retrieves the client ID from command-line arguments or the last saved configuration.
+///
+/// This function attempts to extract the client ID from the provided [args]
+/// using `--clientId` or `-id`. If not found, it checks the last saved
+/// configuration. If a last configured client ID is found, the user is
+/// prompted for confirmation to use it.
+///
+/// Throws an [Exception] if no client ID is provided via arguments and
+/// no last configured client is found, or if the user declines to use
+/// the last configured client ID.
+///
+/// Returns a `Future<String?>` representing the client ID, or `null` if
+/// no client ID can be determined.
 Future<String?> getClientIdFromArgsOrLast(List<String> args) async {
   String? clientId =
       getArgumentValue(args, '--clientId') ??
@@ -213,10 +251,12 @@ Map<String, String> _promptBasicSettings() {
   final List<String> selectedAssets = [];
 
   // Ask about launcher icon
-  final needsLauncherIcon = promptUser(
-    '\nDoes your app need a custom launcher icon? (y/n)',
-    'y',
-  ).toLowerCase() == 'y';
+  final needsLauncherIcon =
+      promptUser(
+        '\nDoes your app need a custom launcher icon? (y/n)',
+        'y',
+      ).toLowerCase() ==
+      'y';
 
   if (needsLauncherIcon) {
     final launcherIconFile = promptUser(
@@ -232,10 +272,12 @@ Map<String, String> _promptBasicSettings() {
   }
 
   // Ask about splash screen
-  final needsSplashScreen = promptUser(
-    'Does your app need a custom splash screen? (y/n)',
-    'n',
-  ).toLowerCase() == 'y';
+  final needsSplashScreen =
+      promptUser(
+        'Does your app need a custom splash screen? (y/n)',
+        'n',
+      ).toLowerCase() ==
+      'y';
 
   String? splashScreenFile;
   if (needsSplashScreen) {
@@ -248,10 +290,9 @@ Map<String, String> _promptBasicSettings() {
   }
 
   // Ask about logo asset
-  final needsLogo = promptUser(
-    'Does your app need a logo asset? (y/n)',
-    'n',
-  ).toLowerCase() == 'y';
+  final needsLogo =
+      promptUser('Does your app need a logo asset? (y/n)', 'n').toLowerCase() ==
+      'y';
 
   if (needsLogo) {
     final logoFile = promptUser(
@@ -277,10 +318,12 @@ Map<String, String> _promptBasicSettings() {
 List<CustomField> _promptCustomFields() {
   final fields = <CustomField>[];
 
-  final wantsCustomFields = promptUser(
-    '\nDo you want to add custom configuration fields? (y/n)',
-    'n',
-  ).toLowerCase() == 'y';
+  final wantsCustomFields =
+      promptUser(
+        '\nDo you want to add custom configuration fields? (y/n)',
+        'n',
+      ).toLowerCase() ==
+      'y';
 
   if (!wantsCustomFields) {
     logger.i('No custom fields added.');
@@ -331,10 +374,8 @@ List<CustomField> _promptCustomFields() {
 
     logger.i('✅ Added custom field: $fieldName ($type)');
 
-    final addMore = promptUser(
-      '\nAdd another field? (y/n)',
-      'n',
-    ).toLowerCase() == 'y';
+    final addMore =
+        promptUser('\nAdd another field? (y/n)', 'n').toLowerCase() == 'y';
 
     if (!addMore) break;
   }
@@ -406,19 +447,23 @@ ${isThereASplashScreen ? 'splash_screen_asset: "${cloneAssets[1]}"' : ''}$custom
   }
 }
 
-/// Initializes the Clonify environment by performing the following steps:
+/// Initializes the Clonify environment, setting up necessary directories and configuration files.
 ///
+/// This function performs the following steps:
 /// - Checks for the existence of the `clonify` directory and creates it if it does not exist.
 /// - Checks for the existence of the `clonify_settings.yaml` file inside the `clonify` directory.
-///   - If the file does not exist, creates it with default settings for Firebase, Fastlane, company name, and default color.
-///   - If the file exists, calls `validatedClonifySettings()` to validate the settings.
+///   - If the file does not exist, it prompts the user for various settings (Firebase, Fastlane,
+///     company name, default color, clone assets, and custom fields) and creates the file.
+///   - If the file exists, it validates the existing settings using `validatedClonifySettings()`.
 ///
-/// The initialization process includes prompts for enabling Firebase and Fastlane services,
+/// The initialization process includes interactive prompts for enabling Firebase and Fastlane services,
 /// specifying their respective settings files, entering the company name (used for package naming),
-/// and setting the default app color.
+/// setting the default app color, and defining custom configuration fields.
 ///
-/// Supports cancellation cleanup - if the user cancels during initialization,
+/// Supports cancellation cleanup: if the user cancels during initialization,
 /// any created files or directories will be automatically cleaned up.
+///
+/// Throws an [Exception] if initialization fails at any step.
 Future<void> initClonify() async {
   try {
     // Step 1: Ensure clonify directory exists
@@ -598,22 +643,27 @@ bool _validateBusinessRules(Map<String, dynamic> rawSettings) {
   return true;
 }
 
-/// Validates the `clonify_settings.yaml` configuration file.
+/// Validates the `clonify_settings.yaml` configuration file for correctness and completeness.
 ///
-/// This function checks for the existence and correctness of the
-/// `clonify_settings.yaml` file in the `./clonify/` directory. It ensures:
-/// - The file exists and is not empty.
-/// - The YAML content is valid and can be parsed.
-/// - All required fields (`firebase`, `fastlane`, `company_name`, `default_color`)
-///   are present and have the correct types.
-/// - The `firebase` and `fastlane` fields contain `enabled` (bool) and
-///   `settings_file` (string) subfields.
-/// - The `company_name` field is a non-empty string.
-/// - The `default_color` field is a valid hex color string (e.g., `#FFFFFF`).
+/// This function performs a series of checks on the `clonify_settings.yaml` file
+/// located in the `./clonify/` directory to ensure it is properly structured
+/// and contains valid data. The validation steps include:
+/// - Verifying the file's existence and readability.
+/// - Parsing the YAML content and confirming its validity.
+/// - Checking for the presence and correct data types of all required fields
+///   (`firebase`, `fastlane`, `company_name`, `default_color`).
+/// - Validating the structure and types of subfields within `firebase` and `fastlane`
+///   (e.g., `enabled` as boolean, `settings_file` as string).
+/// - Applying business rules such as ensuring `company_name` is not empty
+///   and `default_color` is a valid hexadecimal color string.
 ///
-/// Prints error messages for any validation failures.
+/// Error messages are printed to the console for any validation failures.
 ///
-/// Returns `true` if the settings file is valid, otherwise `false`.
+/// [isSilent] A boolean flag. If `true`, success messages will not be printed.
+/// Defaults to `true`.
+///
+/// Returns `true` if the `clonify_settings.yaml` file is valid according to
+/// all checks, otherwise returns `false`.
 bool validatedClonifySettings({bool isSilent = true}) {
   // Step 1: Validate file existence and readability
   final content = _validateSettingsFile();
@@ -640,9 +690,16 @@ bool validatedClonifySettings({bool isSilent = true}) {
   return true;
 }
 
-/// GetClonifySettings file as a ClonifySettings object.
-/// This function reads the `clonify_settings.yaml` file and returns a map of settings
-/// as a ClonifySettings object.
+/// Retrieves the Clonify settings from the `clonify_settings.yaml` file.
+///
+/// This function reads the `clonify_settings.yaml` file, parses its YAML content,
+/// and converts it into a [ClonifySettings] object. This object provides
+/// structured access to all configured settings for the Clonify CLI tool.
+///
+/// Throws an [Exception] if the `clonify_settings.yaml` file does not exist
+/// or if its content cannot be parsed into a valid [ClonifySettings] object.
+///
+/// Returns a [ClonifySettings] object containing the parsed configuration.
 ClonifySettings getClonifySettings() {
   final settingsFile = File(Constants.clonifySettingsFilePath);
   if (!settingsFile.existsSync()) {

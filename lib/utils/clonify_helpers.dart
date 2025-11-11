@@ -45,8 +45,15 @@ final Logger logger = Logger(
 
 final ClonifySettings clonifySettings = getClonifySettings();
 
-/// Sanitizes a command argument to prevent command injection.
-/// Only allows alphanumeric, dash, underscore, dot, and slash.
+/// Sanitizes a command-line argument to prevent command injection vulnerabilities.
+///
+/// This function ensures that an argument only contains safe characters
+/// (alphanumeric, dash, underscore, dot, and slash). Arguments matching
+/// a predefined list of known safe commands are skipped from sanitization.
+///
+/// Throws an [ArgumentError] if an unsafe argument is detected and not skipped.
+///
+/// Returns the sanitized or skipped argument string.
 String sanitizeArg(String arg) {
   //⛔ ❌ Error during build commands: Invalid argument(s): Unsafe argument detected: flutter_native_splash:create
   final List<String> skipSanitization = [
@@ -65,6 +72,21 @@ String sanitizeArg(String arg) {
   return arg;
 }
 
+/// Executes a shell command with optional loading indicators and error handling.
+///
+/// This function sanitizes the [command] and [args] to prevent command injection.
+/// It can display a progress indicator while the command is running and
+/// logs success or error messages upon completion.
+///
+/// [command] The executable command to run (e.g., 'flutter', 'dart').
+/// [args] A list of string arguments to pass to the command.
+/// [successMessage] An optional message to display on successful command execution.
+/// [showLoading] If `true`, a loading indicator with elapsed time will be shown. Defaults to `true`.
+/// [loadingMessage] An optional custom message to display during loading.
+/// [workingDirectory] The directory in which to run the command. If `null`, the current
+///                    working directory of the process is used.
+///
+/// Throws an [Exception] if the command fails (returns a non-zero exit code).
 Future<void> runCommand(
   String command,
   List<String> args, {
@@ -149,10 +171,29 @@ Future<void> runCommand(
   }
 }
 
+/// Converts the first character of a given string to uppercase.
+///
+/// This function takes a [text] string and returns a new string where
+/// the first character is converted to uppercase, and the rest of the
+/// string remains unchanged.
+///
+/// Returns the string with its first character in uppercase.
 String toTitleCase(String text) {
   return text[0].toUpperCase() + text.substring(1);
 }
 
+/// Displays a message to the user and waits for their input.
+///
+/// This function prints the [message] to the console and reads a line
+/// of input from `stdin`. If [skip] is `true`, it will use [skipValue]
+/// (or an empty string if [skipValue] is `null`) and log that it's skipping
+/// the prompt, without waiting for user input.
+///
+/// [message] The message to display to the user.
+/// [skipValue] An optional value to return if [skip] is `true`.
+/// [skip] A boolean indicating whether to skip the prompt and use [skipValue].
+///
+/// Returns the user's input or [skipValue] if the prompt is skipped.
 String prompt(String message, {String? skipValue, bool? skip}) {
   logger.i('$message ');
   if (skip == true) {
@@ -162,6 +203,23 @@ String prompt(String message, {String? skipValue, bool? skip}) {
   return stdin.readLineSync() ?? '';
 }
 
+/// Prompts the user for input with a default value and optional validation.
+///
+/// This function displays a [promptMessage] to the user, optionally showing
+/// a [defaultValue]. It reads user input and, if the input is empty,
+/// uses the [defaultValue]. The input can be validated using a [validator]
+/// function, and the user will be re-prompted on invalid input.
+///
+/// If [skip] is `true`, the function will return [skipValue] (or [defaultValue]
+/// if [skipValue] is `null`) without prompting the user.
+///
+/// [promptMessage] The message to display to the user.
+/// [defaultValue] The default value to use if the user provides no input.
+/// [validator] An optional function to validate the user's input.
+/// [skip] A boolean indicating whether to skip the prompt.
+/// [skipValue] An optional value to return if [skip] is `true`.
+///
+/// Returns the validated user input or the default/skip value.
 String promptUser(
   String promptMessage,
   String defaultValue, {
@@ -189,6 +247,18 @@ String promptUser(
   return answer;
 }
 
+/// Retrieves the value associated with a specific command-line argument key.
+///
+/// This function searches the [args] list for the given [key] (e.g., '--clientId').
+/// If the key is found, it returns the value immediately following it in the list.
+///
+/// [args] The list of command-line arguments.
+/// [key] The argument key to search for.
+///
+/// Throws an [ArgumentError] if the [key] is found but no value is provided
+/// after it.
+///
+/// Returns the string value associated with the argument key.
 String getArgValue(List<String> args, String key) {
   final index = args.indexOf(key);
   if (index == -1 || index + 1 >= args.length) {
@@ -197,10 +267,25 @@ String getArgValue(List<String> args, String key) {
   return args[index + 1];
 }
 
+/// Generates a formatted string with a newline, indentation, and an arrow symbol.
+///
+/// This utility function creates a string that starts with a newline character,
+/// followed by a specified number of tab characters for indentation, and
+/// then an arrow symbol `└─-➜`. It's typically used for formatting CLI output.
+///
+/// [tabs] The number of tab characters to use for indentation. Defaults to 3.
+///
+/// Returns a formatted string for CLI output.
 String newLineArrow([int tabs = 3]) {
   return '\n${'\t' * tabs}└─-➜';
 }
 
+/// Prints the usage information and available commands for the Clonify CLI tool.
+///
+/// This function outputs a formatted help message to the console, detailing
+/// the general usage, a list of all available commands with their descriptions
+/// and aliases, and specific options that can be used with the `configure`
+/// and `build` commands. It also includes notes and examples for common use cases.
 void printUsage() {
   logger.i('Clonify CLI - A tool for managing Flutter app clones');
   logger.i('');
@@ -302,6 +387,18 @@ void printUsage() {
   logger.i('  clonify which');
 }
 
+/// Retrieves the value associated with a specific command-line argument key.
+///
+/// This function searches the [args] list for the given [key] (e.g., '--clientId').
+/// If the key is found and a value is present immediately after it, that value is returned.
+/// Unlike `getArgValue` which throws an error, this function returns `null`
+/// if the key is not found or if no value is associated with it.
+///
+/// [args] The list of command-line arguments.
+/// [key] The argument key to search for.
+///
+/// Returns the string value associated with the argument key, or `null` if
+/// the key is not found or its value is missing.
 String? getArgumentValue(List<String> args, String key) {
   final index = args.indexOf(key);
   if (index == -1 || index + 1 >= args.length) {
@@ -311,11 +408,34 @@ String? getArgumentValue(List<String> args, String key) {
   return args[index + 1];
 }
 
+/// Saves the last used client ID to a file.
+///
+/// This function writes the provided [clientId] to the `last_client.txt` file
+/// located in the `./clonify/` directory. This allows the CLI to remember
+/// the last active client for convenience.
+///
+/// Note: This function is duplicated in `clonify_core.dart`. Consider refactoring.
+///
+/// Throws a [FileSystemException] if the file cannot be written.
 Future<void> saveLastClientId(String clientId) async {
   final file = File('./clonify/last_client.txt');
   await file.writeAsString(clientId);
 }
 
+/// Retrieves the last used client ID from a file.
+///
+/// This function reads the `last_client.txt` file from the `./clonify/`
+/// directory to retrieve the last active client ID.
+///
+/// [lastClientFilePath] The path to the file storing the last client ID.
+/// Defaults to `./clonify/last_client.txt`.
+///
+/// Note: This function is duplicated in `clonify_core.dart`. Consider refactoring.
+///
+/// Returns a `Future<String?>` which is the last saved client ID, or `null`
+/// if the file does not exist.
+///
+/// Throws a [FileSystemException] if the file exists but cannot be read.
 Future<String?> getLastClientId([
   String lastClientFilePath = './clonify/last_client.txt',
 ]) async {
@@ -326,6 +446,18 @@ Future<String?> getLastClientId([
   return null;
 }
 
+/// Retrieves the last saved configuration map from a JSON file.
+///
+/// This function reads the `last_config.json` file from the `./clonify/`
+/// directory, decodes its JSON content, and returns it as a map.
+///
+/// Note: This function is duplicated in `clonify_core.dart`. Consider refactoring.
+///
+/// Returns a `Future<Map<String, dynamic>?>` which is the last saved
+/// configuration, or `null` if the file does not exist.
+///
+/// Throws a [FileSystemException] if the file exists but cannot be read,
+/// or a [FormatException] if the file content is not valid JSON.
 Future<Map<String, dynamic>?> getLastConfig() async {
   final file = File('./clonify/last_config.json');
   if (file.existsSync()) {
@@ -334,6 +466,16 @@ Future<Map<String, dynamic>?> getLastConfig() async {
   return null;
 }
 
+/// Increments the patch version and build number of a semantic version string.
+///
+/// This function takes a semantic version string (e.g., "1.0.0+1") and
+/// increments its patch version number and build number. If the new patch
+/// version is greater than the new build number, the patch version is used
+/// as the unified number; otherwise, the build number is used.
+///
+/// [version] The semantic version string to increment.
+///
+/// Returns a new semantic version string with the incremented numbers.
 String versionNumberIncrementor(String version) {
   final versionParts = version.split('+');
   final versionNumbers = versionParts[0].split('.');
@@ -348,12 +490,35 @@ String versionNumberIncrementor(String version) {
   return newVersion;
 }
 
+/// Retrieves the application bundle ID (package name) for a given client ID.
+///
+/// This function reads the configuration file for the specified [clientId],
+/// parses it, and extracts the `packageName` field, which represents the
+/// application's bundle ID.
+///
+/// [clientId] The ID of the client for which to retrieve the bundle ID.
+///
+/// Throws a [FileSystemException] if the config file for the client is not found.
+/// Throws a [FormatException] if the config file content is not valid JSON.
+///
+/// Returns a `Future<String>` representing the application's bundle ID.
 Future<String> getAppBundleId(String clientId) async {
   final Map<String, dynamic> configJson = await parseConfigFile(clientId);
   return configJson['packageName'] ?? '';
 }
 
-// ✅ Get version from config.json
+/// Retrieves the version number from a client's configuration file.
+///
+/// This function reads the `config.json` file for the specified [clientId].
+/// If the 'version' field is missing, it prompts the user to enter a new
+/// version and updates the configuration file.
+///
+/// [clientId] The ID of the client for which to retrieve the version.
+///
+/// Throws a [FileSystemException] if the config file for the client is not found.
+/// Throws a [FormatException] if the config file content is not valid JSON.
+///
+/// Returns a `Future<String>` representing the version number.
 Future<String> getVersionFromConfig(String clientId) async {
   final configFilePath = './clonify/clones/$clientId/config.json';
   try {
