@@ -1,5 +1,12 @@
 # Clonify
 
+![GitHub issues](https://img.shields.io/github/issues/DevMohammadSalameh/clonify)
+![GitHub pull requests](https://img.shields.io/github/issues-pr/DevMohammadSalameh/clonify)
+![GitHub contributors](https://img.shields.io/github/contributors/DevMohammadSalameh/clonify)
+![GitHub](https://img.shields.io/github/license/DevMohammadSalameh/clonify)
+
+## About
+
 A powerful command-line tool for managing multiple Flutter project clones with different configurations, branding, and Firebase projects. Perfect for white-label applications or managing multiple client-specific versions of the same Flutter app.
 
 ## Features
@@ -41,8 +48,8 @@ Make sure your PATH includes the Dart global bin directory:
 
 Verify installation:
 ```bash
-clonify --help
 clonify --version  # or clonify -v
+clonify --help
 ```
 
 ## Quick Start
@@ -383,9 +390,15 @@ dart compile exe bin/clonify.dart
 
 Contributions are welcome! Please read the contributing guidelines before submitting PRs.
 
-## Version
+## Changelog
 
-Current version: **0.1.0** (Pre-release)
+For all notable changes to this project, refer to the CHANGELOG.
+
+## Support 
+
+For any issues or suggestions, please open an issue. Your feedback is highly appreciated.
+
+## Version
 
 This is a pre-release version. The API may change in future releases. Feedback and bug reports are welcome!
 
@@ -415,4 +428,4 @@ Full license: https://www.gnu.org/licenses/gpl-3.0.txt
 ## Acknowledgments
 
 - Built with ❤️ for the Flutter community
-- Inspired by the need for efficient white-label app management
+- Inspired by the need for efficient white-label app management, architecture wise inspired by rename package

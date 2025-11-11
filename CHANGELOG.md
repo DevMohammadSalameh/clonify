@@ -1,3 +1,9 @@
+## 0.2.1
+
+- Fixed an issue where running `clonify --help` would trigger an unnecessary validation error.
+- Enhanced the `intl_utils:generate` command to check if `intl_utils` is a dependency in the user's `pubspec.yaml` before execution, preventing errors when the dependency is missing.
+-improved README.md file
+
 ## 0.2.0 - 2024-11-11 (Pre-release)
 
 - Added `version` command to check the package version.
