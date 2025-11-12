@@ -18,6 +18,7 @@ A powerful command-line tool for managing multiple Flutter project clones with d
 - 🏗️ Build multiple platforms (Android APK/AAB, iOS IPA)
 - 🚀 Optional Fastlane integration for app store uploads
 - 💾 Configuration persistence for easy switching between clones
+- ✨ **Modern TUI (Text User Interface)** with interactive prompts and progress indicators
 
 ## Installation
 
@@ -50,6 +51,53 @@ Verify installation:
 ```bash
 clonify --version  # or clonify -v
 clonify --help
+```
+
+## User Interface
+
+Clonify features a modern **Text User Interface (TUI)** that enhances your development experience with:
+
+### Interactive Prompts
+- 🎯 **Arrow-key navigation** for selecting options (type selection, multiple choices)
+- ✅ **Smart validation** with immediate feedback for inputs (colors, URLs, package names, versions)
+- 🎨 **Color-coded messages** for success (green), errors (red), warnings (yellow), and info (blue)
+- 📋 **Configuration summaries** showing all settings before applying
+- 🔄 **Confirmation prompts** with sensible defaults for quick workflows
+
+### Progress Indicators
+- 📦 **Package renaming** with real-time progress feedback
+- 🔥 **Firebase configuration** progress tracking
+- 🎨 **Asset replacement** progress updates
+- 🚀 **Launcher icon generation** with completion status
+- 💦 **Splash screen creation** progress
+- 🌍 **Internationalization file generation** progress
+- 🛠️ **Build operations** with unified progress tracking for APK/AAB/IPA
+
+### Enhanced Commands
+- **`init`** - Interactive wizard with emoji indicators and type selection
+- **`create`** - Guided clone creation with validation and configuration summary
+- **`list`** - Colored tables with active client highlighting and emoji column headers
+- **`configure`** - Progress indicators for all long-running operations
+- **`build`** - Unified build progress with elapsed time tracking
+
+### Accessibility
+- 🔌 **TTY detection** - Automatically detects terminal capabilities
+- 🎛️ **Fallback mode** - Works in CI/CD and non-interactive environments
+- 🚫 **`--no-tui` flag** - Disable TUI features for basic text mode
+- 🎨 **`NO_COLOR` support** - Respects environment variable for color-blind accessibility
+- ⏭️ **`--skipAll` flag** - Skip all interactive prompts for automation
+
+### Examples
+
+```bash
+# Use TUI features (default)
+clonify create
+
+# Disable TUI for CI/CD environments
+clonify create --no-tui
+
+# Skip all prompts for automation
+clonify configure --skipAll
 ```
 
 ## Quick Start
@@ -137,6 +185,12 @@ clonify list
 ```
 
 ## Commands
+
+### Global Options
+
+Available for all commands:
+- `--no-tui` - Disable TUI (Text User Interface) features and use basic text mode
+- `--help` - Display help information for any command
 
 ### `clonify init`
 Initialize Clonify environment with global settings.
