@@ -1,3 +1,41 @@
+## 0.4.1 - 2024-11-12
+
+### 🔄 Improvements & Bug Fixes
+
+**Asset Management Refactor:**
+- ✨ Simplified asset configuration - assets now configured per clone instead of globally
+- 📱 Launcher icon, splash screen, and logo are now optional per clone
+- 🎯 Asset filenames are now specified during clone creation (more flexible)
+- 🗑️ Removed global `clone_assets` list from settings
+- ✅ Each clone can have different asset filenames
+
+**Configuration Improvements:**
+- 🎨 Changed default color format from `#FFFFFF` to `0xAARRGGBB` (Flutter format)
+- 🌐 Base URL is now optional - users can enter "no" to skip
+- ✨ Better color validation with clearer error messages
+- 📝 Improved prompts with better default values
+
+**Settings Model Changes:**
+- Replaced `assets`, `launcherIconAsset`, `splashScreenAsset` fields
+- Added `needsLauncherIcon`, `needsSplashScreen`, `needsLogo` boolean flags
+- Assets are now stored in individual clone configurations
+
+**Breaking Changes:**
+⚠️ **Settings file format changed** - if you have existing `clonify_settings.yaml`:
+- Old format used `clone_assets`, `launcher_icon_asset`, `splash_screen_asset`
+- New format uses `needs_launcher_icon`, `needs_splash_screen`, `needs_logo`
+- **Migration:** Run `clonify init` again to recreate settings with new format
+- Existing clone configurations will need asset fields added manually
+
+**Bug Fixes:**
+- 🐛 Fixed asset manager to not copy assets globally (now per-clone)
+- ✅ Fixed color validation regex for proper hex format
+- 🔧 Improved asset directory creation logic
+
+**Documentation:**
+- 📚 Added `.pubignore` file for cleaner pub.dev packages
+- 📝 Updated CHANGELOG format
+
 ## 0.4.0 - 2024-11-12
 
 ### ✨ Major Feature: Text User Interface (TUI) Enhancement

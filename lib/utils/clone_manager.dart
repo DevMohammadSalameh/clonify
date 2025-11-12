@@ -190,9 +190,13 @@ Map<String, String>? _promptCloneBasicInfo() {
     );
 
     final baseUrl = promptUserTUI(
-      '🌐 Enter the base URL (e.g., https://example.com)',
-      'https://example.com',
+      '🌐 Enter the base URL (e.g., https://example.com OR "no" for no base URL)',
+      '',
       validator: (value) {
+        if (value.trim() == 'no') {
+          infoMessage('No base URL will be used');
+          return true;
+        }
         if (!Uri.parse(value).isAbsolute) {
           errorMessage('Invalid URL format. Must be an absolute URL.');
           return false;
@@ -202,12 +206,12 @@ Map<String, String>? _promptCloneBasicInfo() {
     );
 
     final primaryColor = promptUserTUI(
-      '🎨 Enter the primary color (hex format: 0xFFRRGGBB)',
+      '🎨 Enter the primary color (hex format: 0xAARRGGBB)',
       clonifySettings.defaultColor,
       validator: (value) {
-        if (!RegExp(r'^0x[0-9A-Fa-f]{8}$').hasMatch(value)) {
+        if (!RegExp(r'^0x[0-9a-fA-F]{8}$').hasMatch(value)) {
           errorMessage(
-            'Invalid color format. Use 0xFFRRGGBB (e.g., 0xFFFFFFFF)',
+            'Invalid color format. Use 0xAARRGGBB (e.g., 0xAAFFFFFF)',
           );
           return false;
         }
@@ -269,6 +273,33 @@ Map<String, String>? _promptCloneBasicInfo() {
       'version': version,
       'firebaseProjectId': firebaseProjectId,
     };
+
+    if (clonifySettings.needsLauncherIcon) {
+      final launcherIcon = promptUserTUI(
+        '🎯 Enter the launcher icon filename (e.g., icon.png)',
+        '',
+        validator: (value) => value.trim().isNotEmpty,
+      );
+      configMap['launcherIcon'] = launcherIcon;
+    }
+
+    if (clonifySettings.needsSplashScreen) {
+      final splashScreen = promptUserTUI(
+        '🎯 Enter the splash screen filename (e.g., splash.png)',
+        'splash.png',
+        validator: (value) => value.trim().isNotEmpty,
+      );
+      configMap['splashScreen'] = splashScreen;
+    }
+
+    if (clonifySettings.needsLogo) {
+      final logo = promptUserTUI(
+        '🎯 Enter the logo filename (e.g., logo.png)',
+        'logo.png',
+        validator: (value) => value.trim().isNotEmpty,
+      );
+      configMap['logo'] = logo;
+    }
 
     if (clonifySettings.customFields.isNotEmpty) {
       infoMessage('\n⚙️  Custom Configuration Fields:');
@@ -351,6 +382,9 @@ bool _createCloneStructure(Map<String, String> config) {
       'primaryColor': config['primaryColor'],
       'firebaseProjectId': config['firebaseProjectId'],
       'version': config['version'],
+      'launcherIcon': config['launcherIcon'],
+      'splashScreen': config['splashScreen'],
+      'logo': config['logo'],
     };
 
     // Add custom fields to config
@@ -630,11 +664,11 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
       launcherIconsYamlEditor.update([
         'flutter_launcher_icons',
         'image_path',
-      ], "assets/images/${clonifySettings.launcherIconAsset}");
+      ], "assets/images/${configJson['launcherIcon']}");
       launcherIconsYamlEditor.update([
         'flutter_launcher_icons',
         'adaptive_icon_foreground',
-      ], "assets/images/${clonifySettings.launcherIconAsset}");
+      ], "assets/images/${configJson['launcherIcon']}");
       launcherIconsConfigFile.writeAsStringSync(
         launcherIconsYamlEditor.toString(),
       );
@@ -642,12 +676,12 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
     } catch (e) {
       logger.e('❌ Error updating $flutterLauncherIconsPath: $e');
     }
-    if (clonifySettings.splashScreenAsset != null) {
+    if (configJson['splashScreen'] != null) {
       try {
         nativeSplashYamlEditor.update([
           'flutter_native_splash',
           'image',
-        ], "assets/images/${clonifySettings.splashScreenAsset}");
+        ], "assets/images/${configJson['splashScreen']}");
         nativeSplashConfigFile.writeAsStringSync(
           nativeSplashYamlEditor.toString(),
         );
@@ -697,7 +731,7 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
     }
 
     // Run flutter_native_splash if splash screen is configured and package is available
-    if (clonifySettings.splashScreenAsset != null) {
+    if (configJson['splashScreen'] != null) {
       if (hasPackage('flutter_native_splash')) {
         final splashProgress = progressWithTUI('💦 Creating splash screen...');
         await runCommand(

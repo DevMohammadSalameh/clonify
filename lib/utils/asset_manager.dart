@@ -83,12 +83,6 @@ void createAssetsDirectory(String clientId) {
 
   targetDir.createSync(recursive: true);
 
-  for (final asset in clonifySettings.assets) {
-    final sourceFile = File('${sourceDir.path}/$asset');
-    final targetFile = File('${targetDir.path}/$asset');
-    sourceFile.copySync(targetFile.path);
-  }
-
   logger.i(
     '[!] Dont forget to replace the assets in the clone assets with the original assets',
   );

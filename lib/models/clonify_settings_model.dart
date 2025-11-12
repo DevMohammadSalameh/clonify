@@ -31,14 +31,14 @@ class ClonifySettings {
   /// The default primary color in hex format (e.g., '#FF5733').
   final String defaultColor;
 
-  /// List of asset file paths to be cloned for each client.
-  final List<String> assets;
+  /// Whether the app needs a launcher icon.
+  final bool needsLauncherIcon;
 
-  /// The asset path to use as the app launcher icon.
-  final String launcherIconAsset;
+  /// Whether the app needs a splash screen.
+  final bool needsSplashScreen;
 
-  /// Optional asset path to use as the app splash screen.
-  final String? splashScreenAsset;
+  /// Whether the app needs a logo asset.
+  final bool needsLogo;
 
   /// List of custom fields that can be configured per clone.
   final List<CustomField> customFields;
@@ -54,9 +54,9 @@ class ClonifySettings {
     required this.fastlaneSettingsFilePath,
     required this.companyName,
     required this.defaultColor,
-    required this.assets,
-    required this.launcherIconAsset,
-    this.splashScreenAsset,
+    required this.needsLauncherIcon,
+    required this.needsSplashScreen,
+    required this.needsLogo,
     this.customFields = const [],
   });
 
@@ -93,9 +93,9 @@ class ClonifySettings {
       fastlaneSettingsFilePath: yaml['fastlane']['settings_file'] ?? '',
       companyName: yaml['company_name'] ?? '',
       defaultColor: yaml['default_color'] ?? '#FFFFFF',
-      assets: List<String>.from(yaml['clone_assets'] ?? []),
-      launcherIconAsset: yaml['launcher_icon_asset'] ?? '',
-      splashScreenAsset: yaml['splash_screen_asset'],
+      needsLauncherIcon: yaml['needs_launcher_icon'] ?? false,
+      needsSplashScreen: yaml['needs_splash_screen'] ?? false,
+      needsLogo: yaml['needs_logo'] ?? false,
       customFields: customFields,
     );
   }

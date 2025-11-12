@@ -225,14 +225,14 @@ Map<String, String> _promptBasicSettings() {
   );
 
   final String defaultColor = promptUserTUI(
-    '🎨 Enter default app color (hex format, e.g., #FFFFFF)',
-    '#FFFFFF',
+    '🎨 Enter default app primary color (hex format, e.g., 0xAAFFFFFF)',
+    '0xAAFFFFFF',
     validator: (value) {
-      if (RegExp(r'^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$').hasMatch(value)) {
-        return true;
+      if (!RegExp(r'^0x[0-9a-fA-F]{8}$').hasMatch(value)) {
+        errorMessage('Invalid primary color format. Use 0xAARRGGBB.');
+        return false;
       }
-      errorMessage('Invalid hex color format. Use #FFFFFF or #FFF.');
-      return false;
+      return true;
     },
   );
 
@@ -245,7 +245,7 @@ Map<String, String> _promptBasicSettings() {
 /// The launcher icon asset will be the first in the list.
 /// The splash screen asset (if any) will be the second in the list.
 /// The logo asset (if any) will be the third in the list.
-(List<String>, bool) _promptCloneAssetsSettings() {
+List<bool> _promptCloneAssetsSettings() {
   final sourceDir = Directory('./assets/images');
 
   if (!sourceDir.existsSync()) {
@@ -257,65 +257,25 @@ Map<String, String> _promptBasicSettings() {
 
   infoMessage('\n🖼️  Asset Configuration');
 
-  final List<String> selectedAssets = [];
-
   // Ask about launcher icon
   final needsLauncherIcon = confirmTUI(
     '\n📱 Does your app need a custom launcher icon?',
     defaultValue: true,
   );
 
-  if (needsLauncherIcon) {
-    final launcherIconFile = promptUserTUI(
-      '🎯 Enter the launcher icon filename (e.g., icon.png)',
-      'icon.png',
-      validator: (value) => value.trim().isNotEmpty,
-    );
-    selectedAssets.add(launcherIconFile);
-  } else {
-    // Launcher icon is required, use default
-    warningMessage('Using default launcher icon filename: icon.png');
-    selectedAssets.add('icon.png');
-  }
-
   // Ask about splash screen
   final needsSplashScreen = confirmTUI(
     '💫 Does your app need a custom splash screen?',
-    defaultValue: false,
+    defaultValue: true,
   );
-
-  String? splashScreenFile;
-  if (needsSplashScreen) {
-    splashScreenFile = promptUserTUI(
-      '🌟 Enter the splash screen filename (e.g., splash.png)',
-      'splash.png',
-      validator: (value) => value.trim().isNotEmpty,
-    );
-    selectedAssets.add(splashScreenFile);
-  }
 
   // Ask about logo asset
   final needsLogo = confirmTUI(
-    '🏷️  Does your app need a logo asset?',
-    defaultValue: false,
+    '🏷️  Does your app need a logo asset (this will be used inside the app)?',
+    defaultValue: true,
   );
 
-  if (needsLogo) {
-    final logoFile = promptUserTUI(
-      '🖼️  Enter the logo filename (e.g., logo.png)',
-      'logo.png',
-      validator: (value) => value.trim().isNotEmpty,
-    );
-    selectedAssets.add(logoFile);
-  }
-
-  if (selectedAssets.isEmpty) {
-    logger.e('No assets selected for cloning.');
-    return ([], false);
-  }
-
-  logger.i('Selected assets: ${selectedAssets.join(', ')}');
-  return (selectedAssets, needsSplashScreen);
+  return [needsLauncherIcon, needsSplashScreen, needsLogo];
 }
 
 /// Prompts for custom configuration fields.
@@ -399,8 +359,7 @@ bool _createSettingsFile(
   Map<String, dynamic> firebaseConfig,
   Map<String, dynamic> fastlaneConfig,
   Map<String, String> basicConfig,
-  List<String> cloneAssets,
-  bool isThereASplashScreen,
+  List<bool> cloneAssetsConfig,
   List<CustomField> customFields,
 ) {
   try {
@@ -430,12 +389,11 @@ company_name: "${basicConfig['companyName']}"
 
 default_color: "${basicConfig['defaultColor']}"
 
-clone_assets:
-  - ${cloneAssets.join('\n  - ')}
+needs_launcher_icon: ${cloneAssetsConfig[0]}
+needs_splash_screen: ${cloneAssetsConfig[1]}
+needs_logo: ${cloneAssetsConfig[2]}
 
-launcher_icon_asset: "${cloneAssets[0]}"
-
-${isThereASplashScreen ? 'splash_screen_asset: "${cloneAssets[1]}"' : ''}$customFieldsYaml
+$customFieldsYaml
 ''');
 
     logger.i(
@@ -479,8 +437,7 @@ Future<void> initClonify() async {
       final firebaseConfig = _promptFirebaseSettings();
       final fastlaneConfig = _promptFastlaneSettings();
       final basicConfig = _promptBasicSettings();
-      final (List<String>, bool) cloneAssetsConfig =
-          _promptCloneAssetsSettings();
+      final List<bool> cloneAssetsConfig = _promptCloneAssetsSettings();
       final customFields = _promptCustomFields();
 
       // Step 3: Create settings file
@@ -489,8 +446,7 @@ Future<void> initClonify() async {
         firebaseConfig,
         fastlaneConfig,
         basicConfig,
-        cloneAssetsConfig.$1,
-        cloneAssetsConfig.$2,
+        cloneAssetsConfig,
         customFields,
       )) {
         _cleanupCreatedPaths();
