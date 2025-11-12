@@ -9,6 +9,7 @@ import 'package:clonify/utils/asset_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:clonify/utils/firebase_manager.dart';
 import 'package:clonify/utils/package_rename_plus_manager.dart';
+import 'package:clonify/utils/tui_helpers.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 // ignore: depend_on_referenced_packages
 import 'package:yaml/yaml.dart' as yaml;
@@ -172,44 +173,85 @@ void _cleanupCloneCreation() {
 /// Returns a map with clone configuration or null if cancelled.
 Map<String, String>? _promptCloneBasicInfo() {
   try {
-    final clientId = prompt(
-      'Enter Clone ID. This ID will be used to identify your project:',
+    infoMessage('\n📦 Creating New Clone Configuration');
+    infoMessage('Please provide the following information:\n');
+
+    final clientId = promptUserTUI(
+      '🆔 Enter Clone ID (used to identify your project)',
+      '',
+      validator: (value) {
+        if (value.trim().isEmpty) {
+          errorMessage('Clone ID cannot be empty');
+          return false;
+        }
+        return true;
+      },
     );
 
-    final baseUrl = promptUser(
-      'Enter the base URL (e.g., https://example.com):',
+    final baseUrl = promptUserTUI(
+      '🌐 Enter the base URL (e.g., https://example.com)',
       'https://example.com',
-      validator: (value) => Uri.parse(value).isAbsolute,
+      validator: (value) {
+        if (!Uri.parse(value).isAbsolute) {
+          errorMessage('Invalid URL format. Must be an absolute URL.');
+          return false;
+        }
+        return true;
+      },
     );
 
-    final primaryColor = promptUser(
-      'Enter the primary color (e.g., 0xFFFFFFFF):',
+    final primaryColor = promptUserTUI(
+      '🎨 Enter the primary color (hex format: 0xFFRRGGBB)',
       clonifySettings.defaultColor,
-      validator: (value) => RegExp(r'^0x[0-9A-Fa-f]{8}$').hasMatch(value),
+      validator: (value) {
+        if (!RegExp(r'^0x[0-9A-Fa-f]{8}$').hasMatch(value)) {
+          errorMessage('Invalid color format. Use 0xFFRRGGBB (e.g., 0xFFFFFFFF)');
+          return false;
+        }
+        return true;
+      },
     );
 
-    final packageName = promptUser(
-      'Enter the package name (e.g., com.example.example):',
+    final packageName = promptUserTUI(
+      '📦 Enter the package name (e.g., com.example.app)',
       'com.${clonifySettings.companyName}.${clientId.toLowerCase()}',
-      validator: (value) =>
-          RegExp(r'^[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z]+$').hasMatch(value),
+      validator: (value) {
+        if (!RegExp(r'^[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z]+$').hasMatch(value)) {
+          errorMessage('Invalid package name format. Use com.company.app');
+          return false;
+        }
+        return true;
+      },
     );
 
-    final appName = promptUser(
-      'Enter the app name (e.g., Clone App):',
+    final appName = promptUserTUI(
+      '📱 Enter the app name (e.g., My App)',
       toTitleCase(clientId),
-      validator: (value) => value.isNotEmpty,
+      validator: (value) {
+        if (value.isEmpty) {
+          errorMessage('App name cannot be empty');
+          return false;
+        }
+        return true;
+      },
     );
 
-    final version = promptUser(
-      'Enter the app version (e.g., 1.0.0+1):',
+    final version = promptUserTUI(
+      '🔢 Enter the app version (e.g., 1.0.0+1)',
       '1.0.0+1',
-      validator: (value) => value.isNotEmpty,
+      validator: (value) {
+        if (!RegExp(r'^\d+\.\d+\.\d+\+\d+$').hasMatch(value)) {
+          errorMessage('Invalid version format. Use X.Y.Z+B (e.g., 1.0.0+1)');
+          return false;
+        }
+        return true;
+      },
     );
+
     String firebaseProjectId = '';
     if (clonifySettings.firebaseEnabled) {
-      firebaseProjectId = promptUser(
-        'Enter the Firebase project ID (e.g., my-project-id):',
+      firebaseProjectId = promptUserTUI(
+        '🔥 Enter the Firebase project ID (e.g., my-project-id)',
         'firebase-$clientId-flutter',
       );
     }
@@ -226,21 +268,36 @@ Map<String, String>? _promptCloneBasicInfo() {
     };
 
     if (clonifySettings.customFields.isNotEmpty) {
-      logger.i('\n📋 Custom configuration fields:');
+      infoMessage('\n⚙️  Custom Configuration Fields:');
       for (final field in clonifySettings.customFields) {
-        final value = promptUser(
-          'Enter value for "${field.name}" (type: ${field.type}):',
+        final value = promptUserTUI(
+          '🔧 Enter value for "${field.name}" (type: ${field.type})',
           '',
           validator: (value) {
-            if (value.trim().isEmpty) return false;
+            if (value.trim().isEmpty) {
+              errorMessage('Value cannot be empty');
+              return false;
+            }
             switch (field.type) {
               case 'int':
-                return int.tryParse(value) != null;
+                if (int.tryParse(value) == null) {
+                  errorMessage('Must be a valid integer number');
+                  return false;
+                }
+                return true;
               case 'double':
-                return double.tryParse(value) != null;
+                if (double.tryParse(value) == null) {
+                  errorMessage('Must be a valid decimal number');
+                  return false;
+                }
+                return true;
               case 'bool':
-                return value.toLowerCase() == 'true' ||
-                    value.toLowerCase() == 'false';
+                if (value.toLowerCase() != 'true' &&
+                    value.toLowerCase() != 'false') {
+                  errorMessage('Must be either "true" or "false"');
+                  return false;
+                }
+                return true;
               case 'string':
               default:
                 return true;
@@ -248,7 +305,20 @@ Map<String, String>? _promptCloneBasicInfo() {
           },
         );
         configMap['custom_${field.name}'] = value;
+        successMessage('Set ${field.name} = $value');
       }
+    }
+
+    // Display configuration summary
+    infoMessage('\n📋 Configuration Summary:');
+    infoMessage('  🆔 Client ID: ${configMap['clientId']}');
+    infoMessage('  🌐 Base URL: ${configMap['baseUrl']}');
+    infoMessage('  🎨 Primary Color: ${configMap['primaryColor']}');
+    infoMessage('  📦 Package: ${configMap['packageName']}');
+    infoMessage('  📱 App Name: ${configMap['appName']}');
+    infoMessage('  🔢 Version: ${configMap['version']}');
+    if (firebaseProjectId.isNotEmpty) {
+      infoMessage('  🔥 Firebase: $firebaseProjectId');
     }
 
     return configMap;
