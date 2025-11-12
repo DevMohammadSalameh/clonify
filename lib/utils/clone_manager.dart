@@ -577,43 +577,66 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
       );
     }
 
-    // Step 3: Run build commands
-    await runCommand('dart', [
-      'run',
-      'flutter_launcher_icons',
-    ], successMessage: '✅ Flutter launcher icons generated successfully!');
+    // Step 3: Check for dependencies and run build commands
+    final pubspecFile = File('./pubspec.yaml');
+    if (!pubspecFile.existsSync()) {
+      logger.w('⚠️ pubspec.yaml not found, skipping package commands.');
+      return true;
+    }
 
-    if (clonifySettings.splashScreenAsset != null) {
-      await runCommand(
-        'dart',
-        ['run', 'flutter_native_splash:create'],
-        successMessage: '✅ Flutter native splash screen created successfully!',
+    final pubspecContent = pubspecFile.readAsStringSync();
+    final pubspecYaml = yaml.loadYaml(pubspecContent);
+    final dependencies = pubspecYaml['dependencies'] as yaml.YamlMap?;
+    final devDependencies = pubspecYaml['dev_dependencies'] as yaml.YamlMap?;
+
+    // Helper function to check if a package exists in dependencies
+    bool hasPackage(String packageName) {
+      return (dependencies != null && dependencies.containsKey(packageName)) ||
+          (devDependencies != null && devDependencies.containsKey(packageName));
+    }
+
+    // Run flutter_launcher_icons if available
+    if (hasPackage('flutter_launcher_icons')) {
+      await runCommand('dart', [
+        'run',
+        'flutter_launcher_icons',
+      ], successMessage: '✅ Flutter launcher icons generated successfully!');
+    } else {
+      logger.w(
+        '⚠️ `flutter_launcher_icons` not found in your pubspec.yaml.\n'
+        '   Add it to dev_dependencies to generate launcher icons:\n'
+        '   dev_dependencies:\n'
+        '     flutter_launcher_icons: ^0.13.1',
       );
     }
 
-    // Check for intl_utils dependency before running the command
-    final pubspecFile = File('./pubspec.yaml');
-    if (pubspecFile.existsSync()) {
-      final pubspecContent = pubspecFile.readAsStringSync();
-      final pubspecYaml = yaml.loadYaml(pubspecContent);
-      final dependencies = pubspecYaml['dependencies'] as yaml.YamlMap?;
-      final devDependencies = pubspecYaml['dev_dependencies'] as yaml.YamlMap?;
-
-      if ((dependencies != null && dependencies.containsKey('intl_utils')) ||
-          (devDependencies != null &&
-              devDependencies.containsKey('intl_utils'))) {
-        await runCommand('dart', [
-          'run',
-          'intl_utils:generate',
-        ], successMessage: '✅ Intl utils generated successfully!');
+    // Run flutter_native_splash if splash screen is configured and package is available
+    if (clonifySettings.splashScreenAsset != null) {
+      if (hasPackage('flutter_native_splash')) {
+        await runCommand(
+          'dart',
+          ['run', 'flutter_native_splash:create'],
+          successMessage: '✅ Flutter native splash screen created successfully!',
+        );
       } else {
         logger.w(
-          '⚠️ `intl_utils` not found in your pubspec.yaml, skipping `intl_utils:generate` command.',
+          '⚠️ `flutter_native_splash` not found in your pubspec.yaml.\n'
+          '   Add it to dev_dependencies to generate splash screens:\n'
+          '   dev_dependencies:\n'
+          '     flutter_native_splash: ^2.3.1',
         );
       }
+    }
+
+    // Run intl_utils if available
+    if (hasPackage('intl_utils')) {
+      await runCommand('dart', [
+        'run',
+        'intl_utils:generate',
+      ], successMessage: '✅ Intl utils generated successfully!');
     } else {
       logger.w(
-        '⚠️ pubspec.yaml not found, skipping `intl_utils:generate` command.',
+        '⚠️ `intl_utils` not found in your pubspec.yaml, skipping `intl_utils:generate` command.',
       );
     }
 
