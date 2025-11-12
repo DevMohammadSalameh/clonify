@@ -311,11 +311,7 @@ String promptUserTUI(
 /// [skip] A boolean indicating whether to skip the prompt.
 ///
 /// Returns true if user confirms, false otherwise.
-bool confirmTUI(
-  String message, {
-  bool defaultValue = false,
-  bool? skip,
-}) {
+bool confirmTUI(String message, {bool defaultValue = false, bool? skip}) {
   if (skip == true) {
     logger.i('$message >>| Skipping with ($defaultValue)...');
     return defaultValue;
@@ -328,8 +324,10 @@ bool confirmTUI(
       defaultValue ? 'y' : 'n',
       validator: (input) {
         final normalized = input.toLowerCase();
-        return normalized == 'y' || normalized == 'n' ||
-               normalized == 'yes' || normalized == 'no';
+        return normalized == 'y' ||
+            normalized == 'n' ||
+            normalized == 'yes' ||
+            normalized == 'no';
       },
     );
     return answer.toLowerCase() == 'y' || answer.toLowerCase() == 'yes';

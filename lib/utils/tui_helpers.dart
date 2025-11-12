@@ -66,11 +66,7 @@ String promptWithTUI(
     return _basicPrompt(message, defaultValue: defaultValue, hidden: hidden);
   }
 
-  return tuiLogger.prompt(
-    message,
-    defaultValue: defaultValue,
-    hidden: hidden,
-  );
+  return tuiLogger.prompt(message, defaultValue: defaultValue, hidden: hidden);
 }
 
 /// Enhanced confirmation prompt with TUI support

@@ -149,8 +149,10 @@ bool _ensureClonifyDirectory() {
 ///
 /// Returns a map with 'enabled' and 'settingsFile' keys.
 Map<String, dynamic> _promptFirebaseSettings() {
-  final bool enableFirebase =
-      confirmTUI('\n🔥 Do you want to enable Firebase?', defaultValue: false);
+  final bool enableFirebase = confirmTUI(
+    '\n🔥 Do you want to enable Firebase?',
+    defaultValue: false,
+  );
 
   String firebaseSettingsFilePath = '';
   if (enableFirebase) {
@@ -178,8 +180,10 @@ Map<String, dynamic> _promptFirebaseSettings() {
 ///
 /// Returns a map with 'enabled' and 'settingsFile' keys.
 Map<String, dynamic> _promptFastlaneSettings() {
-  final bool enableFastlane =
-      confirmTUI('\n🚀 Do you want to enable Fastlane?', defaultValue: false);
+  final bool enableFastlane = confirmTUI(
+    '\n🚀 Do you want to enable Fastlane?',
+    defaultValue: false,
+  );
 
   String fastlaneSettingsFilePath = '';
   if (enableFastlane) {
@@ -372,10 +376,7 @@ List<CustomField> _promptCustomFields() {
 
     successMessage('Added custom field: $fieldName ($type)');
 
-    final addMore = confirmTUI(
-      '\n➕ Add another field?',
-      defaultValue: false,
-    );
+    final addMore = confirmTUI('\n➕ Add another field?', defaultValue: false);
 
     if (!addMore) break;
   }

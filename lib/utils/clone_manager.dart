@@ -206,7 +206,9 @@ Map<String, String>? _promptCloneBasicInfo() {
       clonifySettings.defaultColor,
       validator: (value) {
         if (!RegExp(r'^0x[0-9A-Fa-f]{8}$').hasMatch(value)) {
-          errorMessage('Invalid color format. Use 0xFFRRGGBB (e.g., 0xFFFFFFFF)');
+          errorMessage(
+            'Invalid color format. Use 0xFFRRGGBB (e.g., 0xFFFFFFFF)',
+          );
           return false;
         }
         return true;
@@ -687,7 +689,8 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
         await runCommand(
           'dart',
           ['run', 'flutter_native_splash:create'],
-          successMessage: '✅ Flutter native splash screen created successfully!',
+          successMessage:
+              '✅ Flutter native splash screen created successfully!',
         );
       } else {
         logger.w(
@@ -903,7 +906,9 @@ void listClients() async {
   final dir = Directory('./clonify/clones');
   if (!dir.existsSync()) {
     warningMessage('No clones directory found.');
-    infoMessage('Run "clonify init" to initialize, then "clonify create" to create your first clone.');
+    infoMessage(
+      'Run "clonify init" to initialize, then "clonify create" to create your first clone.',
+    );
     return;
   }
 
@@ -963,10 +968,12 @@ void listClients() async {
   // Print styled table header
   if (isTUIEnabled()) {
     final chalk = Chalk();
-    final headerLine = '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 10)}+';
+    final headerLine =
+        '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 10)}+';
     print(chalk.cyan(headerLine));
 
-    final header = '| '
+    final header =
+        '| '
         '${'🆔 Client ID'.padRight(clientIdWidth + 2)}| '
         '${'📱 App Name'.padRight(appNameWidth + 2)}| '
         '${'🔥 Firebase'.padRight(firebaseProjectIdWidth + 2)}| '
@@ -975,7 +982,8 @@ void listClients() async {
     print(chalk.cyan(headerLine));
   } else {
     // Basic table for non-TUI mode
-    final headerLine = '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+';
+    final headerLine =
+        '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+';
     logger.i('\n$headerLine');
     logger.i(
       '| ${'Client ID'.padRight(clientIdWidth)}|'
@@ -989,7 +997,8 @@ void listClients() async {
   // Print table rows with highlighting for active client
   for (final client in clientsData) {
     final isActive = client['clientId'] == lastClientId;
-    final row = '| '
+    final row =
+        '| '
         '${client['clientId']!.padRight(clientIdWidth)}| '
         '${client['appName']!.padRight(appNameWidth)}| '
         '${(client['firebaseProjectId'] ?? '').padRight(firebaseProjectIdWidth)}| '
@@ -1014,10 +1023,12 @@ void listClients() async {
   // Print table footer
   if (isTUIEnabled()) {
     final chalk = Chalk();
-    final footerLine = '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 10)}+';
+    final footerLine =
+        '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 10)}+';
     print(chalk.cyan(footerLine));
   } else {
-    final footerLine = '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+';
+    final footerLine =
+        '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+';
     logger.i(footerLine);
   }
 

@@ -49,7 +49,8 @@ class ClonifyCommandRunner extends CommandRunner<void> {
     argParser.addFlag(
       'no-tui',
       negatable: false,
-      help: 'Disable TUI (Text User Interface) features and use basic text mode',
+      help:
+          'Disable TUI (Text User Interface) features and use basic text mode',
     );
 
     addCommand(InitializeCommand());
