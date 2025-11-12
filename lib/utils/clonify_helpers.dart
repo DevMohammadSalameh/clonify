@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:clonify/models/clonify_settings_model.dart';
 import 'package:clonify/src/clonify_core.dart';
 import 'package:clonify/utils/clone_manager.dart';
+import 'package:clonify/utils/tui_helpers.dart';
 import 'package:logger/logger.dart';
 
 // Future<void> runParallelCommands(
@@ -245,6 +246,142 @@ String promptUser(
     return promptUser(promptMessage, defaultValue, validator: validator);
   }
   return answer;
+}
+
+// ============================================================================
+// TUI-Enhanced Prompt Functions
+// ============================================================================
+
+/// TUI-enhanced version of [promptUser] with better interactive experience.
+///
+/// Uses mason_logger for enhanced prompting when TUI is enabled.
+/// Falls back to basic [promptUser] when TUI is disabled or --skipAll is used.
+///
+/// [promptMessage] The message to display to the user.
+/// [defaultValue] The default value to use if the user provides no input.
+/// [validator] An optional function to validate the user's input.
+/// [skip] A boolean indicating whether to skip the prompt.
+/// [skipValue] An optional value to return if [skip] is `true`.
+///
+/// Returns the validated user input or the default/skip value.
+String promptUserTUI(
+  String promptMessage,
+  String defaultValue, {
+  bool Function(String)? validator,
+  bool? skip,
+  String? skipValue,
+}) {
+  // Use basic prompt if skipping or TUI is disabled
+  if (skip == true || !isTUIEnabled()) {
+    return promptUser(
+      promptMessage,
+      defaultValue,
+      validator: validator,
+      skip: skip,
+      skipValue: skipValue,
+    );
+  }
+
+  // Use TUI-enhanced prompt
+  while (true) {
+    final answer = promptWithTUI(
+      promptMessage,
+      defaultValue: defaultValue.isNotEmpty ? defaultValue : null,
+    );
+
+    final value = answer.isEmpty ? defaultValue : answer;
+
+    // Validate if validator is provided
+    if (validator != null && !validator(value)) {
+      errorMessage('Invalid input. Please try again.');
+      continue;
+    }
+
+    return value;
+  }
+}
+
+/// TUI-enhanced confirmation prompt.
+///
+/// Uses mason_logger for yes/no confirmations with better UX.
+/// Falls back to basic stdin when TUI is disabled.
+///
+/// [message] The confirmation message to display.
+/// [defaultValue] The default value if user just presses Enter.
+/// [skip] A boolean indicating whether to skip the prompt.
+///
+/// Returns true if user confirms, false otherwise.
+bool confirmTUI(
+  String message, {
+  bool defaultValue = false,
+  bool? skip,
+}) {
+  if (skip == true) {
+    logger.i('$message >>| Skipping with ($defaultValue)...');
+    return defaultValue;
+  }
+
+  if (!isTUIEnabled()) {
+    // Fallback to basic confirmation
+    final answer = promptUser(
+      message,
+      defaultValue ? 'y' : 'n',
+      validator: (input) {
+        final normalized = input.toLowerCase();
+        return normalized == 'y' || normalized == 'n' ||
+               normalized == 'yes' || normalized == 'no';
+      },
+    );
+    return answer.toLowerCase() == 'y' || answer.toLowerCase() == 'yes';
+  }
+
+  return confirmWithTUI(message, defaultValue: defaultValue);
+}
+
+/// TUI-enhanced single-choice selection.
+///
+/// Uses mason_logger for arrow-key navigation when TUI is enabled.
+/// Falls back to numbered list selection when TUI is disabled.
+///
+/// [message] The selection prompt message.
+/// [choices] List of options to choose from.
+/// [defaultValue] The default selection.
+///
+/// Returns the selected option or null if cancelled.
+String? selectOneTUI(
+  String message,
+  List<String> choices, {
+  String? defaultValue,
+}) {
+  if (choices.isEmpty) {
+    errorMessage('No choices available');
+    return null;
+  }
+
+  return chooseOneWithTUI(message, choices, defaultValue: defaultValue);
+}
+
+/// TUI-enhanced multi-choice selection.
+///
+/// Uses mason_logger for checkbox-based selection when TUI is enabled.
+/// Falls back to numbered list with comma-separated input when TUI is disabled.
+///
+/// [message] The selection prompt message.
+/// [choices] List of options to choose from.
+/// [defaultValues] The default selections.
+///
+/// Returns the list of selected options.
+List<String> selectManyTUI(
+  String message,
+  List<String> choices, {
+  List<String>? defaultValues,
+}) {
+  if (choices.isEmpty) {
+    errorMessage('No choices available');
+    return [];
+  }
+
+  return chooseAnyWithTUI(message, choices, defaultValues: defaultValues);
 }
 
 /// Retrieves the value associated with a specific command-line argument key.

@@ -23,6 +23,8 @@ platforms:
 dependencies:
   args: ^2.3.0
   logger: ^2.0.2+1
+  mason_logger: ^0.3.3
+  chalkdart: ^3.0.4
   path: ^1.8.0
   yaml_edit: ^2.2.2
   yaml: ^3.1.3

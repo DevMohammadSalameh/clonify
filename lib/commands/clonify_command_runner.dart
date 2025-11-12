@@ -20,6 +20,7 @@ import 'package:clonify/utils/build_manager.dart';
 import 'package:clonify/utils/clone_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:clonify/utils/upload_manager.dart';
+import 'package:clonify/utils/tui_helpers.dart';
 import 'package:yaml/yaml.dart';
 
 /// A [CommandRunner] for the Clonify CLI tool.
@@ -43,6 +44,12 @@ class ClonifyCommandRunner extends CommandRunner<void> {
       abbr: 'v',
       negatable: false,
       help: 'Display the version of Clonify',
+    );
+
+    argParser.addFlag(
+      'no-tui',
+      negatable: false,
+      help: 'Disable TUI (Text User Interface) features and use basic text mode',
     );
 
     addCommand(InitializeCommand());
@@ -98,6 +105,10 @@ class ClonifyCommandRunner extends CommandRunner<void> {
   Future<void> run(Iterable<String> args) async {
     // Parse arguments
     final argResults = parse(args);
+
+    // Initialize TUI system with --no-tui flag consideration
+    final noTui = argResults['no-tui'] == true;
+    initializeTUI(noTui: noTui);
 
     // Handle --version flag
     if (argResults['version'] == true) {
