@@ -111,6 +111,7 @@ This will:
 - Generate compile-time configuration class
 
 Generates: `lib/generated/clone_configs.dart`
+this class can be used in your project for accessing clone specific attributes. 
 
 ### 4. Build Your App
 
