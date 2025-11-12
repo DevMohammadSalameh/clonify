@@ -6,6 +6,7 @@ import 'package:clonify/messages.dart';
 import 'package:clonify/models/clonify_settings_model.dart';
 import 'package:clonify/models/custom_field_model.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
+import 'package:clonify/utils/tui_helpers.dart';
 // ignore: depend_on_referenced_packages
 import 'package:yaml/yaml.dart' as yaml;
 
@@ -149,20 +150,20 @@ bool _ensureClonifyDirectory() {
 /// Returns a map with 'enabled' and 'settingsFile' keys.
 Map<String, dynamic> _promptFirebaseSettings() {
   final bool enableFirebase =
-      promptUser('Do you want to enable Firebase? (y/n)', 'n') == 'y';
+      confirmTUI('\n🔥 Do you want to enable Firebase?', defaultValue: false);
 
   String firebaseSettingsFilePath = '';
   if (enableFirebase) {
-    firebaseSettingsFilePath = promptUser(
-      'Enter Firebase settings file path:',
+    firebaseSettingsFilePath = promptUserTUI(
+      '📁 Enter Firebase settings file path',
       '',
       validator: (value) {
         if (value.isEmpty) {
-          logger.e('❌ Firebase settings file path cannot be empty.');
+          errorMessage('Firebase settings file path cannot be empty.');
           return false;
         }
         if (!File(value).existsSync()) {
-          logger.e('❌ Firebase settings file does not exist at $value.');
+          errorMessage('Firebase settings file does not exist at $value.');
           return false;
         }
         return true;
@@ -178,19 +179,19 @@ Map<String, dynamic> _promptFirebaseSettings() {
 /// Returns a map with 'enabled' and 'settingsFile' keys.
 Map<String, dynamic> _promptFastlaneSettings() {
   final bool enableFastlane =
-      promptUser('Do you want to enable Fastlane? (y/n)', 'n') == 'y';
+      confirmTUI('\n🚀 Do you want to enable Fastlane?', defaultValue: false);
 
   String fastlaneSettingsFilePath = '';
   if (enableFastlane) {
-    fastlaneSettingsFilePath = promptUser(
-      'Enter Fastlane settings file path:',
+    fastlaneSettingsFilePath = promptUserTUI(
+      '📁 Enter Fastlane settings file path',
       '',
       validator: (value) {
         if (value.isEmpty) {
-          logger.e('❌ Fastlane settings file path cannot be empty.');
+          errorMessage('Fastlane settings file path cannot be empty.');
           return false;
         } else if (!File(value).existsSync()) {
-          logger.e('❌ Fastlane settings file does not exist at $value.');
+          errorMessage('Fastlane settings file does not exist at $value.');
           return false;
         }
         return true;
@@ -205,26 +206,28 @@ Map<String, dynamic> _promptFastlaneSettings() {
 ///
 /// Returns a map with 'companyName' and 'defaultColor' keys.
 Map<String, String> _promptBasicSettings() {
-  final String companyName = promptUser(
-    'Enter your company name:',
+  infoMessage('\n📋 Basic Project Settings');
+
+  final String companyName = promptUserTUI(
+    '🏢 Enter your company name',
     '',
     validator: (value) {
       if (value.isEmpty) {
-        logger.e('❌ Company name cannot be empty.');
+        errorMessage('Company name cannot be empty.');
         return false;
       }
       return true;
     },
   );
 
-  final String defaultColor = promptUser(
-    'Enter default app color (hex format, e.g., #FFFFFF):',
+  final String defaultColor = promptUserTUI(
+    '🎨 Enter default app color (hex format, e.g., #FFFFFF)',
     '#FFFFFF',
     validator: (value) {
       if (RegExp(r'^#(?:[0-9a-fA-F]{6}|[0-9a-fA-F]{3})$').hasMatch(value)) {
         return true;
       }
-      logger.e('Invalid hex color format. Use #FFFFFF or #FFF.');
+      errorMessage('Invalid hex color format. Use #FFFFFF or #FFF.');
       return false;
     },
   );
@@ -248,41 +251,39 @@ Map<String, String> _promptBasicSettings() {
     );
   }
 
+  infoMessage('\n🖼️  Asset Configuration');
+
   final List<String> selectedAssets = [];
 
   // Ask about launcher icon
-  final needsLauncherIcon =
-      promptUser(
-        '\nDoes your app need a custom launcher icon? (y/n)',
-        'y',
-      ).toLowerCase() ==
-      'y';
+  final needsLauncherIcon = confirmTUI(
+    '\n📱 Does your app need a custom launcher icon?',
+    defaultValue: true,
+  );
 
   if (needsLauncherIcon) {
-    final launcherIconFile = promptUser(
-      'Enter the launcher icon filename (e.g., icon.png):',
+    final launcherIconFile = promptUserTUI(
+      '🎯 Enter the launcher icon filename (e.g., icon.png)',
       'icon.png',
       validator: (value) => value.trim().isNotEmpty,
     );
     selectedAssets.add(launcherIconFile);
   } else {
     // Launcher icon is required, use default
-    logger.w('Using default launcher icon filename: icon.png');
+    warningMessage('Using default launcher icon filename: icon.png');
     selectedAssets.add('icon.png');
   }
 
   // Ask about splash screen
-  final needsSplashScreen =
-      promptUser(
-        'Does your app need a custom splash screen? (y/n)',
-        'n',
-      ).toLowerCase() ==
-      'y';
+  final needsSplashScreen = confirmTUI(
+    '💫 Does your app need a custom splash screen?',
+    defaultValue: false,
+  );
 
   String? splashScreenFile;
   if (needsSplashScreen) {
-    splashScreenFile = promptUser(
-      'Enter the splash screen filename (e.g., splash.png):',
+    splashScreenFile = promptUserTUI(
+      '🌟 Enter the splash screen filename (e.g., splash.png)',
       'splash.png',
       validator: (value) => value.trim().isNotEmpty,
     );
@@ -290,13 +291,14 @@ Map<String, String> _promptBasicSettings() {
   }
 
   // Ask about logo asset
-  final needsLogo =
-      promptUser('Does your app need a logo asset? (y/n)', 'n').toLowerCase() ==
-      'y';
+  final needsLogo = confirmTUI(
+    '🏷️  Does your app need a logo asset?',
+    defaultValue: false,
+  );
 
   if (needsLogo) {
-    final logoFile = promptUser(
-      'Enter the logo filename (e.g., logo.png):',
+    final logoFile = promptUserTUI(
+      '🖼️  Enter the logo filename (e.g., logo.png)',
       'logo.png',
       validator: (value) => value.trim().isNotEmpty,
     );
@@ -318,72 +320,70 @@ Map<String, String> _promptBasicSettings() {
 List<CustomField> _promptCustomFields() {
   final fields = <CustomField>[];
 
-  final wantsCustomFields =
-      promptUser(
-        '\nDo you want to add custom configuration fields? (y/n)',
-        'n',
-      ).toLowerCase() ==
-      'y';
+  final wantsCustomFields = confirmTUI(
+    '\n⚙️  Do you want to add custom configuration fields?',
+    defaultValue: false,
+  );
 
   if (!wantsCustomFields) {
-    logger.i('No custom fields added.');
+    infoMessage('No custom fields added.');
     return fields;
   }
 
-  logger.i(
-    '\nYou can now add custom fields that will be required for each clone.',
+  infoMessage(
+    '\n📝 You can now add custom fields that will be required for each clone.',
   );
-  logger.i('Supported types: string, int, bool, double');
+  infoMessage('Supported types: string, int, bool, double');
 
   while (true) {
     print('\n');
-    final fieldName = promptUser(
-      'Enter field name (e.g., socketUrl, apiKey):',
+    final fieldName = promptUserTUI(
+      '🔤 Enter field name (e.g., socketUrl, apiKey)',
       '',
       validator: (value) {
         if (value.trim().isEmpty) {
-          logger.e('❌ Field name cannot be empty.');
+          errorMessage('Field name cannot be empty.');
           return false;
         }
         if (fields.any((f) => f.name == value.trim())) {
-          logger.e('❌ Field name "$value" already exists.');
+          errorMessage('Field name "$value" already exists.');
           return false;
         }
         return true;
       },
     );
 
-    final typeChoice = promptUser(
-      'Select type:\n'
-          '  1. String\n'
-          '  2. Int\n'
-          '  3. Bool\n'
-          '  4. Double\n'
-          'Enter choice (1-4):',
-      '1',
-      validator: (value) {
-        final choice = int.tryParse(value);
-        return choice != null && choice >= 1 && choice <= 4;
-      },
+    // Use TUI selection for type
+    final typeOptions = ['String', 'Int', 'Bool', 'Double'];
+    final selectedType = selectOneTUI(
+      '📊 Select field type',
+      typeOptions,
+      defaultValue: 'String',
     );
 
-    final type = ['string', 'int', 'bool', 'double'][int.parse(typeChoice) - 1];
+    if (selectedType == null) {
+      warningMessage('Type selection cancelled, defaulting to String');
+    }
+
+    final type = (selectedType ?? 'String').toLowerCase();
 
     final field = CustomField(name: fieldName, type: type);
     fields.add(field);
 
-    logger.i('✅ Added custom field: $fieldName ($type)');
+    successMessage('Added custom field: $fieldName ($type)');
 
-    final addMore =
-        promptUser('\nAdd another field? (y/n)', 'n').toLowerCase() == 'y';
+    final addMore = confirmTUI(
+      '\n➕ Add another field?',
+      defaultValue: false,
+    );
 
     if (!addMore) break;
   }
 
   if (fields.isNotEmpty) {
-    logger.i('\nCustom fields summary:');
+    infoMessage('\n📋 Custom fields summary:');
     for (final field in fields) {
-      logger.i('  - ${field.name} (${field.type})');
+      infoMessage('  - ${field.name} (${field.type})');
     }
   }
 
