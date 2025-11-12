@@ -1,3 +1,32 @@
+## 0.3.1 - 2024-11-12
+
+### Bug Fixes
+
+**Version Command:**
+- 🐛 Fixed `--version` flag to correctly read from clonify's own `pubspec.yaml` instead of the Flutter project's `pubspec.yaml`
+- ✅ Version command now displays "clonify version 0.3.1" regardless of where it's run from in a Flutter project
+- 🔧 Added package name verification to ensure correct pubspec is read
+- 📍 Improved pubspec.yaml lookup logic to search relative to executable location
+
+### Improvements
+
+**Dependency Checking:**
+- ✨ Enhanced dependency checking for optional build tools (`flutter_launcher_icons`, `flutter_native_splash`, `intl_utils`)
+- 🛡️ Added graceful handling when optional packages are not installed in user's project
+- 📝 Improved warning messages with clear installation instructions
+- 🔧 Added `hasPackage()` helper function for cleaner dependency validation
+- ⚡ Better error prevention by checking dependencies before running build commands
+
+**Code Quality:**
+- 🧹 Removed `.dart_tool` build artifacts from version control
+- 📦 Added build artifacts to `.gitignore` for cleaner repository
+- ✅ All files pass `dart analyze` with no issues
+- ✅ All files properly formatted with `dart format`
+
+### Breaking Changes
+
+None - all changes are bug fixes and improvements.
+
 ## 0.3.0 - 2024-11-11
 
 ### Documentation & Quality Improvements
