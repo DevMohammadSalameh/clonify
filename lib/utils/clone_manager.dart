@@ -2,6 +2,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:chalkdart/chalk.dart';
 import 'package:clonify/constants.dart';
 import 'package:clonify/models/config_model.dart';
 import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
@@ -896,19 +897,24 @@ Future<Map<String, dynamic>> parseConfigFile(String clientId) async {
 ///
 /// If no clones are found or if there are errors parsing configuration files,
 /// appropriate messages are logged.
-void listClients() {
-  logger.i('📋 Listing all Currently Available clients...');
+void listClients() async {
+  infoMessage('\n📋 Available Clones');
+
   final dir = Directory('./clonify/clones');
   if (!dir.existsSync()) {
-    logger.i('No clients found.');
+    warningMessage('No clones directory found.');
+    infoMessage('Run "clonify init" to initialize, then "clonify create" to create your first clone.');
     return;
   }
+
+  // Get last active client
+  final lastClientId = await getLastClientId();
 
   // Column Widths (adjust as needed)
   int clientIdWidth = 15;
   int appNameWidth = 20;
   int firebaseProjectIdWidth = 30;
-  const int versionWidth = 10;
+  const int versionWidth = 12;
 
   final List<Map<String, String>> clientsData = [];
 
@@ -923,7 +929,7 @@ void listClients() {
           final firebaseProjectId = content['firebaseProjectId'] ?? '';
           final version = content['version']?.toString() ?? 'N/A';
 
-          //adjust column widths
+          // Adjust column widths
           clientIdWidth = clientId.length > clientIdWidth
               ? clientId.length
               : clientIdWidth;
@@ -942,43 +948,92 @@ void listClients() {
             'version': version,
           });
         } catch (e) {
-          // Handle JSON parsing error
-          logger.e('❌ Error parsing config file: $e');
+          errorMessage('Error parsing config file: $e');
         }
       }
     }
   }
 
   if (clientsData.isEmpty) {
-    logger.i('No clients found.');
+    warningMessage('No clones found.');
+    infoMessage('Create your first clone with: clonify create');
     return;
   }
 
-  // Print Table Header
-  logger.i(
-    '\n+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+',
-  );
-  logger.i(
-    '| ${'Client ID'.padRight(clientIdWidth)}|'
-    ' ${'App Name'.padRight(appNameWidth)}|'
-    ' ${'Firebase Project ID'.padRight(firebaseProjectIdWidth)}|'
-    ' ${'Version'.padRight(versionWidth)}|',
-  );
-  logger.i(
-    '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+',
-  );
+  // Print styled table header
+  if (isTUIEnabled()) {
+    final chalk = Chalk();
+    final headerLine = '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 10)}+';
+    print(chalk.cyan(headerLine));
 
-  // Print Table Rows
-  for (final client in clientsData) {
+    final header = '| '
+        '${'🆔 Client ID'.padRight(clientIdWidth + 2)}| '
+        '${'📱 App Name'.padRight(appNameWidth + 2)}| '
+        '${'🔥 Firebase'.padRight(firebaseProjectIdWidth + 2)}| '
+        '${'🔢 Version'.padRight(versionWidth + 2)}|';
+    print(chalk.cyan.bold(header));
+    print(chalk.cyan(headerLine));
+  } else {
+    // Basic table for non-TUI mode
+    final headerLine = '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+';
+    logger.i('\n$headerLine');
     logger.i(
-      '| ${client['clientId']!.padRight(clientIdWidth)}|'
-      ' ${client['appName']!.padRight(appNameWidth)}|'
-      ' ${client['firebaseProjectId']!.padRight(firebaseProjectIdWidth)}|'
-      ' ${client['version']!.padRight(versionWidth)}|',
+      '| ${'Client ID'.padRight(clientIdWidth)}|'
+      ' ${'App Name'.padRight(appNameWidth)}|'
+      ' ${'Firebase Project ID'.padRight(firebaseProjectIdWidth)}|'
+      ' ${'Version'.padRight(versionWidth)}|',
     );
+    logger.i(headerLine);
   }
 
-  logger.i(
-    '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+',
-  );
+  // Print table rows with highlighting for active client
+  for (final client in clientsData) {
+    final isActive = client['clientId'] == lastClientId;
+    final row = '| '
+        '${client['clientId']!.padRight(clientIdWidth)}| '
+        '${client['appName']!.padRight(appNameWidth)}| '
+        '${(client['firebaseProjectId'] ?? '').padRight(firebaseProjectIdWidth)}| '
+        '${client['version']!.padRight(versionWidth)}|';
+
+    if (isTUIEnabled()) {
+      final chalk = Chalk();
+      if (isActive) {
+        print(chalk.green.bold('▶ ${row.substring(2)}'));
+      } else {
+        print(chalk.white('  $row'));
+      }
+    } else {
+      if (isActive) {
+        logger.i('▶ $row');
+      } else {
+        logger.i(row);
+      }
+    }
+  }
+
+  // Print table footer
+  if (isTUIEnabled()) {
+    final chalk = Chalk();
+    final footerLine = '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 10)}+';
+    print(chalk.cyan(footerLine));
+  } else {
+    final footerLine = '+${'─' * (clientIdWidth + appNameWidth + firebaseProjectIdWidth + versionWidth + 7)}+';
+    logger.i(footerLine);
+  }
+
+  // Display summary
+  final totalClones = clientsData.length;
+  if (isTUIEnabled()) {
+    print('');
+    if (lastClientId != null) {
+      successMessage('📌 Active Clone: $lastClientId');
+    }
+    infoMessage('📊 Total Clones: $totalClones');
+  } else {
+    logger.i('');
+    if (lastClientId != null) {
+      logger.i('Active client: $lastClientId');
+    }
+    logger.i('Total clients: $totalClones');
+  }
 }
