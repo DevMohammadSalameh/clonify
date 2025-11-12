@@ -5,6 +5,7 @@ import 'package:clonify/constants.dart';
 import 'package:clonify/messages.dart';
 import 'package:clonify/models/commands_calls_models/build_command_model.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
+import 'package:clonify/utils/tui_helpers.dart';
 import 'package:yaml/yaml.dart' as yaml;
 
 /// Builds Flutter applications for a specific client ID based on the provided build model.
@@ -119,15 +120,15 @@ Future<void> _runFlutterBuildCommands({
   required String version,
   required Stopwatch stopwatch,
 }) async {
-  final progress = Stream.periodic(const Duration(milliseconds: 100), (count) {
-    logger.i(
-      'Building these apps : ${buildModel.buildApk ? '\n- APK' : ''} ${buildModel.buildAab ? '\n- AAB' : ''} ${buildModel.buildIpa ? '\n- IPA' : ''}',
-    );
-    stdout.write(
-      '\r🛠 Apps are being built... [${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(1)}s]',
-    );
-  });
-  final progressSubscription = progress.listen((_) {});
+  // Build list of platforms being built
+  final platforms = <String>[];
+  if (buildModel.buildApk) platforms.add('APK');
+  if (buildModel.buildAab) platforms.add('AAB');
+  if (buildModel.buildIpa) platforms.add('IPA');
+
+  final buildProgress = progressWithTUI(
+    '🛠  Building ${platforms.join(', ')}...',
+  );
 
   try {
     await Future.wait([
@@ -159,24 +160,21 @@ Future<void> _runFlutterBuildCommands({
         ),
     ]);
 
-    progressSubscription.cancel();
-    stdout.write('\r'); // Clear the line
+    buildProgress?.complete(
+      'Builds completed in ${(stopwatch.elapsedMilliseconds / 1000).toStringAsFixed(2)}s',
+    );
+
     if (buildModel.buildIpa) {
-      logger.i(
-        '✓ You can find the iOS app archive at\n  ${'-' * 10}→ build/ios/archive/Runner.xcarchive',
-      );
+      infoMessage('✓ iOS app archive at: build/ios/archive/Runner.xcarchive');
     }
     if (buildModel.buildAab) {
-      logger.i(
-        '✓ You can find the Android app bundle at\n  ${'-' * 10}→ build/app/outputs/bundle/release/app-release.aab',
+      infoMessage(
+        '✓ Android app bundle at: build/app/outputs/bundle/release/app-release.aab',
       );
     }
   } catch (e) {
-    progressSubscription.cancel();
-    stdout.write('\r'); // Clear the line
+    buildProgress?.fail();
     logger.e('❌ Error during app build: $e');
     rethrow;
-  } finally {
-    progressSubscription.cancel();
   }
 }

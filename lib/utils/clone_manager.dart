@@ -468,10 +468,14 @@ Future<bool> _performInitialSetup(
 ) async {
   try {
     // Step 1: Rename app name and package
+    final renameProgress = progressWithTUI(
+      '📦 Renaming package to ${configJson['packageName']}...',
+    );
     await runRenamePackage(
       appName: configJson['appName'],
       packageName: configJson['packageName'],
     );
+    renameProgress?.complete('Package renamed successfully');
 
     if (callModel.isDebug) {
       return true; // Early return for debug mode
@@ -479,15 +483,22 @@ Future<bool> _performInitialSetup(
 
     // Step 2: Create Firebase project and enable FCM
     if (clonifySettings.firebaseEnabled) {
+      final firebaseProgress = progressWithTUI(
+        '🔥 Configuring Firebase for ${configJson['firebaseProjectId']}...',
+      );
       await addFirebaseToApp(
         packageName: configJson['packageName'],
         firebaseProjectId: configJson['firebaseProjectId'],
         skip: callModel.skipAll || callModel.skipFirebaseConfigure,
       );
+      firebaseProgress?.complete('Firebase configured successfully');
     }
 
     // Step 3: Replace assets
+    final assetsProgress = progressWithTUI('🎨 Replacing client assets...');
     replaceAssets(callModel.clientId!);
+    assetsProgress?.complete('Assets replaced successfully');
+
     return true;
   } catch (e) {
     logger.e('❌ Error during initial setup: $e');
@@ -670,10 +681,12 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
 
     // Run flutter_launcher_icons if available
     if (hasPackage('flutter_launcher_icons')) {
+      final iconProgress = progressWithTUI('🚀 Generating launcher icons...');
       await runCommand('dart', [
         'run',
         'flutter_launcher_icons',
       ], successMessage: '✅ Flutter launcher icons generated successfully!');
+      iconProgress?.complete('Launcher icons generated');
     } else {
       logger.w(
         '⚠️ `flutter_launcher_icons` not found in your pubspec.yaml.\n'
@@ -686,12 +699,14 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
     // Run flutter_native_splash if splash screen is configured and package is available
     if (clonifySettings.splashScreenAsset != null) {
       if (hasPackage('flutter_native_splash')) {
+        final splashProgress = progressWithTUI('💦 Creating splash screen...');
         await runCommand(
           'dart',
           ['run', 'flutter_native_splash:create'],
           successMessage:
               '✅ Flutter native splash screen created successfully!',
         );
+        splashProgress?.complete('Splash screen created');
       } else {
         logger.w(
           '⚠️ `flutter_native_splash` not found in your pubspec.yaml.\n'
@@ -704,10 +719,14 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
 
     // Run intl_utils if available
     if (hasPackage('intl_utils')) {
+      final intlProgress = progressWithTUI(
+        '🌍 Generating internationalization files...',
+      );
       await runCommand('dart', [
         'run',
         'intl_utils:generate',
       ], successMessage: '✅ Intl utils generated successfully!');
+      intlProgress?.complete('Internationalization files generated');
     } else {
       logger.w(
         '⚠️ `intl_utils` not found in your pubspec.yaml, skipping `intl_utils:generate` command.',
