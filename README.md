@@ -29,6 +29,23 @@ A powerful command-line tool for managing multiple Flutter project clones with d
 - Firebase CLI (optional, for Firebase features)
 - Fastlane (optional, for upload features)
 
+### Important: Required Dev Dependencies
+
+Clonify relies on the following packages to automate asset generation and package renaming. **Add these to your Flutter project's `dev_dependencies`** for full functionality:
+
+```yaml
+dev_dependencies:
+  flutter_launcher_icons: ^0.13.1  # Automated launcher icon generation
+  flutter_native_splash: ^2.3.1     # Splash screen creation
+  package_rename_plus: ^1.7.2       # Smart package renaming
+  intl_utils: ^2.8.7                # Internationalization (optional)
+```
+
+**Why these are needed:**
+- Clonify calls these tools as external commands to generate icons, splash screens, and rename packages
+- The tool will check for their presence and warn you if they're missing
+- You don't need to import them in your code - Clonify uses them automatically
+
 ### Install Globally
 
 Install clonify globally to use it from anywhere:
@@ -482,5 +499,22 @@ Full license: https://www.gnu.org/licenses/gpl-3.0.txt
 
 ## Acknowledgments
 
-- Built with ❤️ for the Flutter community
-- Inspired by the need for efficient white-label app management, architecture wise inspired by rename package
+Built with ❤️ for the Flutter community, inspired by the need for efficient white-label app management.
+
+### Special Thanks to Open Source Contributors
+
+Clonify leverages these excellent community packages:
+
+**Core TUI Libraries:**
+- [mason_logger](https://pub.dev/packages/mason_logger) - Interactive CLI prompts and progress indicators
+- [chalkdart](https://pub.dev/packages/chalkdart) - Terminal string styling and colors
+
+**Asset Generation Tools (Called by Clonify):**
+- [flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons) - Automated launcher icon generation
+- [flutter_native_splash](https://pub.dev/packages/flutter_native_splash) - Splash screen creation
+- [package_rename_plus](https://pub.dev/packages/package_rename_plus) - Smart package and app renaming
+
+**Architecture Inspiration:**
+- Inspired by the architecture of the `rename` package for Flutter project management
+
+A huge thank you to all the maintainers and contributors of these projects! 🙏
