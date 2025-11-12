@@ -1,4 +1,4 @@
 .dart_tool/
-.flutter-plugins-dependencies
 example/.dart_tool/
 example/pubspec.lock
+doc/
