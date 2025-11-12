@@ -55,28 +55,24 @@ class ClonifyCommandRunner extends CommandRunner<void> {
     addCommand(WhichCommand());
   }
 
-  /// Reads the version from pubspec.yaml
+  /// Reads the version from clonify's own pubspec.yaml
   ///
-  /// Attempts to locate and read the version from the package's pubspec.yaml file.
-  /// Searches in the following locations:
-  /// 1. Current directory (for development)
-  /// 2. Script directory (for global activation)
-  /// 3. Parent directories (for running from subdirectories)
+  /// Attempts to locate and read the version from the clonify package's pubspec.yaml file.
+  /// Searches relative to the executable location to ensure it reads clonify's version,
+  /// not the Flutter project's version.
   String _getVersionFromPubspec() {
     try {
-      // Try current directory first
-      File pubspecFile = File('pubspec.yaml');
+      // Get the script location (where the clonify executable is located)
+      final scriptPath = Platform.script.toFilePath();
+      final scriptDir = Directory(scriptPath).parent;
 
-      // If not found, try to find it relative to the script location
-      if (!pubspecFile.existsSync()) {
-        final scriptPath = Platform.script.toFilePath();
-        final packageRoot = Directory(scriptPath).parent.parent.path;
-        pubspecFile = File('$packageRoot/pubspec.yaml');
-      }
+      // For compiled executable: script is in bin/, pubspec.yaml is in parent
+      // For dart run: script is in bin/, pubspec.yaml is in parent
+      File pubspecFile = File('${scriptDir.parent.path}/pubspec.yaml');
 
-      // If still not found, try parent directory
+      // If not found, try relative to script directory (for development)
       if (!pubspecFile.existsSync()) {
-        pubspecFile = File('../pubspec.yaml');
+        pubspecFile = File('${scriptDir.path}/pubspec.yaml');
       }
 
       if (!pubspecFile.existsSync()) {
@@ -85,6 +81,13 @@ class ClonifyCommandRunner extends CommandRunner<void> {
 
       final pubspecContent = pubspecFile.readAsStringSync();
       final pubspec = loadYaml(pubspecContent) as YamlMap;
+
+      // Verify this is the clonify package by checking the name
+      final packageName = pubspec['name']?.toString();
+      if (packageName != 'clonify') {
+        return 'unknown';
+      }
+
       return pubspec['version']?.toString() ?? 'unknown';
     } catch (e) {
       return 'unknown';
