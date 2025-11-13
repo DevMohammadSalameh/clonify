@@ -262,6 +262,18 @@ List<bool> _promptCloneAssetsSettings() {
     '\n📱 Does your app need a custom launcher icon?',
     defaultValue: true,
   );
+  bool updateAndroidLauncherIcon = true;
+  bool updateIOSLauncherIcon = true;
+  if (needsLauncherIcon) {
+    updateAndroidLauncherIcon = confirmTUI(
+      '🎯 Do you want to update the Android launcher icon?',
+      defaultValue: true,
+    );
+    updateIOSLauncherIcon = confirmTUI(
+      '🎯 Do you want to update the iOS launcher icon?',
+      defaultValue: true,
+    );
+  }
 
   // Ask about splash screen
   final needsSplashScreen = confirmTUI(
@@ -275,7 +287,13 @@ List<bool> _promptCloneAssetsSettings() {
     defaultValue: true,
   );
 
-  return [needsLauncherIcon, needsSplashScreen, needsLogo];
+  return [
+    needsLauncherIcon,
+    needsSplashScreen,
+    needsLogo,
+    updateAndroidLauncherIcon,
+    updateIOSLauncherIcon,
+  ];
 }
 
 /// Prompts for custom configuration fields.
@@ -392,6 +410,9 @@ default_color: "${basicConfig['defaultColor']}"
 needs_launcher_icon: ${cloneAssetsConfig[0]}
 needs_splash_screen: ${cloneAssetsConfig[1]}
 needs_logo: ${cloneAssetsConfig[2]}
+
+update_android_launcher_icon: ${cloneAssetsConfig[3]}
+update_ios_launcher_icon: ${cloneAssetsConfig[4]}
 
 $customFieldsYaml
 ''');

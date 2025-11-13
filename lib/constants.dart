@@ -59,9 +59,6 @@ abstract class Constants {
   /// This template is used to generate the configuration for the `flutter_launcher_icons`
   /// package, which helps in creating adaptive launcher icons for Android and iOS.
   static const String flutterLauncherIconsYaml = '''
-dev_dependencies:
-  flutter_launcher_icons: "^0.13.1"
-
 flutter_launcher_icons:
   android: "launcher_icon"
   ios: true

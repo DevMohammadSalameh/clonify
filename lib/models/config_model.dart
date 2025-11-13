@@ -30,7 +30,20 @@ class CloneConfigModel {
   /// The Android/iOS package name (e.g., 'com.example.app').
   String? packageName;
 
+  /// The launcher icon filename.
+  String? launcherIcon;
+
+  /// The splash screen filename.
+  String? splashScreen;
+
+  /// The logo filename.
+  String? logo;
+
+  /// The Firebase project ID.
+  String? firebaseProjectId;
+
   /// List of additional color configurations for the application.
+
   List<ColorModel>? colors;
 
   /// The base URL for API endpoints.
@@ -66,6 +79,10 @@ class CloneConfigModel {
     packageName = json['packageName'];
     baseUrl = json['baseUrl'];
     version = json['version'] ?? '1.0.0+1';
+    launcherIcon = json['launcherIcon'];
+    splashScreen = json['splashScreen'];
+    logo = json['logo'];
+    firebaseProjectId = json['firebaseProjectId'];
     if (json['colors'] != null) {
       colors = [];
       json['colors'].forEach((v) {

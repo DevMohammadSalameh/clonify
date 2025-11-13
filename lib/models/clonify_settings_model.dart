@@ -40,6 +40,12 @@ class ClonifySettings {
   /// Whether the app needs a logo asset.
   final bool needsLogo;
 
+  /// Whether to update the Android launcher icon.
+  final bool updateAndroidLauncherIcon;
+
+  /// Whether to update the iOS launcher icon.
+  final bool updateIOSLauncherIcon;
+
   /// List of custom fields that can be configured per clone.
   final List<CustomField> customFields;
 
@@ -57,6 +63,8 @@ class ClonifySettings {
     required this.needsLauncherIcon,
     required this.needsSplashScreen,
     required this.needsLogo,
+    required this.updateAndroidLauncherIcon,
+    required this.updateIOSLauncherIcon,
     this.customFields = const [],
   });
 
@@ -96,6 +104,8 @@ class ClonifySettings {
       needsLauncherIcon: yaml['needs_launcher_icon'] ?? false,
       needsSplashScreen: yaml['needs_splash_screen'] ?? false,
       needsLogo: yaml['needs_logo'] ?? false,
+      updateAndroidLauncherIcon: yaml['update_android_launcher_icon'] ?? true,
+      updateIOSLauncherIcon: yaml['update_ios_launcher_icon'] ?? true,
       customFields: customFields,
     );
   }

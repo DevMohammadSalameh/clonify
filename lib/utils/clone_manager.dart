@@ -6,8 +6,9 @@ import 'package:chalkdart/chalk.dart';
 import 'package:clonify/constants.dart';
 import 'package:clonify/models/config_model.dart';
 import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
+import 'package:clonify/src/clonify_core.dart';
 import 'package:clonify/utils/asset_manager.dart';
-import 'package:clonify/utils/clonify_helpers.dart';
+import 'package:clonify/utils/clonify_helpers.dart' hide saveLastClientId;
 import 'package:clonify/utils/firebase_manager.dart';
 import 'package:clonify/utils/package_rename_plus_manager.dart';
 import 'package:clonify/utils/tui_helpers.dart';
@@ -53,13 +54,25 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
     sink.writeln('  static const ${color.name} = Color(0xFF${color.color});');
   }
 
-  // 3.3 Write Base URL
   sink.writeln('  static const String baseUrl = "${configModel.baseUrl}";');
-  // 3.4 Write Client ID
+  sink.writeln(
+    '  static const String packageName = "${configModel.packageName}";',
+  );
+  sink.writeln('  static const String appName = "${configModel.appName}";');
+  sink.writeln(
+    '  static const String logo = "assets/images/${configModel.logo}";',
+  );
+  sink.writeln(
+    '  static const String launcherIcon = "assets/images/${configModel.launcherIcon}";',
+  );
+  sink.writeln(
+    '  static const String splashScreen = "assets/images/${configModel.splashScreen}";',
+  );
+  sink.writeln(
+    '  static const String firebaseProjectId = "${configModel.firebaseProjectId}";',
+  );
   sink.writeln('  static const String clientId = "${configModel.clientId}";');
-  // 3.6 Write Version
   sink.writeln('  static const String version = "${configModel.version}";');
-  // 3.7 Write Primary Color
   sink.writeln(
     '  static const String primaryColor = "${configModel.primaryColor}";',
   );
@@ -195,19 +208,19 @@ Map<String, String>? _promptCloneBasicInfo() {
       '🎨 Enter the primary color (hex format: 0xAARRGGBB)',
       clonifySettings.defaultColor,
       validator: (value) {
-        if (!RegExp(r'^0x[0-9a-fA-F]{8}$').hasMatch(value)) {
-          errorMessage(
-            'Invalid color format. Use 0xAARRGGBB (e.g., 0xAAFFFFFF)',
-          );
-          return false;
-        }
+        // if (!RegExp(r'^0x[0-9a-fA-F]{8}$').hasMatch(value)) {
+        //   errorMessage(
+        //     'Invalid color format. Use 0xAARRGGBB (e.g., 0xAAFFFFFF)',
+        //   );
+        //   return false;
+        // }
         return true;
       },
     );
 
     final packageName = promptUserTUI(
       '📦 Enter the package name (e.g., com.example.app)',
-      'com.${clonifySettings.companyName}.${clientId.toLowerCase()}',
+      'com.${clonifySettings.companyName}.${clientId.toLowerCase().replaceAll(' ', '').replaceAll('-', '').replaceAll('_', '')}',
       validator: (value) {
         if (!RegExp(r'^[a-zA-Z]+\.[a-zA-Z]+\.[a-zA-Z]+$').hasMatch(value)) {
           errorMessage('Invalid package name format. Use com.company.app');
@@ -681,6 +694,11 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
 
     // Step 2: Update YAML files with new app name and package name
     try {
+      final clonifySettings = getClonifySettings();
+      final updateAndroidLauncherIcon =
+          clonifySettings.updateAndroidLauncherIcon;
+      final updateIOSLauncherIcon = clonifySettings.updateIOSLauncherIcon;
+
       launcherIconsYamlEditor.update([
         'flutter_launcher_icons',
         'image_path',
@@ -689,6 +707,17 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
         'flutter_launcher_icons',
         'adaptive_icon_foreground',
       ], "assets/images/${configJson['launcherIcon']}");
+
+      launcherIconsYamlEditor.update([
+        'flutter_launcher_icons',
+        'android',
+      ], updateAndroidLauncherIcon);
+
+      launcherIconsYamlEditor.update([
+        'flutter_launcher_icons',
+        'ios',
+      ], updateIOSLauncherIcon);
+
       launcherIconsConfigFile.writeAsStringSync(
         launcherIconsYamlEditor.toString(),
       );
@@ -793,7 +822,6 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
       );
     }
 
-    generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
     return true;
   } catch (e) {
     logger.e('❌ Error during build commands: $e');
@@ -849,6 +877,8 @@ Future<Map<String, dynamic>?> configureApp(
     if (!await _configureLauncherIconsAndSplashScreen(configJson)) {
       return null;
     }
+
+    generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
 
     logger.i('✅ Successfully cloned app for ${callModel.clientId}!');
     return configJson;
