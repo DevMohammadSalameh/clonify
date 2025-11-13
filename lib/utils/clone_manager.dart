@@ -276,7 +276,7 @@ Map<String, String>? _promptCloneBasicInfo() {
           return true;
         },
       );
-      configMap['launcherIcon'] = 'assets/images/$launcherIcon';
+      configMap['launcherIcon'] = launcherIcon;
     }
 
     if (clonifySettings.needsSplashScreen) {
@@ -295,7 +295,7 @@ Map<String, String>? _promptCloneBasicInfo() {
           return true;
         },
       );
-      configMap['splashScreen'] = 'assets/images/$splashScreen';
+      configMap['splashScreen'] = splashScreen;
     }
 
     if (clonifySettings.needsLogo) {
@@ -312,7 +312,7 @@ Map<String, String>? _promptCloneBasicInfo() {
           return true;
         },
       );
-      configMap['logo'] = 'assets/images/$logo';
+      configMap['logo'] = logo;
     }
 
     if (clonifySettings.customFields.isNotEmpty) {

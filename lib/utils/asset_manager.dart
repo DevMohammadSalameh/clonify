@@ -66,7 +66,7 @@ bool createCloneAssetsDirectory(String clientId, List<String> assets) {
     assetsDir.createSync(recursive: true);
 
     final sourceDir = Directory('./assets/images');
-    final targetDir = Directory('./clonify/clones/$clientId/assets');
+    final targetDir = Directory(assetsDir.path);
 
     if (!sourceDir.existsSync()) {
       throw FileSystemException(
