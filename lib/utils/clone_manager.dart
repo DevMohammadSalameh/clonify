@@ -52,20 +52,6 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
     final color = configModel.colors![i];
     sink.writeln('  static const ${color.name} = Color(0xFF${color.color});');
   }
-  // 3.2. Write gradients
-  for (var i = 0; i < (configModel.gradientsColors?.length ?? 0); i++) {
-    final gradient = configModel.gradientsColors![i];
-    sink.writeln(
-      '  static const ${gradient.name} = LinearGradient('
-      'colors: <Color>['
-      '${gradient.colors?.map((color) => 'Color(0xFF$color)').join(', ')}'
-      '],'
-      'begin: Alignment.${gradient.begin},'
-      'end: Alignment.${gradient.end},'
-      'transform: GradientRotation(${gradient.transform})'
-      ');',
-    );
-  }
 
   // 3.3 Write Base URL
   sink.writeln('  static const String baseUrl = "${configModel.baseUrl}";');
@@ -278,27 +264,55 @@ Map<String, String>? _promptCloneBasicInfo() {
       final launcherIcon = promptUserTUI(
         '🎯 Enter the launcher icon filename (e.g., icon.png)',
         '',
-        validator: (value) => value.trim().isNotEmpty,
+        validator: (value) {
+          if (value.trim().isEmpty) {
+            errorMessage('Launcher icon filename cannot be empty');
+          } else if (!File('assets/images/$value').existsSync()) {
+            errorMessage(
+              'Launcher icon file does not exist at assets/images/$value',
+            );
+            return false;
+          }
+          return true;
+        },
       );
-      configMap['launcherIcon'] = launcherIcon;
+      configMap['launcherIcon'] = 'assets/images/$launcherIcon';
     }
 
     if (clonifySettings.needsSplashScreen) {
       final splashScreen = promptUserTUI(
         '🎯 Enter the splash screen filename (e.g., splash.png)',
-        'splash.png',
-        validator: (value) => value.trim().isNotEmpty,
+        '',
+        validator: (value) {
+          if (value.trim().isEmpty) {
+            errorMessage('Splash screen filename cannot be empty');
+          } else if (!File('assets/images/$value').existsSync()) {
+            errorMessage(
+              'Splash screen file does not exist at assets/images/$value',
+            );
+            return false;
+          }
+          return true;
+        },
       );
-      configMap['splashScreen'] = splashScreen;
+      configMap['splashScreen'] = 'assets/images/$splashScreen';
     }
 
     if (clonifySettings.needsLogo) {
       final logo = promptUserTUI(
         '🎯 Enter the logo filename (e.g., logo.png)',
         'logo.png',
-        validator: (value) => value.trim().isNotEmpty,
+        validator: (value) {
+          if (value.trim().isEmpty) {
+            errorMessage('Logo filename cannot be empty');
+          } else if (!File('assets/images/$value').existsSync()) {
+            errorMessage('Logo file does not exist at assets/images/$value');
+            return false;
+          }
+          return true;
+        },
       );
-      configMap['logo'] = logo;
+      configMap['logo'] = 'assets/images/$logo';
     }
 
     if (clonifySettings.customFields.isNotEmpty) {
@@ -435,7 +449,6 @@ Future<bool> _setupCloneServices(Map<String, String> config) async {
       );
     }
 
-    createAssetsDirectory(config['clientId']!);
     return true;
   } catch (e) {
     logger.e('❌ Error during service setup: $e');
@@ -474,6 +487,16 @@ Future<void> createClone() async {
 
     // Step 3: Setup services (rename, Firebase, assets)
     if (!await _setupCloneServices(config)) {
+      _cleanupCloneCreation();
+      return;
+    }
+
+    // Step 4: Create assets directory
+    if (!createCloneAssetsDirectory(config['clientId']!, [
+      config['launcherIcon']!,
+      config['splashScreen']!,
+      config['logo']!,
+    ])) {
       _cleanupCloneCreation();
       return;
     }
@@ -529,9 +552,9 @@ Future<bool> _performInitialSetup(
     }
 
     // Step 3: Replace assets
-    final assetsProgress = progressWithTUI('🎨 Replacing client assets...');
-    replaceAssets(callModel.clientId!);
-    assetsProgress?.complete('Assets replaced successfully');
+    // final assetsProgress = progressWithTUI('🎨 Replacing client assets...');
+    // replaceAssets(callModel.clientId!);
+    // assetsProgress?.complete('Assets replaced successfully');
 
     return true;
   } catch (e) {
@@ -628,12 +651,9 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
   Map<String, dynamic> configJson,
 ) async {
   try {
-    const flutterLauncherIconsPath = 'flutter_launcher_icons.yaml';
-    const flutterNativeSplashPath = 'flutter_native_splash.yaml';
-
     // Step 1: Load and parse the YAML files
-    final launcherIconsConfigFile = File(flutterLauncherIconsPath);
-    final nativeSplashConfigFile = File(flutterNativeSplashPath);
+    final launcherIconsConfigFile = File(Constants.flutterLauncherIconsPath);
+    final nativeSplashConfigFile = File(Constants.flutterNativeSplashPath);
 
     // Create the config files if it does not exist
     if (!launcherIconsConfigFile.existsSync()) {
@@ -642,7 +662,7 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
         Constants.flutterLauncherIconsYaml,
       );
       logger.i(
-        '✅ Created $flutterLauncherIconsPath. you can modify it for customization.',
+        '✅ Created ${Constants.flutterLauncherIconsPath}. you can modify it for customization.',
       );
     }
     if (!nativeSplashConfigFile.existsSync()) {
@@ -651,7 +671,7 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
         Constants.flutterNativeSplashYaml,
       );
       logger.i(
-        '✅ Created $flutterNativeSplashPath. you can modify it for customization.',
+        '✅ Created ${Constants.flutterNativeSplashPath}. you can modify it for customization.',
       );
     }
     final launcherIconsYamlContent = launcherIconsConfigFile.readAsStringSync();
@@ -672,9 +692,11 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
       launcherIconsConfigFile.writeAsStringSync(
         launcherIconsYamlEditor.toString(),
       );
-      logger.i('✅ Updated $flutterLauncherIconsPath with launcher icon asset');
+      logger.i(
+        '✅ Updated ${Constants.flutterLauncherIconsPath} with launcher icon asset',
+      );
     } catch (e) {
-      logger.e('❌ Error updating $flutterLauncherIconsPath: $e');
+      logger.e('❌ Error updating ${Constants.flutterLauncherIconsPath}: $e');
     }
     if (configJson['splashScreen'] != null) {
       try {
@@ -685,20 +707,24 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
         nativeSplashConfigFile.writeAsStringSync(
           nativeSplashYamlEditor.toString(),
         );
-        logger.i('✅ Updated $flutterNativeSplashPath with splash screen asset');
+        logger.i(
+          '✅ Updated ${Constants.flutterNativeSplashPath} with splash screen asset',
+        );
       } catch (e) {
-        logger.e('❌ Error updating $flutterNativeSplashPath: $e');
+        logger.e('❌ Error updating ${Constants.flutterNativeSplashPath}: $e');
       }
     } else {
       logger.i(
-        'No splash screen asset provided. Skipping update of $flutterNativeSplashPath',
+        'No splash screen asset provided. Skipping update of ${Constants.flutterNativeSplashPath}',
       );
     }
 
     // Step 3: Check for dependencies and run build commands
-    final pubspecFile = File('./pubspec.yaml');
+    final pubspecFile = File(Constants.pubspecFilePath);
     if (!pubspecFile.existsSync()) {
-      logger.w('⚠️ pubspec.yaml not found, skipping package commands.');
+      logger.w(
+        '⚠️ ${Constants.pubspecFilePath} not found, skipping package commands.',
+      );
       return true;
     }
 
@@ -813,10 +839,6 @@ Future<Map<String, dynamic>?> configureApp(
       return null;
     }
 
-    if (callModel.isDebug) {
-      return {}; // Return empty map for debug mode
-    }
-
     // Step 2: Handle version management
     final finalVersion = await _handleVersionManagement(callModel, configJson);
     if (finalVersion == null) {
@@ -847,12 +869,12 @@ Future<Map<String, dynamic>?> configureApp(
 /// Throws a [FileSystemException] if the `pubspec.yaml` file cannot be read or written.
 /// Throws a [YamlException] if the `pubspec.yaml` content is invalid.
 Future<void> updateYamlVersionInPubspec(String newVersion) async {
-  const pubspecFilePath = './pubspec.yaml';
+  final pubspecFilePath = Constants.pubspecFilePath;
   final pubspecContent = File(pubspecFilePath).readAsStringSync();
   final yamlEditor = YamlEditor(pubspecContent);
   yamlEditor.update(['version'], newVersion);
   File(pubspecFilePath).writeAsStringSync(yamlEditor.toString());
-  logger.i('✅ Updated version in pubspec.yaml to $newVersion');
+  logger.i('✅ Updated version in ${Constants.pubspecFilePath} to $newVersion');
 }
 
 /// Cleans up a partial or broken clone by removing its associated directory.

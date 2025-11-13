@@ -3,6 +3,12 @@
 /// This class provides static constants and utility methods for accessing
 /// file paths, configuration templates, and tool metadata.
 abstract class Constants {
+  /// The path to the `flutter_launcher_icons.yaml` configuration file.
+  static const String flutterLauncherIconsPath = 'flutter_launcher_icons.yaml';
+
+  /// The path to the `flutter_native_splash.yaml` configuration file.
+  static const String flutterNativeSplashPath = 'flutter_native_splash.yaml';
+
   /// Generates the expected path for the iOS IPA file.
   ///
   /// The path is constructed based on the standard Flutter build output

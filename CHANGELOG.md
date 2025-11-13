@@ -1,3 +1,36 @@
+## 0.4.2 - 2024-11-13
+
+### 🔄 Improvements & Bug Fixes
+
+**Asset Management Improvements:**
+- ✅ Added file existence validation for asset files during clone creation
+- 🎯 Asset paths now include full path prefix (`assets/images/`)
+- 🐛 Fixed asset directory creation to properly copy specified assets
+- ✨ Improved asset validation with clear error messages
+
+**Code Quality & Cleanup:**
+- 🗑️ Removed gradient color support (simplified color management)
+- 🧹 Cleaned up commented code and unused functions
+- 📦 Removed `GradientColorModel` class and related functionality
+- ✅ Updated examples to reflect simplified color model
+
+**Constants & Configuration:**
+- 📝 Added constants for config file paths (`flutterLauncherIconsPath`, `flutterNativeSplashPath`)
+- 🔧 Refactored config file path references to use constants
+- ✨ Improved code maintainability and consistency
+
+**Breaking Changes:**
+⚠️ **Gradient colors removed** - if you were using `linearGradients`:
+- `GradientColorModel` class has been removed
+- Config JSON no longer supports `linearGradients` field
+- Generated `clone_configs.dart` no longer includes gradient definitions
+- **Migration:** Use regular colors or define gradients manually in your Flutter code
+
+**Bug Fixes:**
+- 🐛 Fixed asset copying to use actual asset filenames from config
+- ✅ Fixed asset validation to check file existence before clone creation
+- 🔧 Improved error messages for missing asset files
+
 ## 0.4.1 - 2024-11-12
 
 ### 🔄 Improvements & Bug Fixes

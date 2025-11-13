@@ -6,7 +6,6 @@
 library;
 
 import 'package:clonify/models/color_model.dart';
-import 'package:clonify/models/gradient_color_model.dart';
 import 'package:clonify/models/config_model.dart';
 import 'package:clonify/models/custom_field_model.dart';
 
@@ -25,20 +24,6 @@ void main() {
   final accentColor = ColorModel.fromJson(colorJson);
   print('   Color: ${accentColor.color}');
   print('   Name: ${accentColor.name}\n');
-
-  // Example 3: Working with GradientColorModel
-  print('3. Creating a GradientColorModel:');
-  final gradientJson = {
-    'name': 'Sunset Gradient',
-    'colors': ['#FF5733', '#FFC300', '#FF5733'],
-    'begin': 'topLeft',
-    'end': 'bottomRight',
-  };
-  final gradient = GradientColorModel.fromJson(gradientJson);
-  print('   Name: ${gradient.name}');
-  print('   Colors: ${gradient.colors}');
-  print('   Begin: ${gradient.begin}');
-  print('   End: ${gradient.end}\n');
 
   // Example 4: Working with CustomField
   print('4. Creating CustomField:');
@@ -68,14 +53,6 @@ void main() {
       {'color': '#2196F3', 'name': 'Primary'},
       {'color': '#FF5733', 'name': 'Secondary'},
     ],
-    'linearGradients': [
-      {
-        'name': 'Primary Gradient',
-        'colors': ['#2196F3', '#1976D2'],
-        'begin': 'topCenter',
-        'end': 'bottomCenter',
-      },
-    ],
   };
 
   final config = CloneConfigModel.fromJson(configJson);
@@ -87,7 +64,6 @@ void main() {
   print('   Version: ${config.version}');
   print('   Valid: ${config.isValid}');
   print('   Colors count: ${config.colors?.length ?? 0}');
-  print('   Gradients count: ${config.gradientsColors?.length ?? 0}\n');
 
   // Example 7: Validating config
   print('7. Validating configurations:');
@@ -118,32 +94,8 @@ void main() {
   }
   print('');
 
-  // Example 9: Multiple gradients
-  print('9. Managing multiple gradients:');
-  final gradientList = [
-    GradientColorModel.fromJson({
-      'name': 'Ocean',
-      'colors': ['#667eea', '#764ba2'],
-      'begin': 'topLeft',
-      'end': 'bottomRight',
-    }),
-    GradientColorModel.fromJson({
-      'name': 'Sunset',
-      'colors': ['#FF5733', '#FFC300'],
-      'begin': 'topCenter',
-      'end': 'bottomCenter',
-    }),
-  ];
-
-  print('   Gradients in collection:');
-  for (final grad in gradientList) {
-    print('     - ${grad.name}: ${grad.colors?.length} colors');
-    print('       Direction: ${grad.begin} → ${grad.end}');
-  }
-  print('');
-
-  // Example 10: Custom fields validation
-  print('10. Custom fields type validation:');
+  // Example 9: Custom fields validation
+  print('9. Custom fields type validation:');
   final validTypes = ['string', 'int', 'bool', 'double'];
   final invalidType = 'array';
 

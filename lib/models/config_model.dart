@@ -1,5 +1,4 @@
 import 'color_model.dart';
-import 'gradient_color_model.dart';
 
 /// Represents the complete configuration for a Flutter project clone.
 ///
@@ -33,9 +32,6 @@ class CloneConfigModel {
 
   /// List of additional color configurations for the application.
   List<ColorModel>? colors;
-
-  /// List of gradient color configurations for the application.
-  List<GradientColorModel>? gradientsColors;
 
   /// The base URL for API endpoints.
   String? baseUrl;
@@ -74,12 +70,6 @@ class CloneConfigModel {
       colors = [];
       json['colors'].forEach((v) {
         colors?.add(ColorModel.fromJson(v));
-      });
-    }
-    if (json['linearGradients'] != null) {
-      gradientsColors = [];
-      json['linearGradients'].forEach((v) {
-        gradientsColors?.add(GradientColorModel.fromJson(v));
       });
     }
   }

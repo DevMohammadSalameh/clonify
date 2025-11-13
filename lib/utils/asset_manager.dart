@@ -59,31 +59,34 @@ void replaceAssets(String clientId) {
 ///
 /// Throws a [FileSystemException] if the source assets directory does not exist
 /// or if files cannot be copied.
-void createAssetsDirectory(String clientId) {
-  //create assets directory for the clone
-  final assetsDir = Directory('./clonify/clones/$clientId/assets');
-  assetsDir.createSync(recursive: true);
-  //copy the assets from the original project to the clone
-  // final List<String> assets = [
-  //   'android12splashScreen.png',
-  //   'launcherIcon.png',
-  //   'splashScreen.png',
-  //   'cloneLogo.png',
-  // ];
+bool createCloneAssetsDirectory(String clientId, List<String> assets) {
+  try {
+    //create assets directory for the clone
+    final assetsDir = Directory('./clonify/clones/$clientId/assets');
+    assetsDir.createSync(recursive: true);
 
-  final sourceDir = Directory('./assets/images');
-  final targetDir = Directory('./clonify/clones/$clientId/assets');
+    final sourceDir = Directory('./assets/images');
+    final targetDir = Directory('./clonify/clones/$clientId/assets');
 
-  if (!sourceDir.existsSync()) {
-    throw FileSystemException(
-      'Assets directory does not exist',
-      sourceDir.path,
-    );
+    if (!sourceDir.existsSync()) {
+      throw FileSystemException(
+        'Assets directory does not exist',
+        sourceDir.path,
+      );
+    }
+
+    targetDir.createSync(recursive: true);
+
+    for (final asset in assets) {
+      final sourceFile = File('${sourceDir.path}/$asset');
+      final targetFile = File('${targetDir.path}/$asset');
+      sourceFile.copySync(targetFile.path);
+    }
+
+    logger.i('✅ Assets directory created successfully.');
+    return true;
+  } catch (e) {
+    logger.e('❌ Error during assets directory creation: $e');
+    return false;
   }
-
-  targetDir.createSync(recursive: true);
-
-  logger.i(
-    '[!] Dont forget to replace the assets in the clone assets with the original assets',
-  );
 }
