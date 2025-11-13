@@ -1,3 +1,32 @@
+## 0.4.3 - 2024-11-13
+
+### 🚀 Major Improvement: Internalized Package Renaming
+
+**Package Rename Internalization:**
+- ✨ Internalized `package_rename_plus` functionality - no external dependency required!
+- ⚡ Direct function calls instead of subprocess execution (faster performance)
+- 🎯 Added custom config path support to `runRenamePackage()`
+- 🔧 Better error handling with exception propagation
+- 📦 Reduced external dependencies for end users
+
+**Documentation Updates:**
+- 📝 Updated README to reflect internalized package renaming
+- 🗑️ Removed `package_rename_plus` from required dev dependencies
+- ✅ Added note about built-in package renaming functionality
+- 🙏 Updated acknowledgments section to credit original package
+
+**Technical Details:**
+- Copied `package_rename_plus` source code to `lib/src/package_rename_plus/`
+- Updated `package_rename_plus_manager.dart` to use direct function calls
+- No breaking changes - existing API remains compatible
+- Users no longer need to install `package_rename_plus` globally or in dev_dependencies
+
+**Benefits:**
+- 🚀 Faster execution (no subprocess overhead)
+- 🛡️ Better error handling and debugging
+- 📉 Fewer external dependencies
+- ✅ Simplified user setup process
+
 ## 0.4.2 - 2024-11-13
 
 ### 🔄 Improvements & Bug Fixes

@@ -3,6 +3,154 @@
 /// This class provides static constants and utility methods for accessing
 /// file paths, configuration templates, and tool metadata.
 abstract class Constants {
+  // ! File Names
+  // ? Root
+  static const packageRenameConfigFileName = 'package_rename_config.yaml';
+  static const pubspecFileName = 'pubspec.yaml';
+
+  // ? Android
+  static const androidManifestFileName = 'AndroidManifest.xml';
+  static const buildGradleFileName = 'build.gradle';
+  static const kotlinBuildGradleFileName = 'build.gradle.kts';
+
+  // ? iOS
+  static const infoPlistFileName = 'Info.plist';
+
+  // ? Web
+  static const indexHtmlFileName = 'index.html';
+  static const manifestJsonFileName = 'manifest.json';
+
+  // ? Linux
+  static const myApplicationFileName = 'my_application.cc';
+
+  // ? Windows
+  static const mainCppFileName = 'main.cpp';
+  static const runnerFileName = 'Runner.rc';
+
+  // ? Linux & Windows
+  static const cMakeListsFileName = 'CMakeLists.txt';
+
+  // ? MacOS
+  static const appInfoFileName = 'AppInfo.xcconfig';
+  static const runnerXCSchemeFileName = 'Runner.xcscheme';
+
+  // ? iOS & MacOS
+  static const projectFileName = 'project.pbxproj';
+
+  // ! Keys
+  static const configKey = 'package_rename_config';
+  static const appNameKey = 'app_name';
+  static const shortAppNameKey = 'short_app_name';
+  static const packageNameKey = 'package_name';
+  static const bundleNameKey = 'bundle_name';
+  static const descriptionKey = 'description';
+  static const organizationKey = 'organization';
+  static const copyrightKey = 'copyright_notice';
+  static const languageKey = 'lang';
+  static const executableKey = 'exe_name';
+  static const overrideOldPackageKey = 'override_old_package';
+
+  // ! Directory Paths
+  // ? Android
+  static const androidAppDirPath = 'android/app';
+  static const androidSrcDirPath = '$androidAppDirPath/src';
+  static const androidMainDirPath = '$androidSrcDirPath/$androidMainDirName';
+
+  // ? iOS
+  static const iosDirPath = 'ios';
+  static const iosRunnerDirPath = '$iosDirPath/Runner';
+  static const iosProjectDirPath = '$iosDirPath/Runner.xcodeproj';
+
+  // ? Web
+  static const webDirPath = 'web';
+
+  // ? Linux
+  static const linuxDirPath = 'linux';
+  static const linuxRunnerDirPath = '$linuxDirPath/runner';
+
+  // ? Windows
+  static const windowsDirPath = 'windows';
+  static const windowsRunnerDirPath = '$windowsDirPath/runner';
+
+  // ? MacOS
+  static const macOSDirPath = 'macos';
+  static const macOSConfigDirPath = '$macOSDirPath/Runner/Configs';
+  static const macOSProjectDirPath = '$macOSDirPath/Runner.xcodeproj';
+  static const macOSXCSchemesDirPath =
+      '$macOSProjectDirPath/xcshareddata/xcschemes';
+
+  // ! Directory Names
+  // ? Android
+  static const androidMainDirName = 'main';
+  static const androidDebugDirName = 'debug';
+  static const androidProfileDirName = 'profile';
+
+  // ! File Paths
+  // ? Android
+  static const androidMainManifestFilePath =
+      '$androidSrcDirPath/$androidMainDirName/$androidManifestFileName';
+  static const androidDebugManifestFilePath =
+      '$androidSrcDirPath/$androidDebugDirName/$androidManifestFileName';
+  static const androidProfileManifestFilePath =
+      '$androidSrcDirPath/$androidProfileDirName/$androidManifestFileName';
+  static const androidAppLevelBuildGradleFilePath =
+      '$androidAppDirPath/$buildGradleFileName';
+  static const androidAppLevelKotlinBuildGradleFilePath =
+      '$androidAppDirPath/$kotlinBuildGradleFileName';
+
+  // ? iOS
+  static const iosInfoPlistFilePath = '$iosRunnerDirPath/$infoPlistFileName';
+  static const iosProjectFilePath = '$iosProjectDirPath/$projectFileName';
+
+  // ? Web
+  static const webIndexFilePath = '$webDirPath/$indexHtmlFileName';
+  static const webManifestFilePath = '$webDirPath/$manifestJsonFileName';
+
+  // ? Linux
+  static const linuxCMakeListsFilePath = '$linuxDirPath/$cMakeListsFileName';
+  static const linuxMyApplicationFilePath =
+      '$linuxDirPath/$myApplicationFileName';
+  static const linuxRunnerMyApplicationFilePath =
+      '$linuxRunnerDirPath/$myApplicationFileName';
+
+  // ? Windows
+  static const windowsCMakeListsFilePath =
+      '$windowsDirPath/$cMakeListsFileName';
+  static const windowsMainCppFilePath =
+      '$windowsRunnerDirPath/$mainCppFileName';
+  static const windowsRunnerFilePath = '$windowsRunnerDirPath/$runnerFileName';
+
+  // ? MacOS
+  static const macOSAppInfoFilePath = '$macOSConfigDirPath/$appInfoFileName';
+  static const macOSRunnerXCSchemeFilePath =
+      '$macOSXCSchemesDirPath/$runnerXCSchemeFileName';
+  static const macOSProjectFilePath = '$macOSProjectDirPath/$projectFileName';
+
+  // ! Decorations
+  static const outputLength = 100;
+  final minorTaskDoneLine = '┈' * outputLength;
+  final majorTaskDoneLine = '━' * outputLength;
+
+  // ! Templates
+  static const androidKotlinMainActivityTemplate = '''
+package {{packageName}}
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
+''';
+
+  static const androidJavaMainActivityTemplate = '''
+package {{packageName}};
+
+import io.flutter.embedding.android.FlutterActivity;
+
+public class MainActivity extends FlutterActivity {
+}
+''';
+
+  static const desktopBinaryNameTemplate = r'^[a-zA-Z0-9_-]+$';
+
   /// The path to the `flutter_launcher_icons.yaml` configuration file.
   static const String flutterLauncherIconsPath = 'flutter_launcher_icons.yaml';
 

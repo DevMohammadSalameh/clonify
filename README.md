@@ -31,20 +31,21 @@ A powerful command-line tool for managing multiple Flutter project clones with d
 
 ### Important: Required Dev Dependencies
 
-Clonify relies on the following packages to automate asset generation and package renaming. **Add these to your Flutter project's `dev_dependencies`** for full functionality:
+Clonify relies on the following packages to automate asset generation. **Add these to your Flutter project's `dev_dependencies`** for full functionality:
 
 ```yaml
 dev_dependencies:
   flutter_launcher_icons: ^0.13.1  # Automated launcher icon generation
   flutter_native_splash: ^2.3.1     # Splash screen creation
-  package_rename_plus: ^1.7.2       # Smart package renaming
   intl_utils: ^2.8.7                # Internationalization (optional)
 ```
 
 **Why these are needed:**
-- Clonify calls these tools as external commands to generate icons, splash screens, and rename packages
+- Clonify calls these tools as external commands to generate icons and splash screens
 - The tool will check for their presence and warn you if they're missing
 - You don't need to import them in your code - Clonify uses them automatically
+
+**Note:** Package renaming functionality is now built directly into Clonify - no external package required!
 
 ### Install Globally
 
@@ -512,7 +513,9 @@ Clonify leverages these excellent community packages:
 **Asset Generation Tools (Called by Clonify):**
 - [flutter_launcher_icons](https://pub.dev/packages/flutter_launcher_icons) - Automated launcher icon generation
 - [flutter_native_splash](https://pub.dev/packages/flutter_native_splash) - Splash screen creation
-- [package_rename_plus](https://pub.dev/packages/package_rename_plus) - Smart package and app renaming
+
+**Internalized Tools:**
+- [package_rename_plus](https://pub.dev/packages/package_rename_plus) - Package renaming functionality (now built directly into Clonify v0.4.3+)
 
 **Architecture Inspiration:**
 - Inspired by the architecture of the `rename` package for Flutter project management
