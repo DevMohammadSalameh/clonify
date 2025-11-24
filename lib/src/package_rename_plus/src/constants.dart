@@ -43,7 +43,7 @@ const _bundleNameKey = 'bundle_name';
 const _descriptionKey = 'description';
 const _organizationKey = 'organization';
 const _copyrightKey = 'copyright_notice';
-const _languageKey = 'lang';
+// const _languageKey = 'lang';
 const _executableKey = 'exe_name';
 const _overrideOldPackageKey = 'override_old_package';
 
@@ -51,7 +51,7 @@ const _overrideOldPackageKey = 'override_old_package';
 // ? Android
 const _androidAppDirPath = 'android/app';
 const _androidSrcDirPath = '$_androidAppDirPath/src';
-const _androidMainDirPath = '$_androidSrcDirPath/$_androidMainDirName';
+// const _androidMainDirPath = '$_androidSrcDirPath/$_androidMainDirName';
 
 // ? iOS
 const _iosDirPath = 'ios';
@@ -125,12 +125,12 @@ final _minorTaskDoneLine = '┈' * _outputLength;
 final _majorTaskDoneLine = '━' * _outputLength;
 
 // ! Templates
-const _androidKotlinMainActivityTemplate = '''
-package {{packageName}}
+// const _androidKotlinMainActivityTemplate = '''
+// package {{packageName}}
 
-import io.flutter.embedding.android.FlutterActivity
+// import io.flutter.embedding.android.FlutterActivity
 
-class MainActivity : FlutterActivity()
+// class MainActivity : FlutterActivity()
 ''';
 
 const _androidJavaMainActivityTemplate = '''

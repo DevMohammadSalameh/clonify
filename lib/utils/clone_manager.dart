@@ -15,8 +15,8 @@ import 'package:clonify/utils/tui_helpers.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 // ignore: depend_on_referenced_packages
 import 'package:yaml/yaml.dart' as yaml;
-import 'package:clonify/src/package_rename_plus/package_rename_plus.dart'
-    as package_rename;
+// import 'package:clonify/src/package_rename_plus/package_rename_plus.dart'
+//     as package_rename;
 
 /// Generates the `clone_configs.dart` file based on the provided [configModel].
 ///

@@ -153,10 +153,10 @@ class _PackageRenameErrors {
     29,
   );
 
-  static const androidOldDirectoryNotFound = _PackageRenameException(
-    _androidOldDirectoryNotFoundMessage,
-    30,
-  );
+  // static const androidOldDirectoryNotFound = _PackageRenameException(
+  //   _androidOldDirectoryNotFoundMessage,
+  //   30,
+  // );
 
   static _PackageRenameException flavourNotFound(String flavor) {
     final flavorNotFoundMessage = _configNotFoundMessage
