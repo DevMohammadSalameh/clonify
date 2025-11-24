@@ -262,15 +262,18 @@ List<bool> _promptCloneAssetsSettings() {
     '\n📱 Does your app need a custom launcher icon?',
     defaultValue: true,
   );
-  bool updateAndroidLauncherIcon = true;
-  bool updateIOSLauncherIcon = true;
+  bool updateAndroidInfo = true;
+  bool updateIOSInfo = true;
+  logger.i(
+    '🎯 When updating the splash screen, launcher icon, App Name and Package Name will',
+  );
   if (needsLauncherIcon) {
-    updateAndroidLauncherIcon = confirmTUI(
-      '🎯 Do you want to update the Android launcher icon?',
+    updateAndroidInfo = confirmTUI(
+      '🎯 Android Info needs to be updated?',
       defaultValue: true,
     );
-    updateIOSLauncherIcon = confirmTUI(
-      '🎯 Do you want to update the iOS launcher icon?',
+    updateIOSInfo = confirmTUI(
+      '🎯 iOS Info needs to be updated?',
       defaultValue: true,
     );
   }
@@ -291,8 +294,8 @@ List<bool> _promptCloneAssetsSettings() {
     needsLauncherIcon,
     needsSplashScreen,
     needsLogo,
-    updateAndroidLauncherIcon,
-    updateIOSLauncherIcon,
+    updateAndroidInfo,
+    updateIOSInfo,
   ];
 }
 
@@ -387,7 +390,7 @@ bool _createSettingsFile(
     // Build custom fields YAML section
     String customFieldsYaml = '';
     if (customFields.isNotEmpty) {
-      customFieldsYaml = '\ncustom_fields:\n';
+      customFieldsYaml = '\n${ClonifySettingsKeys.customFields}:\n';
       for (final field in customFields) {
         customFieldsYaml += '  - name: "${field.name}"\n';
         customFieldsYaml += '    type: "${field.type}"\n';
@@ -396,23 +399,23 @@ bool _createSettingsFile(
 
     settingsFile.writeAsStringSync('''
 # Clonify Settings
-firebase:
-  enabled: ${firebaseConfig['enabled']}
-  settings_file: "${firebaseConfig['enabled'] ? firebaseConfig['settingsFile'] : ''}"
+${ClonifySettingsKeys.firebase}:
+  ${ClonifySettingsKeys.enabled}: ${firebaseConfig['enabled']}
+  ${ClonifySettingsKeys.settingsFile}: "${firebaseConfig['enabled'] ? firebaseConfig['settingsFile'] : ''}"
 
-fastlane:
-  enabled: ${fastlaneConfig['enabled']}
-  settings_file: "${fastlaneConfig['enabled'] ? fastlaneConfig['settingsFile'] : ''}"
-company_name: "${basicConfig['companyName']}"
+${ClonifySettingsKeys.fastlane}:
+  ${ClonifySettingsKeys.enabled}: ${fastlaneConfig['enabled']}
+  ${ClonifySettingsKeys.settingsFile}: "${fastlaneConfig['enabled'] ? fastlaneConfig['settingsFile'] : ''}"
+${ClonifySettingsKeys.companyName}: "${basicConfig['companyName']}"
 
-default_color: "${basicConfig['defaultColor']}"
+${ClonifySettingsKeys.defaultColor}: "${basicConfig['defaultColor']}"
 
-needs_launcher_icon: ${cloneAssetsConfig[0]}
-needs_splash_screen: ${cloneAssetsConfig[1]}
-needs_logo: ${cloneAssetsConfig[2]}
+${ClonifySettingsKeys.needsLauncherIcon}: ${cloneAssetsConfig[0]}
+${ClonifySettingsKeys.needsSplashScreen}: ${cloneAssetsConfig[1]}
+${ClonifySettingsKeys.needsLogo}: ${cloneAssetsConfig[2]}
 
-update_android_launcher_icon: ${cloneAssetsConfig[3]}
-update_ios_launcher_icon: ${cloneAssetsConfig[4]}
+${ClonifySettingsKeys.updateAndroidInfo}: ${cloneAssetsConfig[3]}
+${ClonifySettingsKeys.updateIOSInfo}: ${cloneAssetsConfig[4]}
 
 $customFieldsYaml
 ''');

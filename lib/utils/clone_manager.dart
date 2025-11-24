@@ -15,6 +15,8 @@ import 'package:clonify/utils/tui_helpers.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 // ignore: depend_on_referenced_packages
 import 'package:yaml/yaml.dart' as yaml;
+import 'package:clonify/src/package_rename_plus/package_rename_plus.dart'
+    as package_rename;
 
 /// Generates the `clone_configs.dart` file based on the provided [configModel].
 ///
@@ -695,9 +697,8 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
     // Step 2: Update YAML files with new app name and package name
     try {
       final clonifySettings = getClonifySettings();
-      final updateAndroidLauncherIcon =
-          clonifySettings.updateAndroidLauncherIcon;
-      final updateIOSLauncherIcon = clonifySettings.updateIOSLauncherIcon;
+      final updateAndroidLauncherIcon = clonifySettings.updateAndroidInfo;
+      final updateIOSLauncherIcon = clonifySettings.updateIOSInfo;
 
       launcherIconsYamlEditor.update([
         'flutter_launcher_icons',
@@ -932,50 +933,38 @@ Future<void> cleanupPartialClone(String clientId) async {
 ///
 /// Throws an [Exception] if there's an error executing the `rename` commands.
 Future<void> getCurrentCloneConfig() async {
+  //package_rename_config:
+  // android:
+  //   app_name: ChargerJO
+  //   package_name: com.safeersoft.chargerjo
+
   try {
-    // Run 'rename getAppName'
-    final ProcessResult appNameResult = await Process.run('dart', [
-      'run',
-      'rename',
-      'getAppName',
-    ], runInShell: true);
-
-    // Run 'rename getBundleId'
-    final ProcessResult bundleIdResult = await Process.run('dart', [
-      'run',
-      'rename',
-      'getBundleId',
-    ], runInShell: true);
-
-    // Check and print the results
-    if (appNameResult.stderr.toString().isNotEmpty) {
-      logger.e('❌ Error getting app name: ${appNameResult.stderr}');
-    } else {
-      logger.i('App Name:\n${appNameResult.stdout}');
+    final lastClientId = await getLastClientId();
+    final configFile = File(Constants.packageRenameConfigFileName);
+    if (!configFile.existsSync()) {
+      throw FileSystemException(
+        '❌ ${Constants.packageRenameConfigFileName} not found',
+      );
     }
+    final content = await configFile.readAsString();
+    final yaml.YamlMap config = yaml.loadYaml(content);
+    final androidAppName =
+        config['package_rename_config']?['android']?['app_name'] ?? '';
+    final androidPackageName =
+        config['package_rename_config']?['android']?['package_name'] ?? '';
+    final iosBundleName =
+        config['package_rename_config']?['ios']?['bundle_name'] ?? '';
 
-    if (bundleIdResult.stderr.toString().isNotEmpty) {
-      logger.e('❌ Error getting bundle ID: ${bundleIdResult.stderr}');
-    } else {
-      logger.i('Bundle ID:\n${bundleIdResult.stdout}');
-    }
+    logger.i('App Name: $androidAppName');
+    logger.i('Android Package Name: $androidPackageName');
+    logger.i('iOS Bundle Name: $iosBundleName');
+    logger.i('Client ID: $lastClientId');
   } catch (e) {
     logger.e('❌ Error getting current clone config: $e');
+    rethrow;
   }
 }
 
-/// Parses the configuration file for a specific client ID.
-///
-/// This function reads the `config.json` file located in the
-/// `./clonify/clones/[clientId]/` directory, decodes its JSON content,
-/// and returns it as a map. It also logs some key configuration details.
-///
-/// [clientId] The ID of the client whose configuration file is to be parsed.
-///
-/// Throws a [FileSystemException] if the configuration file does not exist.
-/// Throws a [FormatException] if the file content is not valid JSON.
-///
-/// Returns a `Future<Map<String, dynamic>>` representing the parsed configuration.
 Future<Map<String, dynamic>> parseConfigFile(String clientId) async {
   final configFile = File('./clonify/clones/$clientId/config.json');
 

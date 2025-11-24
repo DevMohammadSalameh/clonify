@@ -40,11 +40,11 @@ class ClonifySettings {
   /// Whether the app needs a logo asset.
   final bool needsLogo;
 
-  /// Whether to update the Android launcher icon.
-  final bool updateAndroidLauncherIcon;
+  /// Whether to update the Android info rename, splash screen and launcher icon.
+  final bool updateAndroidInfo;
 
-  /// Whether to update the iOS launcher icon.
-  final bool updateIOSLauncherIcon;
+  /// Whether to update the iOS info rename, splash screen and launcher icon.
+  final bool updateIOSInfo;
 
   /// List of custom fields that can be configured per clone.
   final List<CustomField> customFields;
@@ -63,8 +63,8 @@ class ClonifySettings {
     required this.needsLauncherIcon,
     required this.needsSplashScreen,
     required this.needsLogo,
-    required this.updateAndroidLauncherIcon,
-    required this.updateIOSLauncherIcon,
+    required this.updateAndroidInfo,
+    required this.updateIOSInfo,
     this.customFields = const [],
   });
 
@@ -87,26 +87,51 @@ class ClonifySettings {
   factory ClonifySettings.fromYaml(YamlMap yaml) {
     // Parse custom fields if they exist
     List<CustomField> customFields = [];
-    if (yaml['custom_fields'] != null) {
-      final fields = yaml['custom_fields'] as YamlList;
+    if (yaml[ClonifySettingsKeys.customFields] != null) {
+      final fields = yaml[ClonifySettingsKeys.customFields] as YamlList;
       customFields = fields
           .map((field) => CustomField.fromYaml(field as Map<dynamic, dynamic>))
           .toList();
     }
 
     return ClonifySettings(
-      firebaseEnabled: yaml['firebase']['enabled'] ?? false,
-      firebaseSettingsFilePath: yaml['firebase']['settings_file'] ?? '',
-      fastlaneEnabled: yaml['fastlane']['enabled'] ?? false,
-      fastlaneSettingsFilePath: yaml['fastlane']['settings_file'] ?? '',
-      companyName: yaml['company_name'] ?? '',
-      defaultColor: yaml['default_color'] ?? '#FFFFFF',
-      needsLauncherIcon: yaml['needs_launcher_icon'] ?? false,
-      needsSplashScreen: yaml['needs_splash_screen'] ?? false,
-      needsLogo: yaml['needs_logo'] ?? false,
-      updateAndroidLauncherIcon: yaml['update_android_launcher_icon'] ?? true,
-      updateIOSLauncherIcon: yaml['update_ios_launcher_icon'] ?? true,
+      firebaseEnabled:
+          yaml[ClonifySettingsKeys.firebase][ClonifySettingsKeys.enabled] ??
+          false,
+      firebaseSettingsFilePath:
+          yaml[ClonifySettingsKeys.firebase][ClonifySettingsKeys
+              .settingsFile] ??
+          '',
+      fastlaneEnabled:
+          yaml[ClonifySettingsKeys.fastlane][ClonifySettingsKeys.enabled] ??
+          false,
+      fastlaneSettingsFilePath:
+          yaml[ClonifySettingsKeys.fastlane][ClonifySettingsKeys
+              .settingsFile] ??
+          '',
+      companyName: yaml[ClonifySettingsKeys.companyName] ?? '',
+      defaultColor: yaml[ClonifySettingsKeys.defaultColor] ?? '#FFFFFF',
+      needsLauncherIcon: yaml[ClonifySettingsKeys.needsLauncherIcon] ?? false,
+      needsSplashScreen: yaml[ClonifySettingsKeys.needsSplashScreen] ?? false,
+      needsLogo: yaml[ClonifySettingsKeys.needsLogo] ?? false,
+      updateAndroidInfo: yaml[ClonifySettingsKeys.updateAndroidInfo] ?? true,
+      updateIOSInfo: yaml[ClonifySettingsKeys.updateIOSInfo] ?? true,
       customFields: customFields,
     );
   }
+}
+
+class ClonifySettingsKeys {
+  static const String firebase = 'firebase';
+  static const String enabled = 'enabled';
+  static const String settingsFile = 'settings_file';
+  static const String fastlane = 'fastlane';
+  static const String companyName = 'company_name';
+  static const String defaultColor = 'default_color';
+  static const String needsLauncherIcon = 'needs_launcher_icon';
+  static const String needsSplashScreen = 'needs_splash_screen';
+  static const String needsLogo = 'needs_logo';
+  static const String updateAndroidInfo = 'update_android_info';
+  static const String updateIOSInfo = 'update_ios_info';
+  static const String customFields = 'custom_fields';
 }
