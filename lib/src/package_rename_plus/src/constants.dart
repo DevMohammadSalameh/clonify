@@ -131,7 +131,7 @@ final _majorTaskDoneLine = '━' * _outputLength;
 // import io.flutter.embedding.android.FlutterActivity
 
 // class MainActivity : FlutterActivity()
-''';
+// ''';
 
 const _androidJavaMainActivityTemplate = '''
 package {{packageName}};
