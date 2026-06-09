@@ -227,7 +227,7 @@ flutter_native_splash:
   image: ""
   android_12:
     image: 
-  web: false
+  web: true
   ios_content_mode: scaleToFill
   fullscreen: true
 ''';

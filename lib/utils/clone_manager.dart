@@ -745,6 +745,10 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
           'flutter_native_splash',
           'image',
         ], "assets/images/${configJson['splashScreen']}");
+        nativeSplashYamlEditor.update([
+          'flutter_native_splash',
+          'web',
+        ], true);
         nativeSplashConfigFile.writeAsStringSync(
           nativeSplashYamlEditor.toString(),
         );
