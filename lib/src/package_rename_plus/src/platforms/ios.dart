@@ -43,6 +43,19 @@ void _setIOSDisplayName(dynamic appName) {
 
     iosInfoPlistFile.writeAsStringSync(newDisplayNameIOSInfoPlistString);
 
+    final iosProjectFile = File(_iosProjectFilePath);
+    if (iosProjectFile.existsSync()) {
+      final iosProjectString = iosProjectFile.readAsStringSync();
+      final updatedProjectString = iosProjectString.replaceAll(
+        RegExp(r'INFOPLIST_KEY_CFBundleDisplayName = ".*?";'),
+        'INFOPLIST_KEY_CFBundleDisplayName = "$appName";',
+      );
+      iosProjectFile.writeAsStringSync(updatedProjectString);
+      PackageRenamePlusLogger.info(
+        'iOS display name set to: `$appName` (project.pbxproj)',
+      );
+    }
+
     PackageRenamePlusLogger.info(
         'iOS display name set to: `$appName` (Info.plist)');
   } on _PackageRenameException catch (e) {
@@ -109,20 +122,19 @@ void _setIOSPackageName({
     }
 
     final iosProjectString = iosProjectFile.readAsStringSync();
+    final escapedOldPackageName = oldPackageName is String
+        ? RegExp.escape(oldPackageName)
+        : r'[^;\s]+';
     final newBundleIDIOSProjectString = iosProjectString
-        // Replaces old bundle id from
-        // `PRODUCT_BUNDLE_IDENTIFIER = {{BUNDLE_ID}};`
         .replaceAll(
       RegExp(
-        'PRODUCT_BUNDLE_IDENTIFIER = $oldPackageName(?<!\\.RunnerTests);',
+        'PRODUCT_BUNDLE_IDENTIFIER = $escapedOldPackageName(?<!\\.RunnerTests);',
       ),
       'PRODUCT_BUNDLE_IDENTIFIER = $packageName;',
     )
-        // Removes old bundle id from
-        // `PRODUCT_BUNDLE_IDENTIFIER = "{{BUNDLE_ID}}.{{EXTENSION_NAME}}";`
         .replaceAllMapped(
       RegExp(
-        'PRODUCT_BUNDLE_IDENTIFIER = $oldPackageName\\.([A-Za-z0-9.-_]+);',
+        'PRODUCT_BUNDLE_IDENTIFIER = $escapedOldPackageName\\.([A-Za-z0-9.-_]+);',
       ),
       (match) {
         final extensionName = match.group(1);

@@ -27,10 +27,8 @@ void replaceAssets(String clientId) {
     }
 
     if (!targetDir.existsSync()) {
-      throw FileSystemException(
-        'Target Assets directory does not exist',
-        targetDir.path,
-      );
+      targetDir.createSync(recursive: true);
+      logger.i('Created target assets directory: ${targetDir.path}');
     }
     final String splitBy = Platform.isWindows ? '\\' : '/';
     for (final file in sourceDir.listSync()) {

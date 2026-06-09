@@ -133,6 +133,11 @@ Future<void> addFirebaseToApp({
   required String packageName,
   bool? skip,
 }) async {
+  if (firebaseProjectId.isEmpty) {
+    logger.i('>>| Skipping Firebase configuration (empty firebaseProjectId).');
+    return;
+  }
+
   final firebaseJsonPath = clonifySettings.firebaseSettingsFilePath;
 
   try {

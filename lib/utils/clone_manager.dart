@@ -47,7 +47,10 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   sink.writeln(
     '// Auto-generated file. any changes will be overwritten. edit clone config instead.',
   );
-  // sink.writeln("import 'package:flutter/material.dart';\n");
+  if ((configModel.colors?.length ?? 0) > 0) {
+    sink.writeln("import 'dart:ui';");
+    sink.writeln();
+  }
   sink.writeln('abstract class CloneConfigs {');
 
   // 3.1. Write colors
@@ -539,7 +542,12 @@ Future<bool> _performInitialSetup(
   Map<String, dynamic> configJson,
 ) async {
   try {
-    // Step 1: Rename app name and package
+    // Step 1: Copy clone branding assets into the project
+    final assetsProgress = progressWithTUI('🎨 Replacing client assets...');
+    replaceAssets(callModel.clientId!);
+    assetsProgress?.complete('Assets replaced successfully');
+
+    // Step 2: Rename app name and package
     final renameProgress = progressWithTUI(
       '📦 Renaming package to ${configJson['packageName']}...',
     );
@@ -553,23 +561,26 @@ Future<bool> _performInitialSetup(
       return true; // Early return for debug mode
     }
 
-    // Step 2: Create Firebase project and enable FCM
+    // Step 3: Create Firebase project and enable FCM
     if (clonifySettings.firebaseEnabled) {
-      final firebaseProgress = progressWithTUI(
-        '🔥 Configuring Firebase for ${configJson['firebaseProjectId']}...',
-      );
-      await addFirebaseToApp(
-        packageName: configJson['packageName'],
-        firebaseProjectId: configJson['firebaseProjectId'],
-        skip: callModel.skipAll || callModel.skipFirebaseConfigure,
-      );
-      firebaseProgress?.complete('Firebase configured successfully');
+      final firebaseProjectId =
+          (configJson['firebaseProjectId'] as String?) ?? '';
+      if (firebaseProjectId.isEmpty) {
+        logger.i(
+          '>>| Skipping Firebase configuration (no firebaseProjectId in clone config).',
+        );
+      } else {
+        final firebaseProgress = progressWithTUI(
+          '🔥 Configuring Firebase for $firebaseProjectId...',
+        );
+        await addFirebaseToApp(
+          packageName: configJson['packageName'],
+          firebaseProjectId: firebaseProjectId,
+          skip: callModel.skipAll || callModel.skipFirebaseConfigure,
+        );
+        firebaseProgress?.complete('Firebase configured successfully');
+      }
     }
-
-    // Step 3: Replace assets
-    // final assetsProgress = progressWithTUI('🎨 Replacing client assets...');
-    // replaceAssets(callModel.clientId!);
-    // assetsProgress?.complete('Assets replaced successfully');
 
     return true;
   } catch (e) {
