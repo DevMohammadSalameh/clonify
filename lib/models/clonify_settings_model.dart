@@ -46,6 +46,13 @@ class ClonifySettings {
   /// Whether to update the iOS info rename, splash screen and launcher icon.
   final bool updateIOSInfo;
 
+  /// Whether all clones share a single version number.
+  ///
+  /// When `true`, the version in `pubspec.yaml` is the single source of truth
+  /// for every clone, and per-clone `version` fields in `config.json` are
+  /// ignored. When `false` (default), each clone tracks its own version.
+  final bool unifiedVersion;
+
   /// List of custom fields that can be configured per clone.
   final List<CustomField> customFields;
 
@@ -65,6 +72,7 @@ class ClonifySettings {
     required this.needsLogo,
     required this.updateAndroidInfo,
     required this.updateIOSInfo,
+    this.unifiedVersion = false,
     this.customFields = const [],
   });
 
@@ -116,6 +124,7 @@ class ClonifySettings {
       needsLogo: yaml[ClonifySettingsKeys.needsLogo] ?? false,
       updateAndroidInfo: yaml[ClonifySettingsKeys.updateAndroidInfo] ?? true,
       updateIOSInfo: yaml[ClonifySettingsKeys.updateIOSInfo] ?? true,
+      unifiedVersion: yaml[ClonifySettingsKeys.unifiedVersion] ?? false,
       customFields: customFields,
     );
   }
@@ -133,5 +142,6 @@ class ClonifySettingsKeys {
   static const String needsLogo = 'needs_logo';
   static const String updateAndroidInfo = 'update_android_info';
   static const String updateIOSInfo = 'update_ios_info';
+  static const String unifiedVersion = 'unified_version';
   static const String customFields = 'custom_fields';
 }

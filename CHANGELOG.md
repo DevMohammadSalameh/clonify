@@ -1,3 +1,18 @@
+## 0.5.0
+
+### ✨ Unified Versioning
+
+- Added a `unified_version` setting to `clonify_settings.yaml`. When `true`,
+  `pubspec.yaml` is the single source of truth for the version across every
+  clone, and per-clone `version` fields in `config.json` are ignored.
+- In unified mode, configuring a clone no longer reads or writes the clone's
+  `config.json` version; an optional bump applies to `pubspec.yaml` only and is
+  shared by all clones (honors `--auto-update` / `--skip-version-update`).
+- The generated clone config and the `list` table now report the shared
+  `pubspec.yaml` version when unified versioning is enabled.
+- Default behavior is unchanged: with `unified_version` absent or `false`, each
+  clone keeps its own version.
+
 ## 0.4.3 - 2024-11-13
 
 ### 🚀 Major Improvement: Internalized Package Renaming

@@ -603,6 +603,12 @@ Future<String?> _handleVersionManagement(
   final yamlVersion = _getCurrentPubspecVersion();
   if (yamlVersion == null) return null;
 
+  // Unified versioning: pubspec.yaml is the single source of truth for every
+  // clone, so skip the per-clone config.json version entirely.
+  if (clonifySettings.unifiedVersion) {
+    return _handleUnifiedVersion(callModel, yamlVersion);
+  }
+
   String configVersion = configJson['version'] ?? '';
 
   // Handle missing config version
@@ -657,6 +663,40 @@ Future<String?> _handleVersionManagement(
   }
 
   return configVersion;
+}
+
+/// Handles version management when unified versioning is enabled.
+///
+/// In this mode the version in `pubspec.yaml` is shared by all clones, so this
+/// never reads or writes the per-clone `config.json` version. It optionally
+/// bumps the shared version (respecting the same skip/auto-update flags as the
+/// per-clone flow) and returns the final shared version.
+///
+/// [currentVersion] The current version read from `pubspec.yaml`.
+Future<String?> _handleUnifiedVersion(
+  ConfigureCommandModel callModel,
+  String currentVersion,
+) async {
+  final changeVersionAnswer = prompt(
+    'Unified versioning is on. Shared version is $currentVersion. '
+    'Update it for all clones? (y/n):',
+    skip: callModel.skipVersionUpdate,
+    skipValue: callModel.autoUpdate ? 'y' : 'No',
+  );
+
+  if (changeVersionAnswer.toLowerCase() != 'y') {
+    return currentVersion;
+  }
+
+  final newVersion = promptUser(
+    'Enter the new shared version number:',
+    currentVersion,
+    validator: (value) => RegExp(r'^\d+\.\d+\.\d+\+\d+$').hasMatch(value),
+    skipValue: versionNumberIncrementor(currentVersion),
+    skip: callModel.autoUpdate,
+  );
+  await updateYamlVersionInPubspec(newVersion);
+  return newVersion;
 }
 
 /// Runs Flutter build commands and generates configuration.
@@ -873,6 +913,9 @@ Future<Map<String, dynamic>?> configureApp(
     if (finalVersion == null) {
       return null;
     }
+    // Reflect the resolved version in the generated clone config. In unified
+    // mode this comes from pubspec.yaml; config.json on disk is left untouched.
+    configJson['version'] = finalVersion;
 
     // Step 3: Run build commands
     if (!await _configureLauncherIconsAndSplashScreen(configJson)) {
@@ -1026,7 +1069,10 @@ void listClients() async {
           final clientId = content['clientId'] ?? '';
           final appName = content['appName'] ?? '';
           final firebaseProjectId = content['firebaseProjectId'] ?? '';
-          final version = content['version']?.toString() ?? 'N/A';
+          // In unified mode every clone shares the pubspec.yaml version.
+          final version = clonifySettings.unifiedVersion
+              ? (_getCurrentPubspecVersion() ?? 'N/A')
+              : (content['version']?.toString() ?? 'N/A');
 
           // Adjust column widths
           clientIdWidth = clientId.length > clientIdWidth
