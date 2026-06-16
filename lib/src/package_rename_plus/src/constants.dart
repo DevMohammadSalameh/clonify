@@ -133,13 +133,13 @@ final _majorTaskDoneLine = '━' * _outputLength;
 // class MainActivity : FlutterActivity()
 // ''';
 
-const _androidJavaMainActivityTemplate = '''
-package {{packageName}};
+// const _androidJavaMainActivityTemplate = '''
+// package {{packageName}};
 
-import io.flutter.embedding.android.FlutterActivity;
+// import io.flutter.embedding.android.FlutterActivity;
 
-public class MainActivity extends FlutterActivity {
-}
-''';
+// public class MainActivity extends FlutterActivity {
+// }
+// ''';
 
 const _desktopBinaryNameTemplate = r'^[a-zA-Z0-9_-]+$';

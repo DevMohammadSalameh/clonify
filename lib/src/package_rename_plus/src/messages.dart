@@ -168,17 +168,17 @@ const _macOSAppInfoNotFoundMessage = '''
 ╚════════════════════════════════════════════════════════════╝
 ''';
 
-const _invalidLanguageTypeMessage = '''
-╔═══════════════════════════════════════╗
-║   lang (Language) must be a String.   ║
-╚═══════════════════════════════════════╝
-''';
+// const _invalidLanguageTypeMessage = '''
+// ╔═══════════════════════════════════════╗
+// ║   lang (Language) must be a String.   ║
+// ╚═══════════════════════════════════════╝
+// ''';
 
-const _invalidAndroidLangValueMessage = '''
-╔════════════════════════════════════════════════════════╗
-║   lang (Language) must be either 'kotlin' or 'java'.   ║
-╚════════════════════════════════════════════════════════╝
-''';
+// const _invalidAndroidLangValueMessage = '''
+// ╔════════════════════════════════════════════════════════╗
+// ║   lang (Language) must be either 'kotlin' or 'java'.   ║
+// ╚════════════════════════════════════════════════════════╝
+// ''';
 
 const _invalidExecutableNameMessage = '''
 ╔══════════════════════════════════════════════════╗
@@ -192,11 +192,11 @@ const _invalidExecutableNameValueMessage = '''
 ╚═══════════════════════════════════════════════════════════════════════════════╝
 ''';
 
-const _androidOldDirectoryNotFoundMessage = '''
-╔═════════════════════════════════════════════════╗
-║   Old directory for MainActivity not found!!!   ║
-╚═════════════════════════════════════════════════╝
-''';
+// const _androidOldDirectoryNotFoundMessage = '''
+// ╔═════════════════════════════════════════════════╗
+// ║   Old directory for MainActivity not found!!!   ║
+// ╚═════════════════════════════════════════════════╝
+// ''';
 
 const _macOSRunnerXCSchemeNotFoundMessage = '''
 ╔════════════════════════════════════════════════════════════════════════════════════╗

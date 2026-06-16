@@ -133,15 +133,15 @@ class _PackageRenameErrors {
     25,
   );
 
-  static const invalidLanguageType = _PackageRenameException(
-    _invalidLanguageTypeMessage,
-    26,
-  );
+  // static const invalidLanguageType = _PackageRenameException(
+  //   _invalidLanguageTypeMessage,
+  //   26,
+  // );
 
-  static const invalidAndroidLanguageValue = _PackageRenameException(
-    _invalidAndroidLangValueMessage,
-    27,
-  );
+  // static const invalidAndroidLanguageValue = _PackageRenameException(
+  //   _invalidAndroidLangValueMessage,
+  //   27,
+  // );
 
   static const invalidExecutableName = _PackageRenameException(
     _invalidExecutableNameMessage,
