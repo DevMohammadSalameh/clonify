@@ -42,6 +42,9 @@ class CloneConfigModel {
   /// The Firebase project ID.
   String? firebaseProjectId;
 
+  /// The Shorebird app ID used for code-push releases/patches.
+  String? shorebirdAppId;
+
   /// List of additional color configurations for the application.
 
   List<ColorModel>? colors;
@@ -83,6 +86,7 @@ class CloneConfigModel {
     splashScreen = json['splashScreen'];
     logo = json['logo'];
     firebaseProjectId = json['firebaseProjectId'];
+    shorebirdAppId = json['shorebirdAppId'];
     if (json['colors'] != null) {
       colors = [];
       json['colors'].forEach((v) {

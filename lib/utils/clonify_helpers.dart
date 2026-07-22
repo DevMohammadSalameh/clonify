@@ -472,6 +472,9 @@ void printUsage() {
     '    --skip-firebase-configure | -SF                   Skip the Firebase configuration.',
   );
   logger.i(
+    '    --skip-shorebird-configure                        Skip Shorebird app_id sync.',
+  );
+  logger.i(
     '    --skip-version | -SV                              Skip config file empty version check.',
   );
   logger.i(

@@ -206,6 +206,36 @@ Map<String, dynamic> _promptFastlaneSettings() {
   return {'enabled': enableFastlane, 'settingsFile': fastlaneSettingsFilePath};
 }
 
+/// Prompts for Shorebird configuration settings.
+///
+/// Returns a map with 'enabled' and 'settingsFile' keys.
+Map<String, dynamic> _promptShorebirdSettings() {
+  final bool enableShorebird = confirmTUI(
+    '\n🐦 Do you want to enable Shorebird app_id sync on configure?',
+    defaultValue: false,
+  );
+
+  String shorebirdSettingsFilePath = './shorebird.yaml';
+  if (enableShorebird) {
+    shorebirdSettingsFilePath = promptUserTUI(
+      '📁 Enter Shorebird settings file path',
+      './shorebird.yaml',
+      validator: (value) {
+        if (value.isEmpty) {
+          errorMessage('Shorebird settings file path cannot be empty.');
+          return false;
+        }
+        return true;
+      },
+    );
+  }
+
+  return {
+    'enabled': enableShorebird,
+    'settingsFile': shorebirdSettingsFilePath,
+  };
+}
+
 /// Prompts for basic project settings.
 ///
 /// Returns a map with 'companyName' and 'defaultColor' keys.
@@ -379,6 +409,7 @@ bool _createSettingsFile(
   File settingsFile,
   Map<String, dynamic> firebaseConfig,
   Map<String, dynamic> fastlaneConfig,
+  Map<String, dynamic> shorebirdConfig,
   Map<String, String> basicConfig,
   List<bool> cloneAssetsConfig,
   List<CustomField> customFields,
@@ -406,6 +437,11 @@ ${ClonifySettingsKeys.firebase}:
 ${ClonifySettingsKeys.fastlane}:
   ${ClonifySettingsKeys.enabled}: ${fastlaneConfig['enabled']}
   ${ClonifySettingsKeys.settingsFile}: "${fastlaneConfig['enabled'] ? fastlaneConfig['settingsFile'] : ''}"
+
+${ClonifySettingsKeys.shorebird}:
+  ${ClonifySettingsKeys.enabled}: ${shorebirdConfig['enabled']}
+  ${ClonifySettingsKeys.settingsFile}: "${shorebirdConfig['enabled'] ? shorebirdConfig['settingsFile'] : './shorebird.yaml'}"
+
 ${ClonifySettingsKeys.companyName}: "${basicConfig['companyName']}"
 
 ${ClonifySettingsKeys.defaultColor}: "${basicConfig['defaultColor']}"
@@ -460,6 +496,7 @@ Future<void> initClonify() async {
       // Step 2: Gather configuration through prompts
       final firebaseConfig = _promptFirebaseSettings();
       final fastlaneConfig = _promptFastlaneSettings();
+      final shorebirdConfig = _promptShorebirdSettings();
       final basicConfig = _promptBasicSettings();
       final List<bool> cloneAssetsConfig = _promptCloneAssetsSettings();
       final customFields = _promptCustomFields();
@@ -469,6 +506,7 @@ Future<void> initClonify() async {
         settingsFile,
         firebaseConfig,
         fastlaneConfig,
+        shorebirdConfig,
         basicConfig,
         cloneAssetsConfig,
         customFields,
@@ -596,6 +634,25 @@ bool _validateServiceConfigurations(Map<String, dynamic> rawSettings) {
     if (!serviceSettings.containsKey('settings_file') ||
         serviceSettings['settings_file'] is! String) {
       logger.e('❌ "$service.settings_file" must be a string.');
+      return false;
+    }
+  }
+
+  // Shorebird is optional for backward compatibility with older settings files.
+  if (rawSettings.containsKey('shorebird')) {
+    final serviceSettings = rawSettings['shorebird'];
+    if (serviceSettings is! Map) {
+      logger.e('❌ "shorebird" must be a map.');
+      return false;
+    }
+    if (!serviceSettings.containsKey('enabled') ||
+        serviceSettings['enabled'] is! bool) {
+      logger.e('❌ "shorebird.enabled" must be a boolean.');
+      return false;
+    }
+    if (!serviceSettings.containsKey('settings_file') ||
+        serviceSettings['settings_file'] is! String) {
+      logger.e('❌ "shorebird.settings_file" must be a string.');
       return false;
     }
   }

@@ -7,12 +7,13 @@
 
 ## About
 
-A powerful command-line tool for managing multiple Flutter project clones with different configurations, branding, and Firebase projects. Perfect for white-label applications or managing multiple client-specific versions of the same Flutter app.
+A powerful command-line tool for managing multiple Flutter project clones with different configurations, branding, Firebase, and Shorebird. Perfect for white-label applications or managing multiple client-specific versions of the same Flutter app.
 
 ## Features
 
 - 🎨 Manage multiple app variants from a single codebase
 - 🔥 Optional Firebase integration per clone
+- 🐦 Optional Shorebird `app_id` sync per clone on `configure`
 - 📱 Auto-generate launcher icons and splash screens
 - 📦 Rename packages and app names per clone
 - 🏗️ Build multiple platforms (Android APK/AAB, iOS IPA)
@@ -52,11 +53,11 @@ dev_dependencies:
 Install clonify globally to use it from anywhere:
 
 ```bash
-# From pub.dev (once published)
-dart pub global activate clonify
+# From this fork
+dart pub global activate --source git https://github.com/gailansoran4/clonify.git
 
-# Or install from source
-git clone https://github.com/DevMohammadSalameh/clonify.git
+# Or install from a local clone
+git clone https://github.com/gailansoran4/clonify.git
 cd clonify
 dart pub global activate --source path .
 ```
@@ -231,6 +232,7 @@ Configure the Flutter project for a specific client.
 - `--autoUpdate` - Automatically increment version
 - `--isDebug` - Run in debug mode
 - `--skipFirebaseConfigure` - Skip Firebase configuration
+- `--skipShorebirdConfigure` - Skip Shorebird app_id sync
 - `--skipPubUpdate` - Skip pubspec.yaml updates
 - `--skipVersionUpdate` - Skip version updates
 
@@ -415,6 +417,25 @@ Firebase is **optional**. To use Firebase:
 To skip Firebase:
 - Set `firebase.enabled: false` in settings
 - Use `--skipFirebaseConfigure` flag
+
+### Shorebird Integration
+
+Shorebird is **optional**. To sync `shorebird.yaml` `app_id` on every configure:
+
+1. Enable in `clonify/clonify_settings.yaml`:
+
+```yaml
+shorebird:
+  enabled: true
+  settings_file: "./shorebird.yaml"
+```
+
+2. Set `shorebirdAppId` per clone in `clonify/clones/<id>/config.json`
+3. Run `clonify configure --clientId <id>` — Shorebird still syncs even with `--skipAll`
+
+To skip Shorebird:
+- Set `shorebird.enabled: false` in settings
+- Use `--skipShorebirdConfigure` flag
 
 ### Fastlane Integration
 

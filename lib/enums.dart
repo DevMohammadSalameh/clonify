@@ -20,6 +20,7 @@ enum ClonifyCommandFlags {
   autoUpdate,
   isDebug,
   skipFirebaseConfigure,
+  skipShorebirdConfigure,
   skipPubUpdate,
   skipVersionUpdate,
   buildAab,
@@ -134,6 +135,8 @@ extension ClonifyCommandFlagsExtension on ClonifyCommandFlags {
         return 'isDebug';
       case ClonifyCommandFlags.skipFirebaseConfigure:
         return 'skipFirebaseConfigure';
+      case ClonifyCommandFlags.skipShorebirdConfigure:
+        return 'skipShorebirdConfigure';
       case ClonifyCommandFlags.skipPubUpdate:
         return 'skipPubUpdate';
       case ClonifyCommandFlags.skipVersionUpdate:
@@ -165,6 +168,8 @@ extension ClonifyCommandFlagsExtension on ClonifyCommandFlags {
         return 'Run the command in debug mode';
       case ClonifyCommandFlags.skipFirebaseConfigure:
         return 'Skip Firebase configuration';
+      case ClonifyCommandFlags.skipShorebirdConfigure:
+        return 'Skip Shorebird configuration';
       case ClonifyCommandFlags.skipPubUpdate:
         return 'Skip updating pubspec.yaml';
       case ClonifyCommandFlags.skipVersionUpdate:
@@ -227,6 +232,8 @@ extension ClonifyCommandFlagsExtension on ClonifyCommandFlags {
         return 'Run the command in debug mode for detailed output';
       case ClonifyCommandFlags.skipFirebaseConfigure:
         return 'Skip Firebase configuration during setup';
+      case ClonifyCommandFlags.skipShorebirdConfigure:
+        return 'Skip Shorebird app_id sync during setup';
       case ClonifyCommandFlags.skipPubUpdate:
         return 'Skip updating the pubspec.yaml file';
       case ClonifyCommandFlags.skipVersionUpdate:

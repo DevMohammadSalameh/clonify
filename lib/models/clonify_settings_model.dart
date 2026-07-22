@@ -25,6 +25,12 @@ class ClonifySettings {
   /// Path to the Fastlane settings file relative to project root.
   final String fastlaneSettingsFilePath;
 
+  /// Whether Shorebird integration is enabled for code-push app_id sync.
+  final bool shorebirdEnabled;
+
+  /// Path to the Shorebird settings file relative to project root.
+  final String shorebirdSettingsFilePath;
+
   /// The company or organization name used across all clones.
   final String companyName;
 
@@ -58,6 +64,8 @@ class ClonifySettings {
     required this.firebaseSettingsFilePath,
     required this.fastlaneEnabled,
     required this.fastlaneSettingsFilePath,
+    this.shorebirdEnabled = false,
+    this.shorebirdSettingsFilePath = './shorebird.yaml',
     required this.companyName,
     required this.defaultColor,
     required this.needsLauncherIcon,
@@ -109,6 +117,17 @@ class ClonifySettings {
           yaml[ClonifySettingsKeys.fastlane][ClonifySettingsKeys
               .settingsFile] ??
           '',
+      shorebirdEnabled: () {
+        final shorebird = yaml[ClonifySettingsKeys.shorebird];
+        if (shorebird is! YamlMap) return false;
+        return shorebird[ClonifySettingsKeys.enabled] ?? false;
+      }(),
+      shorebirdSettingsFilePath: () {
+        final shorebird = yaml[ClonifySettingsKeys.shorebird];
+        if (shorebird is! YamlMap) return './shorebird.yaml';
+        return shorebird[ClonifySettingsKeys.settingsFile] ??
+            './shorebird.yaml';
+      }(),
       companyName: yaml[ClonifySettingsKeys.companyName] ?? '',
       defaultColor: yaml[ClonifySettingsKeys.defaultColor] ?? '#FFFFFF',
       needsLauncherIcon: yaml[ClonifySettingsKeys.needsLauncherIcon] ?? false,
@@ -126,6 +145,7 @@ class ClonifySettingsKeys {
   static const String enabled = 'enabled';
   static const String settingsFile = 'settings_file';
   static const String fastlane = 'fastlane';
+  static const String shorebird = 'shorebird';
   static const String companyName = 'company_name';
   static const String defaultColor = 'default_color';
   static const String needsLauncherIcon = 'needs_launcher_icon';

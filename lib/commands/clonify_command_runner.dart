@@ -261,6 +261,10 @@ class ConfigureCommand extends ClientIdCommand {
       help: ClonifyCommandFlags.skipFirebaseConfigure.help,
     );
     argParser.addFlag(
+      ClonifyCommandFlags.skipShorebirdConfigure.name,
+      help: ClonifyCommandFlags.skipShorebirdConfigure.help,
+    );
+    argParser.addFlag(
       ClonifyCommandFlags.skipPubUpdate.name,
       // abbr: ClonifyCommandFlags.skipPubUpdate.abbr,
       help: ClonifyCommandFlags.skipPubUpdate.help,

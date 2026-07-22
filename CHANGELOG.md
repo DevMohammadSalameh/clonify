@@ -1,3 +1,27 @@
+## 0.4.4 - 2026-07-22
+
+### 🐦 Shorebird integration
+
+- ✨ Native Shorebird `app_id` sync during `clonify configure`
+- ⚙️ Optional `shorebird:` block in `clonify_settings.yaml`
+- 📦 Per-clone `shorebirdAppId` in `clones/*/config.json`
+- 🏳️ New `--skipShorebirdConfigure` flag (Shorebird still runs with `--skipAll`)
+- 📝 `CloneConfigs.shorebirdAppId` generated when present
+
+Example settings:
+
+```yaml
+shorebird:
+  enabled: true
+  settings_file: "./shorebird.yaml"
+```
+
+Example clone config:
+
+```json
+"shorebirdAppId": "0448f2f7-a408-4362-a6e7-257fe3079fb8"
+```
+
 ## 0.4.3 - 2024-11-13
 
 ### 🚀 Major Improvement: Internalized Package Renaming
