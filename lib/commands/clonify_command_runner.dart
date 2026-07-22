@@ -8,6 +8,7 @@ library;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:isolate';
 
 import 'package:args/command_runner.dart';
 import 'package:clonify/constants.dart';
@@ -66,43 +67,47 @@ class ClonifyCommandRunner extends CommandRunner<void> {
     addCommand(WhichCommand());
   }
 
-  /// Reads the version from clonify's own pubspec.yaml
+  /// Reads the version from clonify's own pubspec.yaml when possible.
   ///
-  /// Attempts to locate and read the version from the clonify package's pubspec.yaml file.
-  /// Searches relative to the executable location to ensure it reads clonify's version,
-  /// not the Flutter project's version.
-  String _getVersionFromPubspec() {
+  /// Works for `dart run`, path activates, and `dart pub global activate`
+  /// (including git installs / snapshots) via `package:clonify` resolution.
+  /// Falls back to [Constants.packageVersion].
+  Future<String> getVersionFromPubspec() async {
     try {
-      // Get the script location (where the clonify executable is located)
-      final scriptPath = Platform.script.toFilePath();
-      final scriptDir = Directory(scriptPath).parent;
-
-      // For compiled executable: script is in bin/, pubspec.yaml is in parent
-      // For dart run: script is in bin/, pubspec.yaml is in parent
-      File pubspecFile = File('${scriptDir.parent.path}/pubspec.yaml');
-
-      // If not found, try relative to script directory (for development)
-      if (!pubspecFile.existsSync()) {
-        pubspecFile = File('${scriptDir.path}/pubspec.yaml');
+      final packageUri = await Isolate.resolvePackageUri(
+        Uri.parse('package:clonify/constants.dart'),
+      );
+      if (packageUri != null && packageUri.isScheme('file')) {
+        final libFile = File(packageUri.toFilePath());
+        final packageRoot = libFile.parent.parent; // .../lib/constants.dart
+        final pubspecFile = File('${packageRoot.path}/pubspec.yaml');
+        final version = readClonifyVersionFromPubspec(pubspecFile);
+        if (version != null) return version;
       }
 
-      if (!pubspecFile.existsSync()) {
-        return 'unknown';
+      // Legacy fallbacks relative to Platform.script
+      if (Platform.script.isScheme('file')) {
+        final scriptDir = Directory(Platform.script.toFilePath()).parent;
+        for (final candidate in [
+          File('${scriptDir.parent.path}/pubspec.yaml'),
+          File('${scriptDir.path}/pubspec.yaml'),
+        ]) {
+          final version = readClonifyVersionFromPubspec(candidate);
+          if (version != null) return version;
+        }
       }
-
-      final pubspecContent = pubspecFile.readAsStringSync();
-      final pubspec = loadYaml(pubspecContent) as YamlMap;
-
-      // Verify this is the clonify package by checking the name
-      final packageName = pubspec['name']?.toString();
-      if (packageName != 'clonify') {
-        return 'unknown';
-      }
-
-      return pubspec['version']?.toString() ?? 'unknown';
-    } catch (e) {
-      return 'unknown';
+    } catch (_) {
+      // ignore and use const fallback
     }
+    return Constants.packageVersion;
+  }
+
+  String? readClonifyVersionFromPubspec(File pubspecFile) {
+    if (!pubspecFile.existsSync()) return null;
+    final pubspec = loadYaml(pubspecFile.readAsStringSync());
+    if (pubspec is! YamlMap) return null;
+    if (pubspec['name']?.toString() != 'clonify') return null;
+    return pubspec['version']?.toString();
   }
 
   @override
@@ -116,7 +121,7 @@ class ClonifyCommandRunner extends CommandRunner<void> {
 
     // Handle --version flag
     if (argResults['version'] == true) {
-      final version = _getVersionFromPubspec();
+      final version = await getVersionFromPubspec();
       print('${Constants.toolName} version $version');
       return;
     }

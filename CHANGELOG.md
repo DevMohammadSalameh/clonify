@@ -1,3 +1,9 @@
+## 0.4.6 - 2026-07-22
+
+### 🐛 Fix
+
+- Fix `clonify -v` showing `unknown` for `dart pub global activate --source git` installs
+
 ## 0.4.5 - 2026-07-22
 
 ### 🐦 Shorebird is fully inside Clonify
