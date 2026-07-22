@@ -45,6 +45,12 @@ class CloneConfigModel {
   /// The Shorebird app ID used for code-push releases/patches.
   String? shorebirdAppId;
 
+  /// Optional Transistorsoft Background Geolocation Android JWT license.
+  String? backgroundGeolocationLicenseAndroid;
+
+  /// Optional Transistorsoft Background Geolocation iOS JWT license.
+  String? backgroundGeolocationLicenseIos;
+
   /// List of additional color configurations for the application.
 
   List<ColorModel>? colors;
@@ -87,6 +93,9 @@ class CloneConfigModel {
     logo = json['logo'];
     firebaseProjectId = json['firebaseProjectId'];
     shorebirdAppId = json['shorebirdAppId'];
+    backgroundGeolocationLicenseAndroid =
+        json['backgroundGeolocationLicenseAndroid'];
+    backgroundGeolocationLicenseIos = json['backgroundGeolocationLicenseIos'];
     if (json['colors'] != null) {
       colors = [];
       json['colors'].forEach((v) {

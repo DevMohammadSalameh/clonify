@@ -8,6 +8,7 @@ import 'package:clonify/models/config_model.dart';
 import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
 import 'package:clonify/src/clonify_core.dart';
 import 'package:clonify/utils/asset_manager.dart';
+import 'package:clonify/utils/background_geolocation_license_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart' hide saveLastClientId;
 import 'package:clonify/utils/firebase_manager.dart';
 import 'package:clonify/utils/package_rename_plus_manager.dart';
@@ -934,6 +935,7 @@ Future<Map<String, dynamic>?> configureApp(
     }
 
     generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
+    await applyBackgroundGeolocationLicenses(configJson);
 
     logger.i('✅ Successfully cloned app for ${callModel.clientId}!');
     return configJson;
