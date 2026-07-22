@@ -7,8 +7,11 @@ class ConfigureCommandModel {
   bool autoUpdate = false;
   bool isDebug = false;
   bool skipFirebaseConfigure = false;
+  bool skipShorebirdConfigure = false;
   bool skipPubUpdate = false;
   bool skipVersionUpdate = false;
+
+  ConfigureCommandModel();
 
   ConfigureCommandModel.fromArgs(ArgResults? argResults) {
     clientId = argResults?[ClonifyCommandOptions.clientId.name] as String?;
@@ -18,6 +21,10 @@ class ConfigureCommandModel {
     isDebug = argResults?[ClonifyCommandFlags.isDebug.name] as bool? ?? false;
     skipFirebaseConfigure =
         argResults?[ClonifyCommandFlags.skipFirebaseConfigure.name] as bool? ??
+        false;
+    skipShorebirdConfigure =
+        argResults?[ClonifyCommandFlags.skipShorebirdConfigure.name]
+            as bool? ??
         false;
     skipPubUpdate =
         argResults?[ClonifyCommandFlags.skipPubUpdate.name] as bool? ?? false;

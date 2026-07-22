@@ -11,6 +11,7 @@ import 'package:clonify/utils/asset_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart' hide saveLastClientId;
 import 'package:clonify/utils/firebase_manager.dart';
 import 'package:clonify/utils/package_rename_plus_manager.dart';
+import 'package:clonify/utils/shorebird_manager.dart';
 import 'package:clonify/utils/tui_helpers.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 // ignore: depend_on_referenced_packages
@@ -76,6 +77,12 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   sink.writeln(
     '  static const String firebaseProjectId = "${configModel.firebaseProjectId}";',
   );
+  if (configModel.shorebirdAppId != null &&
+      configModel.shorebirdAppId!.trim().isNotEmpty) {
+    sink.writeln(
+      '  static const String shorebirdAppId = "${configModel.shorebirdAppId}";',
+    );
+  }
   sink.writeln('  static const String clientId = "${configModel.clientId}";');
   sink.writeln('  static const String version = "${configModel.version}";');
   sink.writeln(
@@ -267,6 +274,14 @@ Map<String, String>? _promptCloneBasicInfo() {
       );
     }
 
+    String shorebirdAppId = '';
+    if (clonifySettings.shorebirdEnabled) {
+      shorebirdAppId = promptUserTUI(
+        '🐦 Enter the Shorebird app ID (from shorebird.yaml / console)',
+        '',
+      );
+    }
+
     // Prompt for custom fields if any are defined
     final configMap = <String, String>{
       'clientId': clientId,
@@ -276,6 +291,7 @@ Map<String, String>? _promptCloneBasicInfo() {
       'appName': appName,
       'version': version,
       'firebaseProjectId': firebaseProjectId,
+      'shorebirdAppId': shorebirdAppId,
     };
 
     if (clonifySettings.needsLauncherIcon) {
@@ -386,6 +402,9 @@ Map<String, String>? _promptCloneBasicInfo() {
     if (firebaseProjectId.isNotEmpty) {
       infoMessage('  🔥 Firebase: $firebaseProjectId');
     }
+    if (shorebirdAppId.isNotEmpty) {
+      infoMessage('  🐦 Shorebird: $shorebirdAppId');
+    }
 
     return configMap;
   } catch (e) {
@@ -413,6 +432,7 @@ bool _createCloneStructure(Map<String, String> config) {
       'baseUrl': config['baseUrl'],
       'primaryColor': config['primaryColor'],
       'firebaseProjectId': config['firebaseProjectId'],
+      'shorebirdAppId': config['shorebirdAppId'],
       'version': config['version'],
       'launcherIcon': config['launcherIcon'],
       'splashScreen': config['splashScreen'],
@@ -579,6 +599,25 @@ Future<bool> _performInitialSetup(
           skip: callModel.skipAll || callModel.skipFirebaseConfigure,
         );
         firebaseProgress?.complete('Firebase configured successfully');
+      }
+    }
+
+    // Step 4: Sync Shorebird app_id (runs even with --skipAll unless explicitly skipped)
+    if (clonifySettings.shorebirdEnabled) {
+      final shorebirdAppId = resolveShorebirdAppId(configJson);
+      if (shorebirdAppId.isEmpty) {
+        logger.i(
+          '>>| Skipping Shorebird configuration (no shorebirdAppId in clone config).',
+        );
+      } else {
+        final shorebirdProgress = progressWithTUI(
+          '🐦 Syncing Shorebird app_id to $shorebirdAppId...',
+        );
+        await configureShorebirdAppId(
+          shorebirdAppId: shorebirdAppId,
+          skip: callModel.skipShorebirdConfigure,
+        );
+        shorebirdProgress?.complete('Shorebird app_id synced successfully');
       }
     }
 

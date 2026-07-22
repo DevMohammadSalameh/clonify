@@ -4,6 +4,7 @@ enum ClonifyCommands {
   init,
   which,
   configure,
+  shorebird,
   build,
   clean,
   upload,
@@ -20,6 +21,7 @@ enum ClonifyCommandFlags {
   autoUpdate,
   isDebug,
   skipFirebaseConfigure,
+  skipShorebirdConfigure,
   skipPubUpdate,
   skipVersionUpdate,
   buildAab,
@@ -43,6 +45,8 @@ extension ClonifyCommandExtension on ClonifyCommands {
         return 'which';
       case ClonifyCommands.configure:
         return 'configure';
+      case ClonifyCommands.shorebird:
+        return 'shorebird';
       case ClonifyCommands.build:
         return 'build';
       case ClonifyCommands.clean:
@@ -64,6 +68,8 @@ extension ClonifyCommandExtension on ClonifyCommands {
         return 'Show the current client ID';
       case ClonifyCommands.configure:
         return 'Configure the app for the specified client ID';
+      case ClonifyCommands.shorebird:
+        return 'Configure a clone then run Shorebird (release/patch)';
       case ClonifyCommands.build:
         return 'Build the Flutter project clone';
       case ClonifyCommands.clean:
@@ -86,6 +92,8 @@ extension ClonifyCommandExtension on ClonifyCommands {
         return ['w', 'current', 'who'];
       case ClonifyCommands.configure:
         return ['con', 'config', 'c'];
+      case ClonifyCommands.shorebird:
+        return ['sb'];
       case ClonifyCommands.build:
         return ['b'];
       case ClonifyCommands.clean:
@@ -134,6 +142,8 @@ extension ClonifyCommandFlagsExtension on ClonifyCommandFlags {
         return 'isDebug';
       case ClonifyCommandFlags.skipFirebaseConfigure:
         return 'skipFirebaseConfigure';
+      case ClonifyCommandFlags.skipShorebirdConfigure:
+        return 'skipShorebirdConfigure';
       case ClonifyCommandFlags.skipPubUpdate:
         return 'skipPubUpdate';
       case ClonifyCommandFlags.skipVersionUpdate:
@@ -165,6 +175,8 @@ extension ClonifyCommandFlagsExtension on ClonifyCommandFlags {
         return 'Run the command in debug mode';
       case ClonifyCommandFlags.skipFirebaseConfigure:
         return 'Skip Firebase configuration';
+      case ClonifyCommandFlags.skipShorebirdConfigure:
+        return 'Skip Shorebird configuration';
       case ClonifyCommandFlags.skipPubUpdate:
         return 'Skip updating pubspec.yaml';
       case ClonifyCommandFlags.skipVersionUpdate:
@@ -227,6 +239,8 @@ extension ClonifyCommandFlagsExtension on ClonifyCommandFlags {
         return 'Run the command in debug mode for detailed output';
       case ClonifyCommandFlags.skipFirebaseConfigure:
         return 'Skip Firebase configuration during setup';
+      case ClonifyCommandFlags.skipShorebirdConfigure:
+        return 'Skip Shorebird app_id sync during setup';
       case ClonifyCommandFlags.skipPubUpdate:
         return 'Skip updating the pubspec.yaml file';
       case ClonifyCommandFlags.skipVersionUpdate:

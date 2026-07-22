@@ -6,6 +6,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:args/command_runner.dart';
@@ -19,6 +20,7 @@ import 'package:clonify/src/clonify_core.dart';
 import 'package:clonify/utils/build_manager.dart';
 import 'package:clonify/utils/clone_manager.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
+import 'package:clonify/utils/shorebird_manager.dart';
 import 'package:clonify/utils/upload_manager.dart';
 import 'package:clonify/utils/tui_helpers.dart';
 import 'package:yaml/yaml.dart';
@@ -56,6 +58,7 @@ class ClonifyCommandRunner extends CommandRunner<void> {
     addCommand(InitializeCommand());
     addCommand(CreateCommand());
     addCommand(ConfigureCommand());
+    addCommand(ShorebirdCommand());
     addCommand(BuildCommand());
     addCommand(CleanCommand());
     addCommand(UploadCommand());
@@ -261,6 +264,10 @@ class ConfigureCommand extends ClientIdCommand {
       help: ClonifyCommandFlags.skipFirebaseConfigure.help,
     );
     argParser.addFlag(
+      ClonifyCommandFlags.skipShorebirdConfigure.name,
+      help: ClonifyCommandFlags.skipShorebirdConfigure.help,
+    );
+    argParser.addFlag(
       ClonifyCommandFlags.skipPubUpdate.name,
       // abbr: ClonifyCommandFlags.skipPubUpdate.abbr,
       help: ClonifyCommandFlags.skipPubUpdate.help,
@@ -301,6 +308,100 @@ class ConfigureCommand extends ClientIdCommand {
       throw CustomException(Messages.clientIdRequired);
     }
     await configureApp(configureModel);
+  }
+}
+
+/// Configures a clone (including Shorebird app_id) then runs the Shorebird CLI.
+///
+/// Usage:
+/// ```bash
+/// clonify shorebird --clientId amada_client -- release android
+/// clonify shorebird --clientId amada_staff -- patch ios
+/// ```
+class ShorebirdCommand extends ClientIdCommand {
+  ShorebirdCommand() : super(mandatory: false) {
+    argParser.addFlag(
+      ClonifyCommandFlags.skipFirebaseConfigure.name,
+      help: ClonifyCommandFlags.skipFirebaseConfigure.help,
+      defaultsTo: true,
+    );
+  }
+
+  @override
+  String get name => ClonifyCommands.shorebird.name;
+
+  @override
+  String get description => ClonifyCommands.shorebird.description;
+
+  @override
+  List<String> get aliases => ClonifyCommands.shorebird.aliases;
+
+  @override
+  Future<void> run() async {
+    var clientId =
+        argResults?[ClonifyCommandOptions.clientId.name] as String?;
+    if (clientId == null || clientId.isEmpty) {
+      clientId = await getLastClientId();
+    }
+    if (clientId == null || clientId.isEmpty) {
+      throw CustomException(Messages.clientIdRequired);
+    }
+
+    final shorebirdArgs = argResults!.rest;
+    if (shorebirdArgs.isEmpty) {
+      throw CustomException(
+        'Missing Shorebird args.\n'
+        'Example: clonify shorebird --clientId $clientId -- release android\n'
+        '         clonify shorebird --clientId $clientId -- patch ios',
+      );
+    }
+
+    if (!clonifySettings.shorebirdEnabled) {
+      throw CustomException(
+        'Shorebird is disabled. Set shorebird.enabled: true in clonify/clonify_settings.yaml',
+      );
+    }
+
+    final configFile = File(Constants.configFilePath(clientId));
+    if (!configFile.existsSync()) {
+      throw CustomException('Clone config not found: ${configFile.path}');
+    }
+
+    final configJson =
+        jsonDecode(configFile.readAsStringSync()) as Map<String, dynamic>;
+    final packageName = (configJson['packageName'] as String?)?.trim() ?? '';
+    final shorebirdAppId = resolveShorebirdAppId(configJson);
+
+    if (packageName.isEmpty) {
+      throw CustomException('packageName missing in ${configFile.path}');
+    }
+    if (shorebirdAppId.isEmpty) {
+      throw CustomException('shorebirdAppId missing in ${configFile.path}');
+    }
+
+    final skipFirebase =
+        argResults?[ClonifyCommandFlags.skipFirebaseConfigure.name] as bool? ??
+        true;
+
+    logger.i('🚀 Configuring clone "$clientId" before Shorebird...');
+    final configureModel = ConfigureCommandModel()
+      ..clientId = clientId
+      ..skipAll = true
+      ..skipFirebaseConfigure = skipFirebase
+      ..skipShorebirdConfigure = false;
+    await configureApp(configureModel);
+
+    assertBundleIdMatches(
+      shorebirdArgs: shorebirdArgs,
+      expectedPackageName: packageName,
+    );
+    assertShorebirdAppIdMatches(shorebirdAppId);
+
+    logger.i(
+      '🐦 Running shorebird ${shorebirdArgs.join(' ')} '
+      '(app_id=$shorebirdAppId, package=$packageName, clientId=$clientId)',
+    );
+    await execShorebird(shorebirdArgs);
   }
 }
 
