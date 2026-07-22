@@ -4,6 +4,7 @@ enum ClonifyCommands {
   init,
   which,
   configure,
+  shorebird,
   build,
   clean,
   upload,
@@ -44,6 +45,8 @@ extension ClonifyCommandExtension on ClonifyCommands {
         return 'which';
       case ClonifyCommands.configure:
         return 'configure';
+      case ClonifyCommands.shorebird:
+        return 'shorebird';
       case ClonifyCommands.build:
         return 'build';
       case ClonifyCommands.clean:
@@ -65,6 +68,8 @@ extension ClonifyCommandExtension on ClonifyCommands {
         return 'Show the current client ID';
       case ClonifyCommands.configure:
         return 'Configure the app for the specified client ID';
+      case ClonifyCommands.shorebird:
+        return 'Configure a clone then run Shorebird (release/patch)';
       case ClonifyCommands.build:
         return 'Build the Flutter project clone';
       case ClonifyCommands.clean:
@@ -87,6 +92,8 @@ extension ClonifyCommandExtension on ClonifyCommands {
         return ['w', 'current', 'who'];
       case ClonifyCommands.configure:
         return ['con', 'config', 'c'];
+      case ClonifyCommands.shorebird:
+        return ['sb'];
       case ClonifyCommands.build:
         return ['b'];
       case ClonifyCommands.clean:

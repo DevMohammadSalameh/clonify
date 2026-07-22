@@ -208,32 +208,14 @@ Map<String, dynamic> _promptFastlaneSettings() {
 
 /// Prompts for Shorebird configuration settings.
 ///
-/// Returns a map with 'enabled' and 'settingsFile' keys.
+/// Returns a map with 'enabled' key. Shorebird always uses `./shorebird.yaml`.
 Map<String, dynamic> _promptShorebirdSettings() {
   final bool enableShorebird = confirmTUI(
     '\n🐦 Do you want to enable Shorebird app_id sync on configure?',
     defaultValue: false,
   );
 
-  String shorebirdSettingsFilePath = './shorebird.yaml';
-  if (enableShorebird) {
-    shorebirdSettingsFilePath = promptUserTUI(
-      '📁 Enter Shorebird settings file path',
-      './shorebird.yaml',
-      validator: (value) {
-        if (value.isEmpty) {
-          errorMessage('Shorebird settings file path cannot be empty.');
-          return false;
-        }
-        return true;
-      },
-    );
-  }
-
-  return {
-    'enabled': enableShorebird,
-    'settingsFile': shorebirdSettingsFilePath,
-  };
+  return {'enabled': enableShorebird};
 }
 
 /// Prompts for basic project settings.
@@ -440,7 +422,6 @@ ${ClonifySettingsKeys.fastlane}:
 
 ${ClonifySettingsKeys.shorebird}:
   ${ClonifySettingsKeys.enabled}: ${shorebirdConfig['enabled']}
-  ${ClonifySettingsKeys.settingsFile}: "${shorebirdConfig['enabled'] ? shorebirdConfig['settingsFile'] : './shorebird.yaml'}"
 
 ${ClonifySettingsKeys.companyName}: "${basicConfig['companyName']}"
 
@@ -639,6 +620,7 @@ bool _validateServiceConfigurations(Map<String, dynamic> rawSettings) {
   }
 
   // Shorebird is optional for backward compatibility with older settings files.
+  // Only `enabled` is required; Clonify always uses ./shorebird.yaml.
   if (rawSettings.containsKey('shorebird')) {
     final serviceSettings = rawSettings['shorebird'];
     if (serviceSettings is! Map) {
@@ -648,11 +630,6 @@ bool _validateServiceConfigurations(Map<String, dynamic> rawSettings) {
     if (!serviceSettings.containsKey('enabled') ||
         serviceSettings['enabled'] is! bool) {
       logger.e('❌ "shorebird.enabled" must be a boolean.');
-      return false;
-    }
-    if (!serviceSettings.containsKey('settings_file') ||
-        serviceSettings['settings_file'] is! String) {
-      logger.e('❌ "shorebird.settings_file" must be a string.');
       return false;
     }
   }

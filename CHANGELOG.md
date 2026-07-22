@@ -1,3 +1,23 @@
+## 0.4.5 - 2026-07-22
+
+### 🐦 Shorebird is fully inside Clonify
+
+- ✨ New `clonify shorebird` command (configure + guard + run Shorebird CLI)
+- 🧹 Shorebird always uses `./shorebird.yaml` — no `settings_file` in settings
+- ⚙️ Settings only need:
+
+```yaml
+shorebird:
+  enabled: true
+```
+
+Usage:
+
+```bash
+clonify shorebird --clientId amada_client -- release android
+clonify shorebird --clientId amada_staff -- patch ios
+```
+
 ## 0.4.4 - 2026-07-22
 
 ### 🐦 Shorebird integration

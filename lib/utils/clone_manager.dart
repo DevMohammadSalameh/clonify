@@ -615,7 +615,6 @@ Future<bool> _performInitialSetup(
         );
         await configureShorebirdAppId(
           shorebirdAppId: shorebirdAppId,
-          settingsFilePath: clonifySettings.shorebirdSettingsFilePath,
           skip: callModel.skipShorebirdConfigure,
         );
         shorebirdProgress?.complete('Shorebird app_id synced successfully');

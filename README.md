@@ -420,22 +420,25 @@ To skip Firebase:
 
 ### Shorebird Integration
 
-Shorebird is **optional**. To sync `shorebird.yaml` `app_id` on every configure:
-
-1. Enable in `clonify/clonify_settings.yaml`:
+Shorebird is **optional**. Enable with:
 
 ```yaml
 shorebird:
   enabled: true
-  settings_file: "./shorebird.yaml"
 ```
 
-2. Set `shorebirdAppId` per clone in `clonify/clones/<id>/config.json`
-3. Run `clonify configure --clientId <id>` — Shorebird still syncs even with `--skipAll`
+Clonify always syncs `./shorebird.yaml` from each clone's `shorebirdAppId` on `configure`.
 
-To skip Shorebird:
-- Set `shorebird.enabled: false` in settings
-- Use `--skipShorebirdConfigure` flag
+Release / patch (replaces project wrapper scripts):
+
+```bash
+clonify shorebird --clientId your_client -- release android
+clonify shorebird --clientId your_client -- patch ios
+```
+
+To skip Shorebird sync during configure only:
+- Set `shorebird.enabled: false`
+- Or use `--skipShorebirdConfigure`
 
 ### Fastlane Integration
 

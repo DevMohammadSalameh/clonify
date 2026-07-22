@@ -475,6 +475,15 @@ void printUsage() {
     '    --skip-shorebird-configure                        Skip Shorebird app_id sync.',
   );
   logger.i(
+    '  For "shorebird" command:',
+  );
+  logger.i(
+    '    clonify shorebird --clientId <id> -- release android',
+  );
+  logger.i(
+    '    clonify shorebird --clientId <id> -- patch ios',
+  );
+  logger.i(
     '    --skip-version | -SV                              Skip config file empty version check.',
   );
   logger.i(

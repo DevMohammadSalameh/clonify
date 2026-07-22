@@ -11,6 +11,8 @@ class ConfigureCommandModel {
   bool skipPubUpdate = false;
   bool skipVersionUpdate = false;
 
+  ConfigureCommandModel();
+
   ConfigureCommandModel.fromArgs(ArgResults? argResults) {
     clientId = argResults?[ClonifyCommandOptions.clientId.name] as String?;
     skipAll = argResults?[ClonifyCommandFlags.skipAll.name] as bool? ?? false;

@@ -28,9 +28,6 @@ class ClonifySettings {
   /// Whether Shorebird integration is enabled for code-push app_id sync.
   final bool shorebirdEnabled;
 
-  /// Path to the Shorebird settings file relative to project root.
-  final String shorebirdSettingsFilePath;
-
   /// The company or organization name used across all clones.
   final String companyName;
 
@@ -65,7 +62,6 @@ class ClonifySettings {
     required this.fastlaneEnabled,
     required this.fastlaneSettingsFilePath,
     this.shorebirdEnabled = false,
-    this.shorebirdSettingsFilePath = './shorebird.yaml',
     required this.companyName,
     required this.defaultColor,
     required this.needsLauncherIcon,
@@ -121,12 +117,6 @@ class ClonifySettings {
         final shorebird = yaml[ClonifySettingsKeys.shorebird];
         if (shorebird is! YamlMap) return false;
         return shorebird[ClonifySettingsKeys.enabled] ?? false;
-      }(),
-      shorebirdSettingsFilePath: () {
-        final shorebird = yaml[ClonifySettingsKeys.shorebird];
-        if (shorebird is! YamlMap) return './shorebird.yaml';
-        return shorebird[ClonifySettingsKeys.settingsFile] ??
-            './shorebird.yaml';
       }(),
       companyName: yaml[ClonifySettingsKeys.companyName] ?? '',
       defaultColor: yaml[ClonifySettingsKeys.defaultColor] ?? '#FFFFFF',
