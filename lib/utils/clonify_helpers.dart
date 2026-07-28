@@ -66,7 +66,10 @@ String sanitizeArg(String arg) {
   if (skipSanitization.contains(arg)) {
     return arg;
   }
-  final safe = RegExp(r'^[\w\-.\/]+$');
+  // Allow common CLI flag/value chars used by flutterfire/firebase
+  // (e.g. --platforms=android,ios or --platforms android,ios, projects:create).
+  // Still blocks shell metacharacters: space ; $ ` | & < > ( ) " ' \
+  final safe = RegExp(r'^[\w\-.\/:=,@+]+$');
   if (!safe.hasMatch(arg)) {
     throw ArgumentError('Unsafe argument detected: $arg');
   }

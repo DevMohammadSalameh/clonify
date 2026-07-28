@@ -6,6 +6,15 @@ import 'clonify_helpers.dart';
 
 import 'dart:convert';
 
+/// Returns true when [lib/firebase_options.dart] already targets [packageName].
+bool firebaseOptionsMatchPackage(String packageName) {
+  final optionsFile = File('lib/firebase_options.dart');
+  if (!optionsFile.existsSync()) return false;
+  final content = optionsFile.readAsStringSync();
+  return content.contains("iosBundleId: '$packageName'") ||
+      content.contains('iosBundleId: "$packageName"');
+}
+
 /// Creates a new Firebase project or uses an existing one.
 ///
 /// This function guides the user through the process of setting up a Firebase
@@ -173,10 +182,12 @@ Future<void> addFirebaseToApp({
       }
     }
 
-    if (projectIdMatches) {
+    final packageMatches = firebaseOptionsMatchPackage(packageName);
+
+    if (projectIdMatches && packageMatches) {
       if (skip == false) {
         final userChoice = prompt(
-          'Firebase project ID matches the current configuration. Do you want to re-run the command anyway? (y/n):',
+          'Firebase project ID and package already match. Do you want to re-run the command anyway? (y/n):',
         );
         if (userChoice.toLowerCase() != 'y') {
           logger.i('>>| Skipping Firebase configuration...');
@@ -184,10 +195,14 @@ Future<void> addFirebaseToApp({
         }
       } else {
         logger.i(
-          '✅ Firebase project ID matches the current configuration.\n>>| Skipping Firebase configuration...',
+          '✅ Firebase project ID and package match the current configuration.\n>>| Skipping Firebase configuration...',
         );
         return;
       }
+    } else if (projectIdMatches && !packageMatches) {
+      logger.i(
+        '🔄 Firebase project matches but package differs (need $packageName). Re-running FlutterFire configure...',
+      );
     } else {
       logger.e(
         '❌ Firebase project ID does not match any configuration in firebase.json.',
@@ -225,7 +240,8 @@ Future<void> addFirebaseToApp({
         '--project',
         firebaseProjectId,
         '-y',
-        '--platforms=android,ios',
+        '--platforms',
+        'android,ios',
         '-i',
         packageName,
         '-a',

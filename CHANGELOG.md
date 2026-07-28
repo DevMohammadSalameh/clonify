@@ -1,3 +1,11 @@
+## 0.4.7 - 2026-07-28
+
+### 🐛 Fix
+
+- Allow FlutterFire/Firebase CLI args with `,`, `=`, `:` in `sanitizeArg` (fixes `Unsafe argument detected: --platforms=android,ios`)
+- Re-run Firebase configure on clone switch when package/bundle differs, even if Firebase project ID already matches
+- Split `--platforms android,ios` for FlutterFire configure
+
 ## 0.4.6 - 2026-07-22
 
 ### 🐛 Fix
