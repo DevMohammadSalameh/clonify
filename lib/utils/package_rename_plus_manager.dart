@@ -117,11 +117,11 @@ Future<void> runRenamePackage({
         'android',
         'language',
       ], 'kotlin');
-      _updateOptionalKey(
-        yamlEditor,
-        ['package_rename_config', 'android', 'override_old_package'],
-        overrideOldPackage,
-      );
+      _updateOptionalKey(yamlEditor, [
+        'package_rename_config',
+        'android',
+        'override_old_package',
+      ], overrideOldPackage);
     }
 
     if (clonifySettings.updateIOSInfo) {
@@ -136,11 +136,11 @@ Future<void> runRenamePackage({
         'ios',
         'package_name',
       ], packageName);
-      _updateOptionalKey(
-        yamlEditor,
-        ['package_rename_config', 'ios', 'override_old_package'],
-        overrideOldPackage,
-      );
+      _updateOptionalKey(yamlEditor, [
+        'package_rename_config',
+        'ios',
+        'override_old_package',
+      ], overrideOldPackage);
     }
 
     yamlEditor.update(['package_rename_config', 'web', 'app_name'], appName);
@@ -149,11 +149,7 @@ Future<void> runRenamePackage({
       'web',
       'short_app_name',
     ], shortBundleName);
-    yamlEditor.update([
-      'package_rename_config',
-      'web',
-      'description',
-    ], appName);
+    yamlEditor.update(['package_rename_config', 'web', 'description'], appName);
     yamlEditor.update(['package_rename_config', 'linux', 'app_name'], appName);
     yamlEditor.update([
       'package_rename_config',
@@ -217,19 +213,11 @@ void _ensureRenameConfigSections(
     changed = true;
   }
   if (clonifySettings.updateIOSInfo && !config.containsKey('ios')) {
-    config['ios'] = {
-      'app_name': '',
-      'bundle_name': '',
-      'package_name': '',
-    };
+    config['ios'] = {'app_name': '', 'bundle_name': '', 'package_name': ''};
     changed = true;
   }
   if (!config.containsKey('web')) {
-    config['web'] = {
-      'app_name': '',
-      'short_app_name': '',
-      'description': '',
-    };
+    config['web'] = {'app_name': '', 'short_app_name': '', 'description': ''};
     changed = true;
   }
   if (!config.containsKey('linux')) {

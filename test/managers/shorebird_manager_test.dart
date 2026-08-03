@@ -3,7 +3,11 @@ import 'dart:io';
 import 'package:clonify/utils/shorebird_manager.dart';
 import 'package:test/test.dart';
 
+import '../silence_logs.dart';
+
 void main() {
+  silenceClonifyLogsForTests();
+
   late Directory tempDir;
   late String originalDir;
 
@@ -59,10 +63,7 @@ auto_update: false
   });
 
   test('resolveShorebirdAppId reads string value', () {
-    expect(
-      resolveShorebirdAppId({'shorebirdAppId': '  abc  '}),
-      'abc',
-    );
+    expect(resolveShorebirdAppId({'shorebirdAppId': '  abc  '}), 'abc');
     expect(resolveShorebirdAppId({}), '');
   });
 

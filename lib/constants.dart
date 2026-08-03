@@ -177,11 +177,11 @@ public class MainActivity extends FlutterActivity {
   /// The official name of the Clonify CLI tool.
   static const String toolName = 'clonify';
 
-  /// Package version (keep in sync with pubspec.yaml).
-  static const String packageVersion = '0.4.6';
+  /// Fallback package version when pubspec cannot be resolved at runtime.
+  /// Prefer `--version`, which reads pubspec.yaml dynamically.
+  static const String packageVersion = '0.4.7';
 
   /// The current version of the Clonify CLI tool.
-  /// Note: This is now read dynamically from pubspec.yaml via the --version flag.
   @Deprecated('Use Constants.packageVersion or --version flag')
   static const String version = packageVersion;
 

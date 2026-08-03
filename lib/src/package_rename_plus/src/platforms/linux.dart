@@ -69,7 +69,8 @@ void _setLinuxAppName(dynamic appName) {
     }
 
     PackageRenamePlusLogger.info(
-        'Linux app title set to: `$appName` (my_application.cc)');
+      'Linux app title set to: `$appName` (my_application.cc)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('Linux App Name change failed!!!');
@@ -101,7 +102,8 @@ void _setLinuxPackageName(dynamic packageName) {
     cmakeListsFile.writeAsStringSync(newAppIDCmakeListsString);
 
     PackageRenamePlusLogger.info(
-        'Linux application id set to: `$packageName` (CMakeLists.txt)');
+      'Linux application id set to: `$packageName` (CMakeLists.txt)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('Linux Application ID change failed!!!');
@@ -140,7 +142,8 @@ void _setLinuxExecutableName(dynamic exeName) {
     cmakeListsFile.writeAsStringSync(newBinaryNameCmakeListsString);
 
     PackageRenamePlusLogger.info(
-        'Linux binary name set to: `$exeName` (CMakeLists.txt)');
+      'Linux binary name set to: `$exeName` (CMakeLists.txt)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('Linux Executable Name change failed!!!');

@@ -69,7 +69,8 @@ void _setWindowsAppTitle(String appName) {
     mainCppFile.writeAsStringSync(newAppTitleMainCppString);
 
     PackageRenamePlusLogger.info(
-        'Windows app title set to: `$appName` (main.cpp)');
+      'Windows app title set to: `$appName` (main.cpp)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('Windows App Title change failed!!!');
@@ -105,11 +106,14 @@ void _setWindowsProductDetails(String appName) {
     runnerFile.writeAsStringSync(newProductDetailsRunnerString);
 
     PackageRenamePlusLogger.info(
-        'Windows file description set to: `$appName` (Runner.rc)');
+      'Windows file description set to: `$appName` (Runner.rc)',
+    );
     PackageRenamePlusLogger.info(
-        'Windows internal name set to: `$appName` (Runner.rc)');
+      'Windows internal name set to: `$appName` (Runner.rc)',
+    );
     PackageRenamePlusLogger.info(
-        'Windows product name set to: `$appName` (Runner.rc)');
+      'Windows product name set to: `$appName` (Runner.rc)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('Windows Product Details change failed!!!');
@@ -139,7 +143,8 @@ void _setWindowsOrganization(dynamic organization) {
     runnerFile.writeAsStringSync(newOrganizationRunnerString);
 
     PackageRenamePlusLogger.info(
-        'Windows company name set to: `$organization` (Runner.rc)');
+      'Windows company name set to: `$organization` (Runner.rc)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('Windows Organization change failed!!!');
@@ -173,7 +178,8 @@ void _setWindowsCopyrightNotice(dynamic notice) {
     runnerFile.writeAsStringSync(newCopyrightNoticeRunnerString);
 
     PackageRenamePlusLogger.info(
-        'Windows legal copyright set to: `$notice` (Runner.rc)');
+      'Windows legal copyright set to: `$notice` (Runner.rc)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('Windows Copyright Notice change failed!!!');
@@ -230,7 +236,8 @@ void _setWindowsCMakeListsBinaryName(String exeName) {
     cmakeListsFile.writeAsStringSync(newBinaryNameCmakeListsString);
 
     PackageRenamePlusLogger.info(
-        'Windows binary name set to: `$exeName` (CMakeLists.txt)');
+      'Windows binary name set to: `$exeName` (CMakeLists.txt)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('Windows Binary Name change failed!!!');
@@ -257,7 +264,8 @@ void _setWindowsOriginalFilename(String exeName) {
     runnerFile.writeAsStringSync(newOriginalFilenameRunnerString);
 
     PackageRenamePlusLogger.info(
-        'Windows original filename set to: `$exeName.exe` (Runner.rc)');
+      'Windows original filename set to: `$exeName.exe` (Runner.rc)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('Windows Original Filename change failed!!!');

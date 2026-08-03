@@ -60,7 +60,8 @@ void _setMacOSProductName(String productName) {
     appInfoFile.writeAsStringSync(newProductNameAppInfoString);
 
     PackageRenamePlusLogger.info(
-        'MacOS product name set to: `$productName` (AppInfo.xcconfig)');
+      'MacOS product name set to: `$productName` (AppInfo.xcconfig)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('MacOS Product Name change failed!!!');
@@ -87,7 +88,8 @@ void _setMacOSBuildableName(String buildableName) {
     runnerXCSchemeFile.writeAsStringSync(newBuildableNameXCSchemeString);
 
     PackageRenamePlusLogger.info(
-        'MacOS buildable name set to: `$buildableName` (Runner.xcscheme)');
+      'MacOS buildable name set to: `$buildableName` (Runner.xcscheme)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('MacOS Buildable Name change failed!!!');
@@ -107,18 +109,9 @@ void _setMacOSAppNameInProjectFile(String appName) {
 
     final projectString = projectFile.readAsStringSync();
     final newDotAppProjectString = projectString
-        .replaceAll(
-          RegExp(r'/\* (.*).app \*/'),
-          '/* $appName.app */',
-        )
-        .replaceAll(
-          RegExp('path = "(.*).app";'),
-          'path = "$appName.app";',
-        )
-        .replaceAll(
-          RegExp('path = (.*).app;'),
-          'path = "$appName.app";',
-        )
+        .replaceAll(RegExp(r'/\* (.*).app \*/'), '/* $appName.app */')
+        .replaceAll(RegExp('path = "(.*).app";'), 'path = "$appName.app";')
+        .replaceAll(RegExp('path = (.*).app;'), 'path = "$appName.app";')
         .replaceAll(
           RegExp(
             r'TEST_HOST = "\$\(BUILT_PRODUCTS_DIR\)/'
@@ -131,7 +124,8 @@ void _setMacOSAppNameInProjectFile(String appName) {
     projectFile.writeAsStringSync(newDotAppProjectString);
 
     PackageRenamePlusLogger.info(
-        'MacOS .app name set to: `$appName.app` (project.pbxproj)');
+      'MacOS .app name set to: `$appName.app` (project.pbxproj)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('MacOS .app Name change failed!!!');
@@ -179,16 +173,19 @@ void _setMacOSAppInfoBundleID(String bundleID) {
     appInfoFile.writeAsStringSync(newPackageNameAppInfoString);
 
     PackageRenamePlusLogger.info(
-        'MacOS bundle id set to: `$bundleID` (AppInfo.xcconfig)');
+      'MacOS bundle id set to: `$bundleID` (AppInfo.xcconfig)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error(
-        'MacOS Bundle ID change failed!!! (AppInfo.xcconfig)');
+      'MacOS Bundle ID change failed!!! (AppInfo.xcconfig)',
+    );
   } catch (e) {
     PackageRenamePlusLogger.warning(e.toString());
     PackageRenamePlusLogger.error('ERR Code: 255');
     PackageRenamePlusLogger.error(
-        'MacOS Bundle ID change failed!!! (AppInfo.xcconfig)');
+      'MacOS Bundle ID change failed!!! (AppInfo.xcconfig)',
+    );
   }
 }
 
@@ -204,34 +201,37 @@ void _setMacOSProjectFileBundleID(String bundleID) {
         // Replaces old bundle id from
         // `PRODUCT_BUNDLE_IDENTIFIER = {{BUNDLE_ID}}.RunnerTests;`
         .replaceAll(
-      RegExp('PRODUCT_BUNDLE_IDENTIFIER = (.*?).RunnerTests;'),
-      'PRODUCT_BUNDLE_IDENTIFIER = $bundleID.RunnerTests;',
-    )
+          RegExp('PRODUCT_BUNDLE_IDENTIFIER = (.*?).RunnerTests;'),
+          'PRODUCT_BUNDLE_IDENTIFIER = $bundleID.RunnerTests;',
+        )
         // Removes old bundle id from
         // `PRODUCT_BUNDLE_IDENTIFIER = "{{BUNDLE_ID}}.{{EXTENSION_NAME}}";`
         .replaceAllMapped(
-      RegExp(
-        r'PRODUCT_BUNDLE_IDENTIFIER = "([A-Za-z0-9.-_]+)\.([A-Za-z0-9.-_]+)";',
-      ),
-      (match) {
-        final extensionName = match.group(2);
-        return 'PRODUCT_BUNDLE_IDENTIFIER = "$bundleID.$extensionName";';
-      },
-    );
+          RegExp(
+            r'PRODUCT_BUNDLE_IDENTIFIER = "([A-Za-z0-9.-_]+)\.([A-Za-z0-9.-_]+)";',
+          ),
+          (match) {
+            final extensionName = match.group(2);
+            return 'PRODUCT_BUNDLE_IDENTIFIER = "$bundleID.$extensionName";';
+          },
+        );
 
     macOSProjectFile.writeAsStringSync(newBundleIDMacOSProjectString);
 
     PackageRenamePlusLogger.info(
-        'MacOS bundle id set to: `$bundleID` (project.pbxproj)');
+      'MacOS bundle id set to: `$bundleID` (project.pbxproj)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error(
-        'MacOS Bundle ID change failed!!! (project.pbxproj)');
+      'MacOS Bundle ID change failed!!! (project.pbxproj)',
+    );
   } catch (e) {
     PackageRenamePlusLogger.warning(e.toString());
     PackageRenamePlusLogger.error('ERR Code: 255');
     PackageRenamePlusLogger.error(
-        'MacOS Bundle ID change failed!!! (project.pbxproj)');
+      'MacOS Bundle ID change failed!!! (project.pbxproj)',
+    );
   }
 }
 
@@ -254,7 +254,8 @@ void _setMacOSCopyright(dynamic notice) {
     appInfoFile.writeAsStringSync(newCopyrightAppInfoString);
 
     PackageRenamePlusLogger.info(
-        'MacOS product copyright set to: `$notice` (AppInfo.xcconfig)');
+      'MacOS product copyright set to: `$notice` (AppInfo.xcconfig)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('MacOS Product Copyright change failed!!!');

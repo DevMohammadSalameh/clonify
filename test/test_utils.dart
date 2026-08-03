@@ -5,6 +5,8 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'silence_logs.dart';
+
 /// Mock Flutter project structure generator
 class MockFlutterProject {
   /// Creates a mock Flutter project directory structure
@@ -449,12 +451,16 @@ Building com.test.app for device (ios-release)...
   }
 }
 
-/// Helper to create temporary test directory
+/// Helper to create temporary test directory.
+///
+/// Does not change [Directory.current], so suites can run safely in parallel.
+/// Prefer absolute paths via [path] / [tempDir].
 class TestDirectoryHelper {
   late Directory tempDir;
 
   /// Create temporary directory
   void setUp() {
+    silenceClonifyLogsForTests();
     tempDir = Directory.systemTemp.createTempSync('clonify_test_');
   }
 

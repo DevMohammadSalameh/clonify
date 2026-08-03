@@ -25,9 +25,7 @@ Future<void> configureShorebirdAppId({
 
   final appId = shorebirdAppId.trim();
   if (appId.isEmpty) {
-    logger.i(
-      '>>| Skipping Shorebird configuration (empty shorebirdAppId).',
-    );
+    logger.i('>>| Skipping Shorebird configuration (empty shorebirdAppId).');
     return;
   }
 
@@ -43,10 +41,7 @@ Future<void> configureShorebirdAppId({
 
   late final String updated;
   if (appIdPattern.hasMatch(content)) {
-    updated = content.replaceFirstMapped(
-      appIdPattern,
-      (_) => 'app_id: $appId',
-    );
+    updated = content.replaceFirstMapped(appIdPattern, (_) => 'app_id: $appId');
   } else {
     updated = 'app_id: $appId\n$content';
   }

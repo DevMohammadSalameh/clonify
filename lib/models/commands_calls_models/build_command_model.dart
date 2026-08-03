@@ -3,19 +3,19 @@ import 'package:clonify/enums.dart';
 
 class BuildCommandModel {
   String? clientId;
-  bool skipAll = false;
-  bool buildAab = true;
-  bool buildApk = false;
-  bool buildIpa = true;
-  bool skipBuildCheck = false;
+  bool skipAll = ClonifyCommandFlags.skipAll.defaultsTo;
+  bool buildAab = ClonifyCommandFlags.buildAab.defaultsTo;
+  bool buildApk = ClonifyCommandFlags.buildApk.defaultsTo;
+  bool buildIpa = ClonifyCommandFlags.buildIpa.defaultsTo;
+  bool skipBuildCheck = ClonifyCommandFlags.skipBuildCheck.defaultsTo;
 
   BuildCommandModel.fromArgs(ArgResults? argResults) {
-    clientId = argResults?[ClonifyCommandOptions.clientId.name] as String?;
-    skipAll = argResults?[ClonifyCommandFlags.skipAll.name] as bool? ?? false;
-    buildAab = argResults?[ClonifyCommandFlags.buildAab.name] as bool? ?? true;
-    buildApk = argResults?[ClonifyCommandFlags.buildApk.name] as bool? ?? false;
-    buildIpa = argResults?[ClonifyCommandFlags.buildIpa.name] as bool? ?? false;
-    skipBuildCheck =
-        argResults?[ClonifyCommandFlags.skipBuildCheck.name] as bool? ?? false;
+    if (argResults == null) return;
+    clientId = argResults.clientId;
+    skipAll = argResults.clonifyFlag(ClonifyCommandFlags.skipAll);
+    buildAab = argResults.clonifyFlag(ClonifyCommandFlags.buildAab);
+    buildApk = argResults.clonifyFlag(ClonifyCommandFlags.buildApk);
+    buildIpa = argResults.clonifyFlag(ClonifyCommandFlags.buildIpa);
+    skipBuildCheck = argResults.clonifyFlag(ClonifyCommandFlags.skipBuildCheck);
   }
 }

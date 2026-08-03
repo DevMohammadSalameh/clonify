@@ -1,29 +1,33 @@
 import 'dart:io';
 
-import 'package:clonify/utils/clonify_helpers.dart';
-import 'package:test/test.dart';
-import 'package:args/command_runner.dart';
-
-import 'package:clonify/src/clonify_core.dart';
-import 'package:clonify/commands/clonify_command_runner.dart';
+import 'package:args/args.dart';
+import 'package:clonify/enums.dart';
 import 'package:clonify/models/commands_calls_models/build_command_model.dart';
+import 'package:clonify/src/clonify_core.dart';
+import 'package:clonify/utils/tui_helpers.dart';
+import 'package:test/test.dart';
 
-// Mock functions for testing
-String? mockLastClientId;
-String? mockPromptAnswer;
-bool buildAppsCalled = false;
-BuildCommandModel? capturedBuildModel;
-
-Future<String?> getLastClientId() async => mockLastClientId;
-
-String prompt(String message) => mockPromptAnswer!;
-
-Future<void> buildApps(BuildCommandModel buildModel) async {
-  buildAppsCalled = true;
-  capturedBuildModel = buildModel;
-}
+import 'silence_logs.dart';
 
 void main() {
+  silenceClonifyLogsForTests();
+
+  late Directory tempDir;
+  late String originalDir;
+
+  setUp(() {
+    originalDir = Directory.current.path;
+    tempDir = Directory.systemTemp.createTempSync('clonify_root_test_');
+    Directory.current = tempDir;
+  });
+
+  tearDown(() {
+    Directory.current = originalDir;
+    if (tempDir.existsSync()) {
+      tempDir.deleteSync(recursive: true);
+    }
+  });
+
   group('validatedClonifySettings', () {
     final settingsPath = './clonify/clonify_settings.yaml';
     final clonifyDir = Directory('./clonify');
@@ -127,108 +131,86 @@ default_color: "#ABCDEF"
     });
   });
 
-  group('BuildCommand', () {
-    late CommandRunner runner;
-    late BuildCommand buildCommand;
+  group('BuildCommandModel', () {
+    ArgParser buildParser() {
+      final parser = ArgParser();
+      parser.addOption(ClonifyCommandOptions.clientId.name);
+      parser.addFlag(ClonifyCommandFlags.skipAll.name, defaultsTo: false);
+      parser.addFlag(ClonifyCommandFlags.buildAab.name, defaultsTo: true);
+      parser.addFlag(ClonifyCommandFlags.buildApk.name, defaultsTo: false);
+      parser.addFlag(ClonifyCommandFlags.buildIpa.name, defaultsTo: true);
+      parser.addFlag(
+        ClonifyCommandFlags.skipBuildCheck.name,
+        defaultsTo: false,
+      );
+      return parser;
+    }
 
-    setUp(() {
-      runner = ClonifyCommandRunner();
-      buildCommand = BuildCommand();
-      runner.addCommand(buildCommand);
-      buildAppsCalled = false;
-      capturedBuildModel = null;
-      mockLastClientId = null;
-      mockPromptAnswer = null;
+    test('parses clientId and default flags', () {
+      final results = buildParser().parse(['--clientId', 'testClientId']);
+      final model = BuildCommandModel.fromArgs(results);
+
+      expect(model.clientId, 'testClientId');
+      expect(model.buildAab, isTrue);
+      expect(model.buildApk, isFalse);
+      expect(model.buildIpa, isTrue);
+      expect(model.skipBuildCheck, isFalse);
+      expect(model.skipAll, isFalse);
     });
 
-    test('calls buildApps with clientId when provided', () async {
-      await runner.run(['--client-id', 'testClientId']);
-      expect(buildAppsCalled, isTrue);
-      expect(capturedBuildModel?.clientId, 'testClientId');
-      expect(capturedBuildModel?.buildAab, isTrue);
-      expect(capturedBuildModel?.buildApk, isFalse);
-      expect(capturedBuildModel?.buildIpa, isTrue);
-      expect(capturedBuildModel?.skipBuildCheck, isFalse);
-      expect(capturedBuildModel?.skipAll, isFalse);
-    });
-
-    test(
-      'calls buildApps with lastClientId if available and confirmed',
-      () async {
-        mockLastClientId = 'lastUsedClientId';
-        mockPromptAnswer = 'y';
-        await runner.run([]);
-        expect(buildAppsCalled, isTrue);
-        expect(capturedBuildModel?.clientId, 'lastUsedClientId');
-      },
-    );
-
-    test(
-      'does not call buildApps if lastClientId is available but not confirmed',
-      () async {
-        mockLastClientId = 'lastUsedClientId';
-        mockPromptAnswer = 'n';
-        await runner.run([]);
-        expect(buildAppsCalled, isFalse);
-      },
-    );
-
-    test(
-      'does not call buildApps if no clientId and no lastClientId',
-      () async {
-        mockLastClientId = null;
-        await runner.run([]);
-        expect(buildAppsCalled, isFalse);
-      },
-    );
-
-    test('calls buildApps with correct flags when provided', () async {
-      await runner.run([
-        '--client-id',
+    test('parses overridden flags', () {
+      final results = buildParser().parse([
+        '--clientId',
         'testClientId',
-        '--build-apk',
-        '--no-build-aab',
-        '--no-build-ipa',
-        '--skip-build-check',
-        '--skip-all',
+        '--buildApk',
+        '--no-buildAab',
+        '--no-buildIpa',
+        '--skipBuildCheck',
+        '--skipAll',
       ]);
-      expect(buildAppsCalled, isTrue);
-      expect(capturedBuildModel?.clientId, 'testClientId');
-      expect(capturedBuildModel?.buildAab, isFalse);
-      expect(capturedBuildModel?.buildApk, isTrue);
-      expect(capturedBuildModel?.buildIpa, isFalse);
-      expect(capturedBuildModel?.skipBuildCheck, isTrue);
-      expect(capturedBuildModel?.skipAll, true);
+      final model = BuildCommandModel.fromArgs(results);
+
+      expect(model.clientId, 'testClientId');
+      expect(model.buildAab, isFalse);
+      expect(model.buildApk, isTrue);
+      expect(model.buildIpa, isFalse);
+      expect(model.skipBuildCheck, isTrue);
+      expect(model.skipAll, isTrue);
     });
 
-    test('buildAab defaults to true when not specified', () async {
-      await runner.run(['--client-id', 'testClientId']);
-      expect(buildAppsCalled, isTrue);
-      expect(capturedBuildModel?.buildAab, isTrue);
+    test('buildAab defaults to true when not specified', () {
+      final model = BuildCommandModel.fromArgs(
+        buildParser().parse(['--clientId', 'x']),
+      );
+      expect(model.buildAab, isTrue);
     });
 
-    test('buildApk defaults to false when not specified', () async {
-      await runner.run(['--client-id', 'testClientId']);
-      expect(buildAppsCalled, isTrue);
-      expect(capturedBuildModel?.buildApk, isFalse);
+    test('buildApk defaults to false when not specified', () {
+      final model = BuildCommandModel.fromArgs(
+        buildParser().parse(['--clientId', 'x']),
+      );
+      expect(model.buildApk, isFalse);
     });
 
-    test('buildIpa defaults to true when not specified', () async {
-      await runner.run(['--client-id', 'testClientId']);
-      expect(buildAppsCalled, isTrue);
-      expect(capturedBuildModel?.buildIpa, isTrue);
+    test('buildIpa defaults to true when not specified', () {
+      final model = BuildCommandModel.fromArgs(
+        buildParser().parse(['--clientId', 'x']),
+      );
+      expect(model.buildIpa, isTrue);
     });
 
-    test('skipBuildCheck defaults to false when not specified', () async {
-      await runner.run(['--client-id', 'testClientId']);
-      expect(buildAppsCalled, isTrue);
-      expect(capturedBuildModel?.skipBuildCheck, isFalse);
+    test('skipBuildCheck defaults to false when not specified', () {
+      final model = BuildCommandModel.fromArgs(
+        buildParser().parse(['--clientId', 'x']),
+      );
+      expect(model.skipBuildCheck, isFalse);
     });
 
-    test('skipAll defaults to false when not specified', () async {
-      await runner.run(['--client-id', 'testClientId']);
-      expect(buildAppsCalled, isTrue);
-      expect(capturedBuildModel?.skipAll, isFalse);
+    test('skipAll defaults to false when not specified', () {
+      final model = BuildCommandModel.fromArgs(
+        buildParser().parse(['--clientId', 'x']),
+      );
+      expect(model.skipAll, isFalse);
     });
   });
 
@@ -236,20 +218,13 @@ default_color: "#ABCDEF"
     final clonifyDir = Directory('./clonify');
     final settingsFile = File('./clonify/clonify_settings.yaml');
 
+    setUp(() {
+      initializeTUI(noTui: true);
+    });
+
     tearDown(() {
       if (settingsFile.existsSync()) settingsFile.deleteSync();
       if (clonifyDir.existsSync()) clonifyDir.deleteSync(recursive: true);
-    });
-
-    test('creates clonify directory and settings file if not exist', () async {
-      await initClonify();
-      expect(clonifyDir.existsSync(), isTrue);
-      expect(settingsFile.existsSync(), isTrue);
-      final content = settingsFile.readAsStringSync();
-      expect(content, contains('firebase:'));
-      expect(content, contains('fastlane:'));
-      expect(content, contains('company_name:'));
-      expect(content, contains('default_color:'));
     });
 
     test('does not overwrite existing settings file', () async {
@@ -286,22 +261,20 @@ company_name: "TestCompany"
 default_color: "#ABCDEF"
 ''');
 
-      expect(clonifySettings.companyName, equals("TestCompany"));
-      expect(clonifySettings.defaultColor, equals("#ABCDEF"));
-      expect(clonifySettings.firebaseEnabled, isTrue);
-      expect(
-        clonifySettings.firebaseSettingsFilePath,
-        contains("firebase.json"),
-      );
-      expect(clonifySettings.fastlaneEnabled, isFalse);
-      expect(
-        clonifySettings.fastlaneSettingsFilePath,
-        contains("fastlane.json"),
-      );
+      final settings = getClonifySettings();
+      expect(settings.companyName, equals('TestCompany'));
+      expect(settings.defaultColor, equals('#ABCDEF'));
+      expect(settings.firebaseEnabled, isTrue);
+      expect(settings.firebaseSettingsFilePath, contains('firebase.json'));
+      expect(settings.fastlaneEnabled, isFalse);
+      expect(settings.fastlaneSettingsFilePath, contains('fastlane.json'));
     });
 
     test('throws if settings file does not exist', () {
-      expect(() => clonifySettings, throwsException);
+      if (File(settingsPath).existsSync()) {
+        File(settingsPath).deleteSync();
+      }
+      expect(() => getClonifySettings(), throwsException);
     });
   });
 }

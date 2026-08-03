@@ -8,10 +8,7 @@ void _setWebConfigurations(dynamic webConfig) {
     final webConfigMap = Map<String, dynamic>.from(webConfig);
 
     _setWebTitle(webConfigMap[_appNameKey]);
-    _setPWAAppName(
-      webConfigMap[_appNameKey],
-      webConfigMap[_shortAppNameKey],
-    );
+    _setPWAAppName(webConfigMap[_appNameKey], webConfigMap[_shortAppNameKey]);
     _setWebDescription(webConfigMap[_descriptionKey]);
     _setPWADescription(webConfigMap[_descriptionKey]);
   } on _PackageRenameException catch (e) {
@@ -40,8 +37,9 @@ void _setWebTitle(dynamic appName) {
     final webIndexDocument = html.parse(webIndexString);
     webIndexDocument.querySelector('title')?.text = appName;
     webIndexDocument
-        .querySelector('meta[name="apple-mobile-web-app-title"]')
-        ?.attributes['content'] = appName;
+            .querySelector('meta[name="apple-mobile-web-app-title"]')
+            ?.attributes['content'] =
+        appName;
 
     webIndexFile.writeAsStringSync('${webIndexDocument.outerHtml}\n');
 
@@ -75,9 +73,8 @@ void _setPWAAppName(dynamic appName, dynamic shortAppName) {
     }
 
     final webManifestString = webManifestFile.readAsStringSync();
-    final webManifestJson = json.decode(
-      webManifestString,
-    ) as Map<String, dynamic>;
+    final webManifestJson =
+        json.decode(webManifestString) as Map<String, dynamic>;
 
     webManifestJson['name'] = appName;
     webManifestJson['short_name'] = actualShortAppName;
@@ -87,7 +84,8 @@ void _setPWAAppName(dynamic appName, dynamic shortAppName) {
 
     PackageRenamePlusLogger.info('PWA name set to: `$appName` (manifest.json)');
     PackageRenamePlusLogger.info(
-        'PWA short name set to: `$actualShortAppName` (manifest.json)');
+      'PWA short name set to: `$actualShortAppName` (manifest.json)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('PWA Name/Short Name change failed!!!');
@@ -113,13 +111,15 @@ void _setWebDescription(dynamic description) {
     final webIndexString = webIndexFile.readAsStringSync();
     final webIndexDocument = html.parse(webIndexString);
     webIndexDocument
-        .querySelector('meta[name="description"]')
-        ?.attributes['content'] = description;
+            .querySelector('meta[name="description"]')
+            ?.attributes['content'] =
+        description;
 
     webIndexFile.writeAsStringSync('${webIndexDocument.outerHtml}\n');
 
     PackageRenamePlusLogger.info(
-        'Web description set to: `$description` (index.html)');
+      'Web description set to: `$description` (index.html)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('Web Description change failed!!!');
@@ -146,9 +146,8 @@ void _setPWADescription(dynamic description) {
     }
 
     final webManifestString = webManifestFile.readAsStringSync();
-    final webManifestJson = json.decode(
-      webManifestString,
-    ) as Map<String, dynamic>;
+    final webManifestJson =
+        json.decode(webManifestString) as Map<String, dynamic>;
 
     webManifestJson['description'] = description;
 
@@ -156,7 +155,8 @@ void _setPWADescription(dynamic description) {
     webManifestFile.writeAsStringSync('${encoder.convert(webManifestJson)}\n');
 
     PackageRenamePlusLogger.info(
-        'PWA description set to: `$description` (manifest.json)');
+      'PWA description set to: `$description` (manifest.json)',
+    );
   } on _PackageRenameException catch (e) {
     PackageRenamePlusLogger.error('${e.message}ERR Code: ${e.code}');
     PackageRenamePlusLogger.error('PWA Description change failed!!!');

@@ -1,0 +1,3 @@
+# Directory.current is process-global; suites that rely on relative paths
+# (e.g. ./clonify, ./shorebird.yaml) must not run in parallel.
+concurrency: 1

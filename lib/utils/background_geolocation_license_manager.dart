@@ -20,8 +20,8 @@ Future<void> applyBackgroundGeolocationLicenses(
 ) async {
   final androidLicense =
       (configJson[backgroundGeolocationLicenseAndroidKey] as String?)?.trim();
-  final iosLicense =
-      (configJson[backgroundGeolocationLicenseIosKey] as String?)?.trim();
+  final iosLicense = (configJson[backgroundGeolocationLicenseIosKey] as String?)
+      ?.trim();
 
   if ((androidLicense == null || androidLicense.isEmpty) &&
       (iosLicense == null || iosLicense.isEmpty)) {
@@ -50,7 +50,8 @@ Future<void> applyAndroidBackgroundGeolocationLicense(String license) async {
     r'<meta-data\s+android:name="com\.transistorsoft\.locationmanager\.license"[^/]*/>',
     multiLine: true,
   );
-  final metaBlock = '''
+  final metaBlock =
+      '''
         <meta-data
             android:name="$androidLicenseMetaName"
             android:value="$license" />''';
@@ -91,10 +92,7 @@ Future<void> applyIosBackgroundGeolocationLicense(String license) async {
   if (keyRegex.hasMatch(content)) {
     content = content.replaceFirst(keyRegex, keyBlock);
   } else if (content.contains('</dict>')) {
-    content = content.replaceFirst(
-      '</dict>',
-      '\t\t$keyBlock\n\t</dict>',
-    );
+    content = content.replaceFirst('</dict>', '\t\t$keyBlock\n\t</dict>');
   } else {
     logger.w('⚠️  Could not locate </dict> in Info.plist');
     return;

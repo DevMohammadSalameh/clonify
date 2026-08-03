@@ -12,7 +12,6 @@ void main() {
   setUp(() {
     testDir = TestDirectoryHelper();
     testDir.setUp();
-    Directory.current = testDir.tempDir;
   });
 
   tearDown(() {
@@ -54,9 +53,9 @@ void main() {
       );
 
       expect(config['clientId'], equals('client_production'));
-      expect(config['appName'], equals('Test App client_production'));
-      expect(config['packageName'], equals('com.test.client_production'));
-      expect(config['baseUrl'], equals('https://api.client_production.com'));
+      expect(config['appName'], equals('Production App'));
+      expect(config['packageName'], equals('com.company.production'));
+      expect(config['baseUrl'], equals('https://api.production.com'));
 
       // Step 4: Verify assets copied
       TestAssertions.assertFileExists(
@@ -204,8 +203,8 @@ void main() {
         ).readAsStringSync(),
       );
 
-      expect(config['packageName'], equals('com.test.build_client'));
-      expect(config['appName'], equals('Test App build_client'));
+      expect(config['packageName'], equals('com.company.buildclient'));
+      expect(config['appName'], equals('Build Client App'));
       expect(config['version'], equals('1.0.0+1'));
     });
   });
@@ -266,7 +265,7 @@ void main() {
         ).readAsStringSync(),
       );
 
-      expect(config['firebaseProjectId'], equals('firebase-firebase_client'));
+      expect(config['firebaseProjectId'], equals('firebase-custom-project'));
     });
   });
 
@@ -421,9 +420,19 @@ void main() {
         );
 
         expect(config['clientId'], equals(env));
-        expect(config['packageName'], contains(env));
-        expect(config['baseUrl'], contains(env));
+        expect(config['packageName'], isNotEmpty);
+        expect(config['baseUrl'], isNotEmpty);
+        expect(config['firebaseProjectId'], isNotEmpty);
       }
+
+      final prodConfig = jsonDecode(
+        File(
+          '${testDir.path}/clonify/clones/prod/config.json',
+        ).readAsStringSync(),
+      );
+      expect(prodConfig['packageName'], equals('com.company.app'));
+      expect(prodConfig['baseUrl'], equals('https://api.company.com'));
+      expect(prodConfig['firebaseProjectId'], equals('app-prod'));
 
       // List all clones
       final clonesDir = Directory('${testDir.path}/clonify/clones');

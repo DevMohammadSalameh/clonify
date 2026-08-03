@@ -11,7 +11,6 @@ void main() {
   setUp(() {
     testDir = TestDirectoryHelper();
     testDir.setUp();
-    Directory.current = testDir.tempDir;
   });
 
   tearDown(() {
