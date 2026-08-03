@@ -39,6 +39,10 @@ class CloneConfigModel {
   /// The logo filename.
   String? logo;
 
+  /// Optional Android status-bar notification icon filename under clone assets
+  /// (white-on-transparent PNG, default `ic_notification.png`).
+  String? notificationIcon;
+
   /// The Firebase project ID.
   String? firebaseProjectId;
 
@@ -91,6 +95,7 @@ class CloneConfigModel {
     launcherIcon = json['launcherIcon'];
     splashScreen = json['splashScreen'];
     logo = json['logo'];
+    notificationIcon = json['notificationIcon'];
     firebaseProjectId = json['firebaseProjectId'];
     shorebirdAppId = json['shorebirdAppId'];
     backgroundGeolocationLicenseAndroid =
