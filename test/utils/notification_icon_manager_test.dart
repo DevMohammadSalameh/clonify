@@ -40,4 +40,11 @@ void main() {
       );
     });
   });
+
+  group('notificationColorArgbLiteral', () {
+    test('returns Dart Color literal', () {
+      expect(notificationColorArgbLiteral('0xFFFF7300'), '0xFFFF7300');
+      expect(notificationColorArgbLiteral('#0066FF'), '0xFF0066FF');
+    });
+  });
 }

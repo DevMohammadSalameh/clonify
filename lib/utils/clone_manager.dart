@@ -46,11 +46,23 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   final file = File('${generatedDir.path}/clone_configs.dart');
   final sink = file.openWrite();
 
+  final backgroundNotificationColorRaw =
+      (configModel.backgroundNotificationColor?.trim().isNotEmpty ?? false)
+      ? configModel.backgroundNotificationColor!.trim()
+      : configModel.primaryColor;
+  final backgroundNotificationColorLiteral =
+      backgroundNotificationColorRaw == null
+      ? null
+      : notificationColorArgbLiteral(backgroundNotificationColorRaw);
+  final needsDartUiImport =
+      (configModel.colors?.length ?? 0) > 0 ||
+      backgroundNotificationColorLiteral != null;
+
   // 3. Write 'CloneConfigs' class
   sink.writeln(
     '// Auto-generated file. any changes will be overwritten. edit clone config instead.',
   );
-  if ((configModel.colors?.length ?? 0) > 0) {
+  if (needsDartUiImport) {
     sink.writeln("import 'dart:ui';");
     sink.writeln();
   }
@@ -90,17 +102,11 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   sink.writeln(
     '  static const String primaryColor = "${configModel.primaryColor}";',
   );
-  final backgroundNotificationColor =
-      (configModel.backgroundNotificationColor?.trim().isNotEmpty ?? false)
-      ? configModel.backgroundNotificationColor!.trim()
-      : configModel.primaryColor;
-  if (backgroundNotificationColor != null &&
-      backgroundNotificationColor.trim().isNotEmpty) {
+  if (backgroundNotificationColorLiteral != null) {
     sink.writeln(
-      '  static const String backgroundNotificationColor = "$backgroundNotificationColor";',
+      '  static const Color backgroundNotificationColor = Color($backgroundNotificationColorLiteral);',
     );
   }
-
   // 3.8 Write Custom Fields (if any exist in clonifySettings)
   if (clonifySettings.customFields.isNotEmpty) {
     // Read the config file to get custom field values

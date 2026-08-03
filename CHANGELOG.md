@@ -7,7 +7,7 @@
   (or `notificationIcon` in clone `config.json`)
 - Update `android/.../values/colors.xml` `notification_color` from
   `backgroundNotificationColor` (fallback: `primaryColor`)
-- Emit `CloneConfigs.backgroundNotificationColor` from configure
+- Emit `CloneConfigs.backgroundNotificationColor` as a `Color` constant from configure
 
 ## 0.4.7 - 2026-07-28
 

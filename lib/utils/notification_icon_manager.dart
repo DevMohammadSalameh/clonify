@@ -105,6 +105,13 @@ String? notificationColorHexFromPrimary(String primaryColor) {
   return '#$value';
 }
 
+/// Converts clone colors to a Dart `Color` literal value like `0xFFFF7300`.
+String? notificationColorArgbLiteral(String colorValue) {
+  final hex = notificationColorHexFromPrimary(colorValue);
+  if (hex == null) return null;
+  return '0xFF${hex.substring(1)}';
+}
+
 Future<void> applyAndroidNotificationColor(String colorValue) async {
   final hex = notificationColorHexFromPrimary(colorValue);
   if (hex == null) {
