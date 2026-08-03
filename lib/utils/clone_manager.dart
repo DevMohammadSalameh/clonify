@@ -90,6 +90,16 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
   sink.writeln(
     '  static const String primaryColor = "${configModel.primaryColor}";',
   );
+  final backgroundNotificationColor =
+      (configModel.backgroundNotificationColor?.trim().isNotEmpty ?? false)
+      ? configModel.backgroundNotificationColor!.trim()
+      : configModel.primaryColor;
+  if (backgroundNotificationColor != null &&
+      backgroundNotificationColor.trim().isNotEmpty) {
+    sink.writeln(
+      '  static const String backgroundNotificationColor = "$backgroundNotificationColor";',
+    );
+  }
 
   // 3.8 Write Custom Fields (if any exist in clonifySettings)
   if (clonifySettings.customFields.isNotEmpty) {

@@ -43,6 +43,10 @@ class CloneConfigModel {
   /// (white-on-transparent PNG, default `ic_notification.png`).
   String? notificationIcon;
 
+  /// Optional Android notification icon tint / background color
+  /// (`0xAARRGGBB` or `#RRGGBB`). Falls back to [primaryColor] when unset.
+  String? backgroundNotificationColor;
+
   /// The Firebase project ID.
   String? firebaseProjectId;
 
@@ -96,6 +100,7 @@ class CloneConfigModel {
     splashScreen = json['splashScreen'];
     logo = json['logo'];
     notificationIcon = json['notificationIcon'];
+    backgroundNotificationColor = json['backgroundNotificationColor'];
     firebaseProjectId = json['firebaseProjectId'];
     shorebirdAppId = json['shorebirdAppId'];
     backgroundGeolocationLicenseAndroid =

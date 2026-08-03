@@ -5,7 +5,9 @@
 - Sync per-clone Android notification icon on `clonify configure` when
   `clonify/clones/{clientId}/assets/ic_notification.png` exists
   (or `notificationIcon` in clone `config.json`)
-- Update `android/.../values/colors.xml` `notification_color` from clone `primaryColor`
+- Update `android/.../values/colors.xml` `notification_color` from
+  `backgroundNotificationColor` (fallback: `primaryColor`)
+- Emit `CloneConfigs.backgroundNotificationColor` from configure
 
 ## 0.4.7 - 2026-07-28
 

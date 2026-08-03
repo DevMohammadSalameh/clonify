@@ -21,4 +21,23 @@ void main() {
       expect(notificationColorHexFromPrimary('0x12'), isNull);
     });
   });
+
+  group('resolveBackgroundNotificationColor', () {
+    test('prefers backgroundNotificationColor over primaryColor', () {
+      expect(
+        resolveBackgroundNotificationColor({
+          'primaryColor': '0xFFFF7300',
+          'backgroundNotificationColor': '0xFF0066FF',
+        }),
+        '0xFF0066FF',
+      );
+    });
+
+    test('falls back to primaryColor', () {
+      expect(
+        resolveBackgroundNotificationColor({'primaryColor': '0xFFFF7300'}),
+        '0xFFFF7300',
+      );
+    });
+  });
 }

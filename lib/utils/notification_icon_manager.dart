@@ -5,6 +5,7 @@ import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:path/path.dart' as p;
 
 const notificationIconConfigKey = 'notificationIcon';
+const backgroundNotificationColorConfigKey = 'backgroundNotificationColor';
 const defaultNotificationIconFileName = 'ic_notification.png';
 const androidNotificationIconFileName = 'ic_notification.png';
 const androidNotificationColorName = 'notification_color';
@@ -23,7 +24,7 @@ const androidNotificationDrawableDirs = <String>[
 ///
 /// - Copies the white-on-transparent PNG into `android/app/src/main/res/drawable*/`
 /// - Updates `notification_color` in `android/app/src/main/res/values/colors.xml`
-///   from the clone `primaryColor` when that color entry exists
+///   from `backgroundNotificationColor`, falling back to `primaryColor`
 Future<void> applyAndroidNotificationIcon(
   String clientId,
   Map<String, dynamic> configJson,
@@ -66,13 +67,23 @@ Future<void> applyAndroidNotificationIcon(
     '✅ Android notification icon synced from ${source.path}',
   );
 
-  final primaryColor = (configJson['primaryColor'] as String?)?.trim();
-  if (primaryColor != null && primaryColor.isNotEmpty) {
-    await applyAndroidNotificationColor(primaryColor);
+  final tint = resolveBackgroundNotificationColor(configJson);
+  if (tint != null) {
+    await applyAndroidNotificationColor(tint);
   }
 }
 
-/// Converts clone primary colors like `0xFFFF7300` / `#FF7300` to `#RRGGBB`.
+/// Prefers `backgroundNotificationColor`, then `primaryColor`.
+String? resolveBackgroundNotificationColor(Map<String, dynamic> configJson) {
+  final dedicated =
+      (configJson[backgroundNotificationColorConfigKey] as String?)?.trim();
+  if (dedicated != null && dedicated.isNotEmpty) return dedicated;
+  final primary = (configJson['primaryColor'] as String?)?.trim();
+  if (primary != null && primary.isNotEmpty) return primary;
+  return null;
+}
+
+/// Converts clone colors like `0xFFFF7300` / `#FF7300` to `#RRGGBB`.
 String? notificationColorHexFromPrimary(String primaryColor) {
   var value = primaryColor.trim();
   if (value.isEmpty) return null;
@@ -94,11 +105,11 @@ String? notificationColorHexFromPrimary(String primaryColor) {
   return '#$value';
 }
 
-Future<void> applyAndroidNotificationColor(String primaryColor) async {
-  final hex = notificationColorHexFromPrimary(primaryColor);
+Future<void> applyAndroidNotificationColor(String colorValue) async {
+  final hex = notificationColorHexFromPrimary(colorValue);
   if (hex == null) {
     logger.w(
-      '⚠️  Could not parse primaryColor "$primaryColor" for notification tint.',
+      '⚠️  Could not parse notification tint "$colorValue".',
     );
     return;
   }
