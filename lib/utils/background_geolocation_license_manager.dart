@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:clonify/constants.dart';
+import 'package:clonify/custom_exceptions.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 
 const backgroundGeolocationLicenseAndroidKey =
@@ -25,6 +26,12 @@ Future<void> applyBackgroundGeolocationLicenses(
 
   if ((androidLicense == null || androidLicense.isEmpty) &&
       (iosLicense == null || iosLicense.isEmpty)) {
+    if (configJson.containsKey(backgroundGeolocationLicenseAndroidKey) ||
+        configJson.containsKey(backgroundGeolocationLicenseIosKey)) {
+      throw CustomException(
+        'backgroundGeolocationLicenseAndroid and backgroundGeolocationLicenseIos must be set',
+      );
+    }
     return;
   }
 
@@ -39,10 +46,9 @@ Future<void> applyBackgroundGeolocationLicenses(
 Future<void> applyAndroidBackgroundGeolocationLicense(String license) async {
   final file = File(Constants.androidMainManifestFilePath);
   if (!file.existsSync()) {
-    logger.w(
-      '⚠️  ${Constants.androidMainManifestFilePath} not found; skipped BG Geo Android license.',
+    throw CustomException(
+      '${Constants.androidMainManifestFilePath} not found; cannot apply backgroundGeolocationLicenseAndroid',
     );
-    return;
   }
 
   var content = await file.readAsString();
@@ -64,8 +70,9 @@ Future<void> applyAndroidBackgroundGeolocationLicense(String license) async {
       '$metaBlock\n    </application>',
     );
   } else {
-    logger.w('⚠️  Could not locate </application> in AndroidManifest.xml');
-    return;
+    throw CustomException(
+      'Could not locate </application> in AndroidManifest.xml',
+    );
   }
 
   await file.writeAsString(content);
@@ -75,10 +82,9 @@ Future<void> applyAndroidBackgroundGeolocationLicense(String license) async {
 Future<void> applyIosBackgroundGeolocationLicense(String license) async {
   final file = File(Constants.iosInfoPlistFilePath);
   if (!file.existsSync()) {
-    logger.w(
-      '⚠️  ${Constants.iosInfoPlistFilePath} not found; skipped BG Geo iOS license.',
+    throw CustomException(
+      '${Constants.iosInfoPlistFilePath} not found; cannot apply backgroundGeolocationLicenseIos',
     );
-    return;
   }
 
   var content = await file.readAsString();
@@ -94,8 +100,7 @@ Future<void> applyIosBackgroundGeolocationLicense(String license) async {
   } else if (content.contains('</dict>')) {
     content = content.replaceFirst('</dict>', '\t\t$keyBlock\n\t</dict>');
   } else {
-    logger.w('⚠️  Could not locate </dict> in Info.plist');
-    return;
+    throw CustomException('Could not locate </dict> in Info.plist');
   }
 
   await file.writeAsString(content);

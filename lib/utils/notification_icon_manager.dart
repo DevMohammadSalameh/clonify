@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:clonify/constants.dart';
+import 'package:clonify/custom_exceptions.dart';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:path/path.dart' as p;
 
@@ -40,6 +41,11 @@ Future<void> applyAndroidNotificationIcon(
     p.join('clonify', 'clones', clientId, 'assets', iconFileName),
   );
   if (!source.existsSync()) {
+    if (configJson.containsKey(notificationIconConfigKey)) {
+      throw CustomException(
+        'Missing $notificationIconConfigKey at ${source.path}',
+      );
+    }
     logger.i(
       'ℹ️  No Android notification icon at ${source.path}; skipped.',
     );
@@ -50,10 +56,9 @@ Future<void> applyAndroidNotificationIcon(
     p.join(Constants.androidMainDirPath, 'res'),
   );
   if (!resRoot.existsSync()) {
-    logger.w(
-      '⚠️  ${resRoot.path} not found; skipped Android notification icon.',
+    throw CustomException(
+      '${resRoot.path} not found; cannot sync Android notification icon.',
     );
-    return;
   }
 
   for (final dirName in androidNotificationDrawableDirs) {

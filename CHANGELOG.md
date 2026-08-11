@@ -1,3 +1,16 @@
+## 0.4.9 - 2026-08-11
+
+### ✨ Feature
+
+- Fail `clonify configure` when branding assets are missing, empty, or not PNG
+  (launcher icon, splash, logo, and `notificationIcon` when configured)
+- Fail when `backgroundGeolocationLicenseIos` or
+  `backgroundGeolocationLicenseAndroid` is missing, blank, invalid, or bound
+  to the wrong package / OS
+- Fail after configure if `assets/images`, `clone_configs.dart`, native
+  licenses, or Android notification drawables were not generated
+- `replaceAssets` now throws instead of swallowing copy failures
+
 ## 0.4.8 - 2026-08-03
 
 ### ✨ Feature

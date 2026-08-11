@@ -176,6 +176,12 @@ This will:
 - Update launcher icons and splash screens
 - Sync versions
 - Generate compile-time configuration class
+- Apply Background Geolocation licenses and Android notification icon
+- **Fail immediately** if required assets or licenses are missing:
+  - `launcherIcon` / `splashScreen` / `logo` missing, empty, or not PNG
+  - `notificationIcon` configured but the file was not generated
+  - `backgroundGeolocationLicenseIos` or `backgroundGeolocationLicenseAndroid`
+    missing, blank, invalid, or issued for another package/OS
 
 Generates: `lib/generated/clone_configs.dart`
 this class can be used in your project for accessing clone specific attributes. 

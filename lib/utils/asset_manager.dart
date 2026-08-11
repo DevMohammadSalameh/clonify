@@ -2,6 +2,8 @@
 
 import 'dart:io';
 
+import 'package:clonify/custom_exceptions.dart';
+
 import 'clonify_helpers.dart';
 
 /// Replaces the assets in the main project's assets directory with assets from a specific clone.
@@ -43,6 +45,7 @@ void replaceAssets(String clientId) {
     logger.i('✅ Assets replaced successfully.');
   } catch (e) {
     logger.e('❌ Error during asset replacement: $e');
+    throw CustomException('Failed to replace clone assets: $e');
   }
 }
 
