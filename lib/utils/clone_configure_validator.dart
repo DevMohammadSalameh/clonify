@@ -51,6 +51,8 @@ void assertConfigureFinished(String clientId, Map<String, dynamic> configJson) {
   assertNotificationOutputs(clientId, configJson);
 }
 
+const requiredCloneAssetFields = ['launcherIcon', 'splashScreen', 'logo'];
+
 void assertCloneAssetFiles(String clientId, Map<String, dynamic> configJson) {
   final assetsDir = Directory(p.join('clonify', 'clones', clientId, 'assets'));
   if (!assetsDir.existsSync()) {
@@ -59,13 +61,10 @@ void assertCloneAssetFiles(String clientId, Map<String, dynamic> configJson) {
     );
   }
 
-  for (final field in ['launcherIcon', 'splashScreen', 'logo']) {
+  for (final field in requiredCloneAssetFields) {
     final fileName = trimmedConfigString(configJson[field]);
     if (fileName == null) {
-      if (configJson.containsKey(field)) {
-        throw CustomException('Clone config "$field" is not set');
-      }
-      continue;
+      throw CustomException('Clone config "$field" is not set');
     }
     assertPngFile(p.join(assetsDir.path, fileName), field);
   }
@@ -82,6 +81,9 @@ void assertBackgroundGeolocationLicenses(Map<String, dynamic> configJson) {
     configJson[backgroundGeolocationLicenseIosKey],
   );
 
+  if (packageName == null) {
+    throw CustomException('packageName is not set');
+  }
   if (androidLicense == null) {
     throw CustomException('backgroundGeolocationLicenseAndroid is not set');
   }
@@ -127,11 +129,18 @@ void assertLicenseJwt({
 
 void assertNotificationSource(String clientId, Map<String, dynamic> configJson) {
   if (!notificationIconIsRequired(configJson)) return;
-  final fileName =
-      trimmedConfigString(configJson[notificationIconConfigKey]) ??
-      defaultNotificationIconFileName;
+  final fileName = trimmedConfigString(configJson[notificationIconConfigKey]);
+  if (configJson.containsKey(notificationIconConfigKey) && fileName == null) {
+    throw CustomException('Clone config "notificationIcon" is not set');
+  }
   assertPngFile(
-    p.join('clonify', 'clones', clientId, 'assets', fileName),
+    p.join(
+      'clonify',
+      'clones',
+      clientId,
+      'assets',
+      fileName ?? defaultNotificationIconFileName,
+    ),
     notificationIconConfigKey,
   );
 }
@@ -144,9 +153,11 @@ void assertGeneratedImageFiles(Map<String, dynamic> configJson) {
     );
   }
 
-  for (final field in ['launcherIcon', 'splashScreen', 'logo']) {
+  for (final field in requiredCloneAssetFields) {
     final fileName = trimmedConfigString(configJson[field]);
-    if (fileName == null) continue;
+    if (fileName == null) {
+      throw CustomException('Clone config "$field" is not set');
+    }
     assertPngFile(p.join(imagesDir.path, fileName), field);
   }
 

@@ -94,6 +94,102 @@ void main() {
       );
     });
 
+    test('throws when Android license is blank', () {
+      expect(
+        () => assertBackgroundGeolocationLicenses({
+          'packageName': 'com.app',
+          backgroundGeolocationLicenseAndroidKey: '   ',
+          backgroundGeolocationLicenseIosKey: fakeJwt(
+            os: 'ios',
+            appId: 'com.app',
+          ),
+        }),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('backgroundGeolocationLicenseAndroid is not set'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when both license keys are omitted', () {
+      writeNativeLicenseSlots();
+      expect(
+        () => assertBackgroundGeolocationLicenses({'packageName': 'com.app'}),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('backgroundGeolocationLicenseAndroid is not set'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when packageName is omitted while licenses are set', () {
+      expect(
+        () => assertBackgroundGeolocationLicenses({
+          backgroundGeolocationLicenseAndroidKey: fakeJwt(
+            os: 'android',
+            appId: 'com.app',
+          ),
+          backgroundGeolocationLicenseIosKey: fakeJwt(
+            os: 'ios',
+            appId: 'com.app',
+          ),
+        }),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('packageName is not set'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when JWT payload is missing os', () {
+      expect(
+        () => assertBackgroundGeolocationLicenses({
+          'packageName': 'com.app',
+          backgroundGeolocationLicenseAndroidKey: fakeJwt(
+            os: 'android',
+            appId: 'com.app',
+          ),
+          backgroundGeolocationLicenseIosKey: fakeJwtPayload({'app_id': 'com.app'}),
+        }),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('must be "ios"'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when JWT payload is missing app_id', () {
+      expect(
+        () => assertBackgroundGeolocationLicenses({
+          'packageName': 'com.app',
+          backgroundGeolocationLicenseAndroidKey: fakeJwt(
+            os: 'android',
+            appId: 'com.app',
+          ),
+          backgroundGeolocationLicenseIosKey: fakeJwtPayload({'os': 'ios'}),
+        }),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('must match packageName'),
+          ),
+        ),
+      );
+    });
+
     test('throws when the JWT is invalid', () {
       expect(
         () => assertBackgroundGeolocationLicenses({
@@ -196,6 +292,42 @@ void main() {
       );
     });
 
+    test('throws when each branding key is omitted', () {
+      writeCloneAssets();
+      for (final field in requiredCloneAssetFields) {
+        final config = validLicensedConfig()..remove(field);
+        expect(
+          () => assertCloneAssetFiles('client_a', config),
+          throwsA(
+            isA<CustomException>().having(
+              (error) => error.message,
+              'message',
+              contains('"$field" is not set'),
+            ),
+          ),
+          reason: 'expected configure to fail when $field is omitted',
+        );
+      }
+    });
+
+    test('throws when each branding key is blank', () {
+      writeCloneAssets();
+      for (final field in requiredCloneAssetFields) {
+        final config = validLicensedConfig()..[field] = '   ';
+        expect(
+          () => assertCloneAssetFiles('client_a', config),
+          throwsA(
+            isA<CustomException>().having(
+              (error) => error.message,
+              'message',
+              contains('"$field" is not set'),
+            ),
+          ),
+          reason: 'expected configure to fail when $field is blank',
+        );
+      }
+    });
+
     test('throws when splash.png is missing', () {
       writeCloneAssets(writeSplash: false);
       expect(
@@ -205,6 +337,34 @@ void main() {
             (error) => error.message,
             'message',
             contains('splashScreen'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when icon.png is missing', () {
+      writeCloneAssets(writeIcon: false);
+      expect(
+        () => assertCloneAssetFiles('client_a', validLicensedConfig()),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('launcherIcon'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when logo.png is missing', () {
+      writeCloneAssets(writeLogo: false);
+      expect(
+        () => assertCloneAssetFiles('client_a', validLicensedConfig()),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('logo'),
           ),
         ),
       );
@@ -252,6 +412,23 @@ void main() {
       expect(
         () => assertNotificationSource('client_a', {'packageName': 'com.app'}),
         returnsNormally,
+      );
+    });
+
+    test('throws when notificationIcon is blank', () {
+      writeCloneAssets();
+      expect(
+        () => assertNotificationSource('client_a', {
+          ...validLicensedConfig(),
+          'notificationIcon': '   ',
+        }),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('notificationIcon'),
+          ),
+        ),
       );
     });
 
@@ -309,6 +486,67 @@ void main() {
       );
     });
 
+    test('throws when generated images directory is missing', () {
+      writeCloneAssets();
+      writeGeneratedCheckout();
+      Directory('assets/images').deleteSync(recursive: true);
+      expect(
+        () => assertConfigureFinished('client_a', validLicensedConfig()),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('Generated images directory does not exist'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when generated icon was not copied', () {
+      writeCloneAssets();
+      writeGeneratedCheckout(writeIcon: false);
+      expect(
+        () => assertConfigureFinished('client_a', validLicensedConfig()),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('launcherIcon'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when generated logo was not copied', () {
+      writeCloneAssets();
+      writeGeneratedCheckout(writeLogo: false);
+      expect(
+        () => assertConfigureFinished('client_a', validLicensedConfig()),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('logo'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when AndroidManifest does not contain the Android license', () {
+      writeCloneAssets();
+      writeGeneratedCheckout(writeAndroidLicense: false);
+      expect(
+        () => assertConfigureFinished('client_a', validLicensedConfig()),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('backgroundGeolocationLicenseAndroid'),
+          ),
+        ),
+      );
+    });
+
     test('throws when Info.plist does not contain the iOS license', () {
       writeCloneAssets();
       writeGeneratedCheckout(writeIosLicense: false);
@@ -348,6 +586,48 @@ void main() {
       );
     });
   });
+
+  group('assertConfigureReady omitted keys', () {
+    test('fails when any required branding or license key is omitted', () {
+      writeCloneAssets();
+      const requiredKeys = [
+        'launcherIcon',
+        'splashScreen',
+        'logo',
+        'packageName',
+        backgroundGeolocationLicenseAndroidKey,
+        backgroundGeolocationLicenseIosKey,
+      ];
+      for (final field in requiredKeys) {
+        final config = validLicensedConfig()..remove(field);
+        expect(
+          () => assertConfigureReady('client_a', config),
+          throwsA(isA<CustomException>()),
+          reason: 'expected configure to fail when $field is omitted',
+        );
+      }
+    });
+
+    test('fails when any required branding or license key is blank', () {
+      writeCloneAssets();
+      const requiredKeys = [
+        'launcherIcon',
+        'splashScreen',
+        'logo',
+        'packageName',
+        backgroundGeolocationLicenseAndroidKey,
+        backgroundGeolocationLicenseIosKey,
+      ];
+      for (final field in requiredKeys) {
+        final config = validLicensedConfig()..[field] = '';
+        expect(
+          () => assertConfigureReady('client_a', config),
+          throwsA(isA<CustomException>()),
+          reason: 'expected configure to fail when $field is blank',
+        );
+      }
+    });
+  });
 }
 
 Map<String, dynamic> validLicensedConfig() {
@@ -367,13 +647,17 @@ Map<String, dynamic> validLicensedConfig() {
 }
 
 String fakeJwt({required String os, required String appId}) {
+  return fakeJwtPayload({'os': os, 'app_id': appId});
+}
+
+String fakeJwtPayload(Map<String, dynamic> payload) {
   final header = base64Url
       .encode(utf8.encode('{"alg":"none"}'))
       .replaceAll('=', '');
-  final payload = base64Url
-      .encode(utf8.encode(jsonEncode({'os': os, 'app_id': appId})))
+  final body = base64Url
+      .encode(utf8.encode(jsonEncode(payload)))
       .replaceAll('=', '');
-  return '$header.$payload.sig';
+  return '$header.$body.sig';
 }
 
 Uint8List pngBytes() {
@@ -404,6 +688,8 @@ void writePng(String path, {bool empty = false, bool invalid = false}) {
 }
 
 void writeCloneAssets({
+  bool writeIcon = true,
+  bool writeLogo = true,
   bool writeSplash = true,
   bool writeNotification = true,
   bool emptyIcon = false,
@@ -411,8 +697,8 @@ void writeCloneAssets({
 }) {
   final assets = Directory('clonify/clones/client_a/assets')
     ..createSync(recursive: true);
-  writePng('${assets.path}/icon.png', empty: emptyIcon);
-  writePng('${assets.path}/logo.png', invalid: invalidLogo);
+  if (writeIcon) writePng('${assets.path}/icon.png', empty: emptyIcon);
+  if (writeLogo) writePng('${assets.path}/logo.png', invalid: invalidLogo);
   if (writeSplash) writePng('${assets.path}/splash.png');
   if (writeNotification) writePng('${assets.path}/ic_notification.png');
 }
@@ -431,15 +717,18 @@ void writeNativeLicenseSlots() {
 }
 
 void writeGeneratedCheckout({
+  bool writeIcon = true,
+  bool writeLogo = true,
   bool writeSplash = true,
   bool writeCloneConfigs = true,
+  bool writeAndroidLicense = true,
   bool writeIosLicense = true,
   bool writeXxxhdpiNotification = true,
 }) {
   final config = validLicensedConfig();
   Directory('assets/images').createSync(recursive: true);
-  writePng('assets/images/icon.png');
-  writePng('assets/images/logo.png');
+  if (writeIcon) writePng('assets/images/icon.png');
+  if (writeLogo) writePng('assets/images/logo.png');
   if (writeSplash) writePng('assets/images/splash.png');
   writePng('assets/images/ic_notification.png');
 
@@ -449,10 +738,13 @@ void writeGeneratedCheckout({
       ..writeAsStringSync('abstract class CloneConfigs {}');
   }
 
+  final androidValue = writeAndroidLicense
+      ? config[backgroundGeolocationLicenseAndroidKey]
+      : 'missing';
   File('android/app/src/main/AndroidManifest.xml')
     ..createSync(recursive: true)
     ..writeAsStringSync(
-      '<manifest><application><meta-data android:name="com.transistorsoft.locationmanager.license" android:value="${config[backgroundGeolocationLicenseAndroidKey]}" /></application></manifest>',
+      '<manifest><application><meta-data android:name="com.transistorsoft.locationmanager.license" android:value="$androidValue" /></application></manifest>',
     );
 
   final iosBody = writeIosLicense

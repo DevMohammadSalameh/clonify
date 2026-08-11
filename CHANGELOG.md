@@ -1,3 +1,12 @@
+## 0.4.10 - 2026-08-11
+
+### ✨ Feature
+
+- Fail `clonify configure` when `launcherIcon`, `splashScreen`, `logo`, or
+  `packageName` is omitted or blank (not only when the file is missing)
+- Fail when a configured `notificationIcon` key is blank
+- Fail when a license JWT payload is missing `os` or `app_id`
+
 ## 0.4.9 - 2026-08-11
 
 ### ✨ Feature
