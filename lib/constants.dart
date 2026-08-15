@@ -208,7 +208,7 @@ public class MainActivity extends FlutterActivity {
   /// A template string for the `flutter_launcher_icons.yaml` configuration file.
   ///
   /// This template is used to generate the configuration for the `flutter_launcher_icons`
-  /// package, which helps in creating adaptive launcher icons for Android and iOS.
+  /// package, which helps in creating launcher icons for Android, iOS, and web.
   static const String flutterLauncherIconsYaml = '''
 flutter_launcher_icons:
   android: "launcher_icon"
@@ -218,6 +218,11 @@ flutter_launcher_icons:
   adaptive_icon_background: "#ffffff"
   adaptive_icon_foreground: ""
   min_sdk_android: 21
+  web:
+    generate: true
+    image_path: ""
+    background_color: "#ffffff"
+    theme_color: "#ffffff"
 ''';
 
   /// A template string for the `flutter_native_splash.yaml` configuration file.
@@ -229,7 +234,8 @@ flutter_native_splash:
   color: "#FFFFFF"
   image: ""
   android_12:
-    image: 
+    image: ""
+    color: "#FFFFFF"
   web: true
   ios_content_mode: scaleToFill
   fullscreen: true

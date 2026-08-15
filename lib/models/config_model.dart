@@ -47,6 +47,10 @@ class CloneConfigModel {
   /// (`0xAARRGGBB` or `#RRGGBB`). Falls back to [primaryColor] when unset.
   String? backgroundNotificationColor;
 
+  /// Optional splash screen background color (`0xAARRGGBB` or `#RRGGBB`).
+  /// Falls back to `#FFFFFF` when unset.
+  String? backgroundSplashColor;
+
   /// The Firebase project ID.
   String? firebaseProjectId;
 
@@ -101,6 +105,7 @@ class CloneConfigModel {
     logo = json['logo'];
     notificationIcon = json['notificationIcon'];
     backgroundNotificationColor = json['backgroundNotificationColor'];
+    backgroundSplashColor = json['backgroundSplashColor'];
     firebaseProjectId = json['firebaseProjectId'];
     shorebirdAppId = json['shorebirdAppId'];
     backgroundGeolocationLicenseAndroid =

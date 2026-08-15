@@ -1,3 +1,11 @@
+## 0.4.11 - 2026-08-15
+
+### ✨ Feature
+
+- Generate web launcher icons / favicon on configure (`flutter_launcher_icons` web block)
+- Write Android 12 splash `image` + `color` from clone splash assets
+- Support optional `backgroundSplashColor` in clone `config.json` (fallback `#FFFFFF`)
+
 ## 0.4.10 - 2026-08-11
 
 ### ✨ Feature

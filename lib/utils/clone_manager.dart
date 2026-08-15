@@ -349,6 +349,11 @@ Map<String, String>? _promptCloneBasicInfo() {
         },
       );
       configMap['splashScreen'] = splashScreen;
+      final backgroundSplashColor = promptUserTUI(
+        '🎨 Enter the splash background color (e.g., 0xFFFFFFFF or #FFFFFF)',
+        '0xFFFFFFFF',
+      );
+      configMap['backgroundSplashColor'] = backgroundSplashColor;
     }
 
     if (clonifySettings.needsLogo) {
@@ -455,6 +460,8 @@ bool _createCloneStructure(Map<String, String> config) {
       'version': config['version'],
       'launcherIcon': config['launcherIcon'],
       'splashScreen': config['splashScreen'],
+      'backgroundSplashColor':
+          config['backgroundSplashColor'] ?? '0xFFFFFFFF',
       'logo': config['logo'],
     };
 
@@ -764,19 +771,22 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
     final nativeSplashYamlEditor = YamlEditor(nativeSplashYamlContent);
 
     // Step 2: Update YAML files with new app name and package name
+    final clonifySettings = getClonifySettings();
     try {
-      final clonifySettings = getClonifySettings();
       final updateAndroidLauncherIcon = clonifySettings.updateAndroidInfo;
       final updateIOSLauncherIcon = clonifySettings.updateIOSInfo;
+
+      final launcherIconPath =
+          "assets/images/${configJson['launcherIcon']}";
 
       launcherIconsYamlEditor.update([
         'flutter_launcher_icons',
         'image_path',
-      ], "assets/images/${configJson['launcherIcon']}");
+      ], launcherIconPath);
       launcherIconsYamlEditor.update([
         'flutter_launcher_icons',
         'adaptive_icon_foreground',
-      ], "assets/images/${configJson['launcherIcon']}");
+      ], launcherIconPath);
 
       launcherIconsYamlEditor.update([
         'flutter_launcher_icons',
@@ -787,6 +797,16 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
         'flutter_launcher_icons',
         'ios',
       ], updateIOSLauncherIcon);
+
+      launcherIconsYamlEditor.update([
+        'flutter_launcher_icons',
+        'web',
+      ], {
+        'generate': true,
+        'image_path': launcherIconPath,
+        'background_color': clonifySettings.defaultColor,
+        'theme_color': clonifySettings.defaultColor,
+      });
 
       launcherIconsConfigFile.writeAsStringSync(
         launcherIconsYamlEditor.toString(),
@@ -799,10 +819,32 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
     }
     if (configJson['splashScreen'] != null) {
       try {
+        final splashImagePath =
+            "assets/images/${configJson['splashScreen']}";
+        final splashColor =
+            notificationColorHexFromPrimary(
+              ((configJson['backgroundSplashColor'] as String?)?.trim().isNotEmpty ??
+                      false)
+                  ? (configJson['backgroundSplashColor'] as String).trim()
+                  : '#FFFFFF',
+            ) ??
+            '#FFFFFF';
+
+        nativeSplashYamlEditor.update([
+          'flutter_native_splash',
+          'color',
+        ], splashColor);
         nativeSplashYamlEditor.update([
           'flutter_native_splash',
           'image',
-        ], "assets/images/${configJson['splashScreen']}");
+        ], splashImagePath);
+        nativeSplashYamlEditor.update([
+          'flutter_native_splash',
+          'android_12',
+        ], {
+          'image': splashImagePath,
+          'color': splashColor,
+        });
         nativeSplashYamlEditor.update(['flutter_native_splash', 'web'], true);
         nativeSplashConfigFile.writeAsStringSync(
           nativeSplashYamlEditor.toString(),
