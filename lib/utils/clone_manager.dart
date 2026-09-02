@@ -164,8 +164,8 @@ Future<void> generateCloneConfigFile(CloneConfigModel configModel) async {
 
   sink.writeln('}');
 
-  // Close the file stream
-  sink.close();
+  // Close the file stream (must await so length check in assertConfigureFinished sees content)
+  await sink.close();
 
   logger.i(
     'Generated clone_configs.dart file. You can find it in lib/generated/clone_configs.dart',
@@ -841,10 +841,13 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
         nativeSplashYamlEditor.update([
           'flutter_native_splash',
           'android_12',
-        ], {
-          'image': splashImagePath,
-          'color': splashColor,
-        });
+          'image',
+        ], splashImagePath);
+        nativeSplashYamlEditor.update([
+          'flutter_native_splash',
+          'android_12',
+          'color',
+        ], splashColor);
         nativeSplashYamlEditor.update(['flutter_native_splash', 'web'], true);
         nativeSplashConfigFile.writeAsStringSync(
           nativeSplashYamlEditor.toString(),
@@ -992,7 +995,7 @@ Future<Map<String, dynamic>?> configureApp(
       return null;
     }
 
-    generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
+    await generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
     await applyBackgroundGeolocationLicenses(configJson);
     await applyAndroidNotificationIcon(callModel.clientId!, configJson);
     assertConfigureFinished(callModel.clientId!, configJson);
