@@ -477,6 +477,9 @@ On `clonify configure`, Clonify copies those files to `android/` and wires
 release signing in `android/app/build.gradle(.kts)` to `rootProject.file(...)`.
 If the files are missing, configure skips signing (debug keys stay in use)
 unless `androidKeystore` / `androidKeyProperties` is set in `config.json`.
+Switching to a clone with no signing files removes leftover
+`android/key.properties` so the previous Play key is not reused.
+Keystore names must be a file name (`upload-keystore.jks`), not a path.
 
 Add to the Flutter app `.gitignore`:
 

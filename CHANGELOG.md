@@ -1,3 +1,14 @@
+## 0.4.15 - 2026-09-08
+
+### ✨ Feature
+
+- Restore continues other roots if one backup is missing, and never deletes
+  live files until that root's backup is present
+- Reject Android keystore / properties names that are paths (`../evil.jks`)
+- Remove leftover `android/key.properties` when the next clone has no signing
+  files, so the previous Play key is not reused
+- Read `key.properties` with a UTF-8 BOM and require a real PKCS#12 header
+
 ## 0.4.14 - 2026-09-08
 
 ### ✨ Feature

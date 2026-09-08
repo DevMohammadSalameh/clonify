@@ -36,6 +36,15 @@ keyAlias='upload'
       expect(values[androidKeyPropertiesStorePasswordKey], 'quoted');
       expect(values[androidKeyPropertiesKeyAliasKey], 'upload');
     });
+
+    test('reads CRLF lines, UTF-8 BOM, and last duplicate key', () {
+      final values = parseAndroidKeyProperties(
+        '\uFEFFstorePassword=first\r\nstorePassword=second\r\nkeyPassword=k\r\nkeyAlias=upload\r\n',
+      );
+      expect(values[androidKeyPropertiesStorePasswordKey], 'second');
+      expect(values[androidKeyPropertiesKeyPasswordKey], 'k');
+      expect(values[androidKeyPropertiesKeyAliasKey], 'upload');
+    });
   });
 
   group('serializeAndroidKeyProperties', () {
@@ -57,12 +66,13 @@ keyAlias='upload'
     });
 
     test('accepts PKCS#12 prefix', () {
-      expect(hasJavaKeystoreSignature(const [0x30, 0x82, 0x01]), isTrue);
+      expect(hasJavaKeystoreSignature(const [0x30, 0x82, 0x01, 0x00]), isTrue);
     });
 
     test('rejects empty and random bytes', () {
       expect(hasJavaKeystoreSignature(const []), isFalse);
       expect(hasJavaKeystoreSignature(const [0x00, 0x01]), isFalse);
+      expect(hasJavaKeystoreSignature(const [0x30, 0x82, 0x01]), isFalse);
     });
   });
 
@@ -186,6 +196,68 @@ android {
         updated,
         contains('rootProject.file(keystoreProperties[\'storeFile\'])'),
       );
+    });
+
+    test('inserts signing into a Kotlin release block that has no signingConfig', () {
+      final updated = ensureAndroidGradleReleaseSigning('''
+plugins {
+    id("com.android.application")
+}
+
+android {
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+        }
+    }
+}
+''', isKotlinDsl: true);
+      expect(updated, contains('signingConfigs.getByName("release")'));
+    });
+
+    test('inserts loader when the plugins block is missing', () {
+      final updated = ensureAndroidGradleReleaseSigning('''
+android {
+    buildTypes {
+        release {
+            signingConfig = signingConfigs.getByName("debug")
+        }
+    }
+}
+''', isKotlinDsl: true);
+      expect(updated, contains('keystorePropertiesFile'));
+      expect(updated, contains('signingConfigs.getByName("release")'));
+    });
+  });
+
+  group('assertSafeAndroidSigningFileName', () {
+    test('accepts a plain keystore file name', () {
+      expect(
+        () => assertSafeAndroidSigningFileName(
+          'upload-keystore.jks',
+          androidKeystoreConfigKey,
+        ),
+        returnsNormally,
+      );
+    });
+
+    test('rejects path traversal and nested paths', () {
+      for (final name in [
+        '../evil.jks',
+        'foo/bar.jks',
+        r'..\evil.jks',
+        r'foo\bar.jks',
+        '.',
+        '..',
+        '',
+        '  ',
+      ]) {
+        expect(
+          () => assertSafeAndroidSigningFileName(name, androidKeystoreConfigKey),
+          throwsA(isA<CustomException>()),
+          reason: 'expected unsafe name $name to be rejected',
+        );
+      }
     });
   });
 
@@ -384,6 +456,94 @@ android {
       );
     });
 
+    test('removes leftover key.properties from a previous clone', () async {
+      File('android/key.properties')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('storePassword=old-clone\n');
+      await applyAndroidReleaseSigning('client_b', {});
+      expect(File('android/key.properties').existsSync(), isFalse);
+    });
+
+    test('throws when the keystore name is a path', () async {
+      writeCloneSigningFiles();
+      writeKotlinGradleWithDebugReleaseSigning();
+      expect(
+        () => applyAndroidReleaseSigning('client_a', {
+          androidKeystoreConfigKey: '../outside.jks',
+        }),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('not a path'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when a required key.properties value is blank', () async {
+      writeCloneSigningFiles(
+        properties:
+            'storePassword=   \nkeyPassword=k\nkeyAlias=upload\nstoreFile=upload-keystore.jks\n',
+      );
+      expect(
+        () => applyAndroidReleaseSigning('client_a', {}),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('storePassword'),
+          ),
+        ),
+      );
+    });
+
+    test('copies a custom key.properties file name', () async {
+      Directory('clonify/clones/client_a/android').createSync(recursive: true);
+      File(
+        'clonify/clones/client_a/android/upload-keystore.jks',
+      ).writeAsBytesSync(fakeJksBytes());
+      File('clonify/clones/client_a/android/play.properties').writeAsStringSync(
+        'storePassword=s\nkeyPassword=k\nkeyAlias=upload\nstoreFile=old.jks\n',
+      );
+      writeKotlinGradleWithDebugReleaseSigning();
+
+      await applyAndroidReleaseSigning('client_a', {
+        androidKeyPropertiesConfigKey: 'play.properties',
+      });
+
+      expect(
+        File('android/key.properties').readAsStringSync(),
+        contains('storeFile=upload-keystore.jks'),
+      );
+    });
+
+    test('prefers Kotlin Gradle when both Groovy and Kotlin files exist', () async {
+      writeCloneSigningFiles();
+      writeKotlinGradleWithDebugReleaseSigning();
+      File('android/app/build.gradle').writeAsStringSync('''
+plugins {
+    id "com.android.application"
+}
+android {
+    buildTypes {
+        release {
+            signingConfig signingConfigs.debug
+        }
+    }
+}
+''');
+      await applyAndroidReleaseSigning('client_a', {});
+      expect(
+        File('android/app/build.gradle.kts').readAsStringSync(),
+        contains('signingConfigs.getByName("release")'),
+      );
+      expect(
+        File('android/app/build.gradle').readAsStringSync(),
+        contains('signingConfig signingConfigs.debug'),
+      );
+    });
+
     test('wires Groovy Gradle when only build.gradle exists', () async {
       writeCloneSigningFiles();
       File('android/app/build.gradle')
@@ -434,6 +594,20 @@ android {
       expect(
         example.readAsStringSync(),
         contains('storeFile=upload-keystore.jks'),
+      );
+    });
+
+    test('does not overwrite an existing example file', () {
+      Directory('clonify/clones/client_a/android').createSync(recursive: true);
+      File(
+        'clonify/clones/client_a/android/key.properties.example',
+      ).writeAsStringSync('KEEP');
+      createCloneAndroidSigningDirectory('client_a');
+      expect(
+        File(
+          'clonify/clones/client_a/android/key.properties.example',
+        ).readAsStringSync(),
+        'KEEP',
       );
     });
   });

@@ -684,6 +684,41 @@ void main() {
         ),
       );
     });
+
+    test('throws when androidKeystore is a relative path', () {
+      expect(
+        () => assertAndroidSigningSource('client_a', {
+          androidKeystoreConfigKey: '../outside.jks',
+        }),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('not a path'),
+          ),
+        ),
+      );
+    });
+  });
+
+  group('assertAndroidSigningOutputs', () {
+    test('throws when copied storeFile does not match the keystore name', () {
+      writeCloneSigningSource();
+      writeAndroidSigningOutputs();
+      File('android/key.properties').writeAsStringSync(
+        'storePassword=store-secret\nkeyPassword=key-secret\nkeyAlias=upload\nstoreFile=../old.jks\n',
+      );
+      expect(
+        () => assertAndroidSigningOutputs('client_a', {}),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('storeFile'),
+          ),
+        ),
+      );
+    });
   });
 
   group('assertConfigureReady omitted keys', () {

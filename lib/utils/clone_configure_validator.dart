@@ -261,15 +261,17 @@ void assertAndroidSigningSource(
     throw CustomException('Clone config "androidKeyProperties" is not set');
   }
 
+  final keystoreName = resolveAndroidKeystoreFileName(configJson);
+  final propertiesName = resolveAndroidKeyPropertiesFileName(configJson);
+  assertSafeAndroidSigningFileName(keystoreName, androidKeystoreConfigKey);
+  assertSafeAndroidSigningFileName(
+    propertiesName,
+    androidKeyPropertiesConfigKey,
+  );
+
   final sourceDir = cloneAndroidSigningDir(clientId);
-  final keystorePath = p.join(
-    sourceDir,
-    resolveAndroidKeystoreFileName(configJson),
-  );
-  final propertiesPath = p.join(
-    sourceDir,
-    resolveAndroidKeyPropertiesFileName(configJson),
-  );
+  final keystorePath = p.join(sourceDir, keystoreName);
+  final propertiesPath = p.join(sourceDir, propertiesName);
 
   assertAndroidKeystoreFile(keystorePath, androidKeystoreConfigKey);
   assertAndroidKeyPropertiesFile(propertiesPath, androidKeyPropertiesConfigKey);

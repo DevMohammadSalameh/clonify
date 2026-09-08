@@ -97,6 +97,21 @@ String? trimmedSigningString(Object? value) {
   return text.isEmpty ? null : text;
 }
 
+/// Clone signing files must live in `clonify/clones/{id}/android/`, never
+/// a relative path that could write outside the project.
+void assertSafeAndroidSigningFileName(String name, String field) {
+  final trimmed = name.trim();
+  if (trimmed.isEmpty ||
+      trimmed.contains('/') ||
+      trimmed.contains('\\') ||
+      trimmed == '.' ||
+      trimmed == '..') {
+    throw CustomException(
+      '$field must be a file name in the clone android folder, not a path: $name',
+    );
+  }
+}
+
 bool androidSigningIsConfigured(Map<String, dynamic> configJson) {
   return trimmedSigningString(configJson[androidKeystoreConfigKey]) != null ||
       configJson.containsKey(androidKeystoreConfigKey) ||
@@ -149,12 +164,7 @@ Future<void> applyAndroidReleaseSigning(
   Map<String, dynamic> configJson,
 ) async {
   if (!androidSigningIsRequired(clientId, configJson)) {
-    final leftover = File(Constants.androidKeyPropertiesFilePath);
-    if (leftover.existsSync()) {
-      logger.w(
-        '⚠️  ${leftover.path} still exists from a previous clone; release builds may use that keystore.',
-      );
-    }
+    removeLeftoverAndroidKeyProperties();
     logger.i(
       'ℹ️  No Android signing files at ${cloneAndroidSigningDir(clientId)}; skipped.',
     );
@@ -163,6 +173,11 @@ Future<void> applyAndroidReleaseSigning(
 
   final keystoreName = resolveAndroidKeystoreFileName(configJson);
   final propertiesName = resolveAndroidKeyPropertiesFileName(configJson);
+  assertSafeAndroidSigningFileName(keystoreName, androidKeystoreConfigKey);
+  assertSafeAndroidSigningFileName(
+    propertiesName,
+    androidKeyPropertiesConfigKey,
+  );
   final sourceDir = cloneAndroidSigningDir(clientId);
   final sourceKeystore = File(p.join(sourceDir, keystoreName));
   final sourceProperties = File(p.join(sourceDir, propertiesName));
@@ -245,9 +260,22 @@ Future<void> ensureProjectGradleReleaseSigning() async {
   );
 }
 
+void removeLeftoverAndroidKeyProperties() {
+  final leftover = File(Constants.androidKeyPropertiesFilePath);
+  if (!leftover.existsSync()) return;
+  leftover.deleteSync();
+  logger.w(
+    '⚠️  Removed leftover ${leftover.path} so the previous clone\'s keystore is not reused.',
+  );
+}
+
 Map<String, String> parseAndroidKeyProperties(String content) {
+  var text = content;
+  if (text.startsWith('\uFEFF')) {
+    text = text.substring(1);
+  }
   final values = <String, String>{};
-  for (final rawLine in content.split(RegExp(r'\r?\n'))) {
+  for (final rawLine in text.split(RegExp(r'\r?\n'))) {
     final line = rawLine.trim();
     if (line.isEmpty || line.startsWith('#') || !line.contains('=')) {
       continue;
@@ -299,7 +327,7 @@ bool hasJavaKeystoreSignature(List<int> bytes) {
     }
     if (isJks) return true;
   }
-  return bytes.isNotEmpty && bytes.first == 0x30;
+  return bytes.length >= 4 && bytes.first == 0x30;
 }
 
 String serializeAndroidKeyProperties(

@@ -34,15 +34,23 @@ const checkpointSkipDirectoryNames = <String>{
 
 /// Thrown after a failed configure has restored the previous project files.
 class ConfigureRolledBackException implements Exception {
-  ConfigureRolledBackException(this.cause);
+  ConfigureRolledBackException(this.cause, {this.restoreError});
 
   final Object cause;
+  final Object? restoreError;
 
-  String get message => 'Configure failed: $cause';
+  String get message {
+    if (restoreError == null) return 'Configure failed: $cause';
+    return 'Configure failed: $cause\nAlso failed to restore previous files: $restoreError';
+  }
 
   @override
-  String toString() =>
-      '$message\nRestored previous iOS, Android, and project files.';
+  String toString() {
+    if (restoreError == null) {
+      return '$message\nRestored previous iOS, Android, and project files.';
+    }
+    return message;
+  }
 }
 
 /// Snapshot of configure-owned files. Restore wipes a half-applied clone
@@ -67,10 +75,24 @@ class FileTreeCheckpoint {
   }
 
   void restore() {
+    Object? firstError;
+    StackTrace? firstStack;
     for (final entry in entries) {
-      _restoreRoot(entry);
+      try {
+        _restoreRoot(entry);
+      } catch (error, stack) {
+        firstError ??= error;
+        firstStack ??= stack;
+      }
     }
-    discard();
+    try {
+      discard();
+    } catch (_) {
+      // Backup leftover in temp is safer than aborting a restored project.
+    }
+    if (firstError != null) {
+      Error.throwWithStackTrace(firstError, firstStack!);
+    }
   }
 
   void discard() {
@@ -103,13 +125,32 @@ class FileTreeCheckpoint {
       _deleteEntity(entry.root);
       return;
     }
+    final backupPath = p.join(backupDir.path, entry.id, p.basename(entry.root));
+    if (_isMissing(backupPath)) {
+      throw StateError('Checkpoint backup missing for ${entry.root}');
+    }
+
+    final absoluteRoot = p.normalize(p.absolute(entry.root));
+    final staged = '$absoluteRoot.clonify_restore_${entry.id}';
+    _deleteEntity(staged);
+    _copyEntity(backupPath, staged);
+
     final parked = _parkSkippedDirectories(entry.root);
-    _deleteEntity(entry.root);
-    _copyEntity(
-      p.join(backupDir.path, entry.id, p.basename(entry.root)),
-      entry.root,
-    );
-    _unparkSkippedDirectories(entry.root, parked);
+    var restored = false;
+    try {
+      _deleteEntity(entry.root);
+      _renameEntity(staged, entry.root);
+      restored = true;
+    } catch (error) {
+      if (_isMissing(entry.root) && !_isMissing(staged)) {
+        _copyEntity(staged, entry.root);
+        restored = !_isMissing(entry.root);
+      }
+      if (!restored) rethrow;
+    } finally {
+      _unparkSkippedDirectories(entry.root, parked);
+      _deleteEntity(staged);
+    }
   }
 }
 
@@ -139,7 +180,7 @@ Future<T> runConfigureTransaction<T>(Future<T> Function() body) async {
     } catch (restoreError) {
       logger.e('❌ Configure failed: $error');
       logger.e('❌ Also failed to restore previous files: $restoreError');
-      rethrow;
+      throw ConfigureRolledBackException(error, restoreError: restoreError);
     }
     throw ConfigureRolledBackException(error);
   }
@@ -169,6 +210,22 @@ void _deleteEntity(String path) {
     return;
   }
   File(path).deleteSync();
+}
+
+void _renameEntity(String sourcePath, String destPath) {
+  final type = FileSystemEntity.typeSync(sourcePath, followLinks: false);
+  if (type == FileSystemEntityType.notFound) return;
+  File(destPath).parent.createSync(recursive: true);
+  if (type == FileSystemEntityType.directory) {
+    Directory(sourcePath).renameSync(destPath);
+    return;
+  }
+  File(sourcePath).renameSync(destPath);
+}
+
+bool _isMissing(String path) {
+  return FileSystemEntity.typeSync(path, followLinks: false) ==
+      FileSystemEntityType.notFound;
 }
 
 List<(String, Directory)> _parkSkippedDirectories(String root) {
