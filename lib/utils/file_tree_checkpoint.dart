@@ -3,7 +3,8 @@ import 'dart:io';
 import 'package:clonify/utils/clonify_helpers.dart';
 import 'package:path/path.dart' as p;
 
-/// Project trees `clonify configure` is allowed to mutate.
+/// Local files `clonify configure` may change. On failure these are restored
+/// so the project looks like the switch never ran.
 const configureMutableRoots = <String>[
   'android',
   'ios',
@@ -20,8 +21,8 @@ const configureMutableRoots = <String>[
   'flutter_launcher_icons.yaml',
   'flutter_native_splash.yaml',
   'firebase.json',
-  'clonify/last_client.txt',
-  'clonify/last_config.json',
+  '.firebaserc',
+  'clonify',
 ];
 
 const checkpointSkipDirectoryNames = <String>{

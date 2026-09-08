@@ -1,6 +1,6 @@
 name: clonify
 description: A powerful CLI tool for managing multiple Flutter project clones with different configurations, branding, Firebase, and Shorebird. Perfect for white-label apps.
-version: 0.4.13
+version: 0.4.14
 homepage: https://github.com/gailansoran4/clonify
 repository: https://github.com/gailansoran4/clonify
 issue_tracker: https://github.com/gailansoran4/clonify/issues

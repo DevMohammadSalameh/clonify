@@ -1,3 +1,12 @@
+## 0.4.14 - 2026-09-08
+
+### ✨ Feature
+
+- Restore **every local file** the switch touched, including clone
+  `config.json` (version), `.firebaserc`, Shorebird, Firebase options,
+  iOS, and Android — as if `clonify configure` never ran
+- Firebase apps already created in Google's console are still not deleted
+
 ## 0.4.13 - 2026-09-08
 
 ### ✨ Feature

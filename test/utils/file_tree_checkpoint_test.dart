@@ -138,5 +138,69 @@ void main() {
       expect(value, 7);
       expect(File('ios/Runner/Info.plist').readAsStringSync(), 'NEW_IOS');
     });
+
+    test(
+      'restores version, clone config, Shorebird, Firebase, iOS, Android',
+      () async {
+        File('pubspec.yaml').writeAsStringSync('version: 1.0.0+1');
+        File('shorebird.yaml').writeAsStringSync('app_id: old-shorebird');
+        File('lib/firebase_options.dart')
+          ..createSync(recursive: true)
+          ..writeAsStringSync('OLD_FIREBASE');
+        File('.firebaserc').writeAsStringSync('{"projects":{"default":"old"}}');
+        File('clonify/clones/client/config.json')
+          ..createSync(recursive: true)
+          ..writeAsStringSync('{"version":"1.0.0+1"}');
+        File('ios/Runner/Info.plist')
+          ..createSync(recursive: true)
+          ..writeAsStringSync('OLD_IOS');
+        File('android/app/src/main/AndroidManifest.xml')
+          ..createSync(recursive: true)
+          ..writeAsStringSync('OLD_ANDROID');
+
+        await expectLater(
+          runConfigureTransaction(() async {
+            File('pubspec.yaml').writeAsStringSync('version: 9.0.0+9');
+            File('shorebird.yaml').writeAsStringSync('app_id: new-shorebird');
+            File('lib/firebase_options.dart').writeAsStringSync('NEW_FIREBASE');
+            File(
+              '.firebaserc',
+            ).writeAsStringSync('{"projects":{"default":"new"}}');
+            File(
+              'clonify/clones/client/config.json',
+            ).writeAsStringSync('{"version":"9.0.0+9"}');
+            File('ios/Runner/Info.plist').writeAsStringSync('NEW_IOS');
+            File(
+              'android/app/src/main/AndroidManifest.xml',
+            ).writeAsStringSync('NEW_ANDROID');
+            throw CustomException('configure failed after all writes');
+          }),
+          throwsA(isA<ConfigureRolledBackException>()),
+        );
+
+        expect(File('pubspec.yaml').readAsStringSync(), 'version: 1.0.0+1');
+        expect(
+          File('shorebird.yaml').readAsStringSync(),
+          'app_id: old-shorebird',
+        );
+        expect(
+          File('lib/firebase_options.dart').readAsStringSync(),
+          'OLD_FIREBASE',
+        );
+        expect(
+          File('.firebaserc').readAsStringSync(),
+          '{"projects":{"default":"old"}}',
+        );
+        expect(
+          File('clonify/clones/client/config.json').readAsStringSync(),
+          '{"version":"1.0.0+1"}',
+        );
+        expect(File('ios/Runner/Info.plist').readAsStringSync(), 'OLD_IOS');
+        expect(
+          File('android/app/src/main/AndroidManifest.xml').readAsStringSync(),
+          'OLD_ANDROID',
+        );
+      },
+    );
   });
 }
