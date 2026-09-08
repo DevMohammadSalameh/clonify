@@ -177,11 +177,14 @@ This will:
 - Sync versions
 - Generate compile-time configuration class
 - Apply Background Geolocation licenses and Android notification icon
+- Sync per-clone Android Play signing (`upload-keystore.jks` + `key.properties`)
 - **Fail immediately** if required assets or licenses are missing:
   - `launcherIcon` / `splashScreen` / `logo` missing, empty, or not PNG
   - `notificationIcon` configured but the file was not generated
   - `backgroundGeolocationLicenseIos` or `backgroundGeolocationLicenseAndroid`
     missing, blank, invalid, or issued for another package/OS
+  - `androidKeystore` / `androidKeyProperties` configured (or clone `android/`
+    files present) but the keystore / `key.properties` is missing or invalid
 
 Generates: `lib/generated/clone_configs.dart`
 this class can be used in your project for accessing clone specific attributes. 
@@ -328,6 +331,9 @@ custom_fields:
   "baseUrl": "https://api.client-a.com",
   "primaryColor": "0xFF6200EE",
   "firebaseProjectId": "firebase-client-a",
+  "backgroundSplashColor": "0xFFFFFFFF",
+  "androidKeystore": "upload-keystore.jks",
+  "androidKeyProperties": "key.properties",
   "version": "1.0.0+1",
   "socketUrl": "wss://socket.client-a.com",
   "maxRetries": "5",
@@ -445,6 +451,37 @@ clonify shorebird --clientId your_client -- patch ios
 To skip Shorebird sync during configure only:
 - Set `shorebird.enabled: false`
 - Or use `--skipShorebirdConfigure`
+
+### Android Play signing
+
+Each clone can keep its own upload keystore (do **not** commit secrets):
+
+```
+clonify/clones/{clientId}/android/upload-keystore.jks
+clonify/clones/{clientId}/android/key.properties
+```
+
+`key.properties` uses the Flutter format:
+
+```
+storePassword=YOUR_STORE_PASSWORD
+keyPassword=YOUR_KEY_PASSWORD
+keyAlias=upload
+storeFile=upload-keystore.jks
+```
+
+On `clonify configure`, Clonify copies those files to `android/` and wires
+release signing in `android/app/build.gradle(.kts)` to `rootProject.file(...)`.
+If the files are missing, configure skips signing (debug keys stay in use)
+unless `androidKeystore` / `androidKeyProperties` is set in `config.json`.
+
+Add to the Flutter app `.gitignore`:
+
+```
+**/android/key.properties
+*.jks
+*.keystore
+```
 
 ### Fastlane Integration
 

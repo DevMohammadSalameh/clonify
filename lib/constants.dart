@@ -52,7 +52,8 @@ abstract class Constants {
 
   // ! Directory Paths
   // ? Android
-  static const androidAppDirPath = 'android/app';
+  static const androidDirPath = 'android';
+  static const androidAppDirPath = '$androidDirPath/app';
   static const androidSrcDirPath = '$androidAppDirPath/src';
   static const androidMainDirPath = '$androidSrcDirPath/$androidMainDirName';
 
@@ -97,6 +98,9 @@ abstract class Constants {
       '$androidAppDirPath/$buildGradleFileName';
   static const androidAppLevelKotlinBuildGradleFilePath =
       '$androidAppDirPath/$kotlinBuildGradleFileName';
+  static const androidKeyPropertiesFileName = 'key.properties';
+  static const androidKeyPropertiesFilePath =
+      '$androidDirPath/$androidKeyPropertiesFileName';
 
   // ? iOS
   static const iosInfoPlistFilePath = '$iosRunnerDirPath/$infoPlistFileName';
@@ -179,7 +183,7 @@ public class MainActivity extends FlutterActivity {
 
   /// Fallback package version when pubspec cannot be resolved at runtime.
   /// Prefer `--version`, which reads pubspec.yaml dynamically.
-  static const String packageVersion = '0.4.10';
+  static const String packageVersion = '0.4.12';
 
   /// The current version of the Clonify CLI tool.
   @Deprecated('Use Constants.packageVersion or --version flag')

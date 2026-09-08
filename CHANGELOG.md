@@ -1,3 +1,15 @@
+## 0.4.12 - 2026-09-08
+
+### ✨ Feature
+
+- Sync per-clone Android Play signing on `clonify configure` from
+  `clonify/clones/{clientId}/android/upload-keystore.jks` + `key.properties`
+- Copy those files into `android/` (never into Dart generated config)
+- Wire `android/app/build.gradle` / `build.gradle.kts` release signing to
+  `key.properties` when the project is still using debug keys
+- Optional clone `config.json` keys: `androidKeystore`, `androidKeyProperties`
+- `clonify create` now adds `clonify/clones/{id}/android/key.properties.example`
+
 ## 0.4.11 - 2026-08-15
 
 ### ✨ Feature

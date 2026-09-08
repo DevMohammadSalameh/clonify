@@ -4,6 +4,7 @@ import 'dart:typed_data';
 
 import 'package:clonify/constants.dart';
 import 'package:clonify/custom_exceptions.dart';
+import 'package:clonify/utils/android_signing_manager.dart';
 import 'package:clonify/utils/background_geolocation_license_manager.dart';
 import 'package:clonify/utils/notification_icon_manager.dart';
 import 'package:path/path.dart' as p;
@@ -23,7 +24,8 @@ bool projectHasBackgroundGeolocationSlots() {
       manifest.existsSync() &&
       manifest.readAsStringSync().contains(androidLicenseMetaName);
   final hasIosSlot =
-      plist.existsSync() && plist.readAsStringSync().contains(iosLicensePlistKey);
+      plist.existsSync() &&
+      plist.readAsStringSync().contains(iosLicensePlistKey);
   return hasAndroidSlot || hasIosSlot;
 }
 
@@ -42,6 +44,7 @@ void assertConfigureReady(String clientId, Map<String, dynamic> configJson) {
   assertCloneAssetFiles(clientId, configJson);
   assertBackgroundGeolocationLicenses(configJson);
   assertNotificationSource(clientId, configJson);
+  assertAndroidSigningSource(clientId, configJson);
 }
 
 void assertConfigureFinished(String clientId, Map<String, dynamic> configJson) {
@@ -49,6 +52,7 @@ void assertConfigureFinished(String clientId, Map<String, dynamic> configJson) {
   assertGeneratedCloneConfigsFile();
   assertNativeLicensesApplied(configJson);
   assertNotificationOutputs(clientId, configJson);
+  assertAndroidSigningOutputs(clientId, configJson);
 }
 
 const requiredCloneAssetFields = ['launcherIcon', 'splashScreen', 'logo'];
@@ -127,7 +131,10 @@ void assertLicenseJwt({
   }
 }
 
-void assertNotificationSource(String clientId, Map<String, dynamic> configJson) {
+void assertNotificationSource(
+  String clientId,
+  Map<String, dynamic> configJson,
+) {
   if (!notificationIconIsRequired(configJson)) return;
   final fileName = trimmedConfigString(configJson[notificationIconConfigKey]);
   if (configJson.containsKey(notificationIconConfigKey) && fileName == null) {
@@ -194,7 +201,8 @@ void assertNativeLicensesApplied(Map<String, dynamic> configJson) {
       'AndroidManifest.xml not found; cannot apply backgroundGeolocationLicenseAndroid',
     );
   }
-  if (androidLicense != null && !manifest.readAsStringSync().contains(androidLicense)) {
+  if (androidLicense != null &&
+      !manifest.readAsStringSync().contains(androidLicense)) {
     throw CustomException(
       'AndroidManifest.xml does not contain backgroundGeolocationLicenseAndroid',
     );
@@ -238,6 +246,84 @@ void assertNotificationOutputs(
   }
 }
 
+void assertAndroidSigningSource(
+  String clientId,
+  Map<String, dynamic> configJson,
+) {
+  if (!androidSigningIsRequired(clientId, configJson)) return;
+
+  if (configJson.containsKey(androidKeystoreConfigKey) &&
+      trimmedConfigString(configJson[androidKeystoreConfigKey]) == null) {
+    throw CustomException('Clone config "androidKeystore" is not set');
+  }
+  if (configJson.containsKey(androidKeyPropertiesConfigKey) &&
+      trimmedConfigString(configJson[androidKeyPropertiesConfigKey]) == null) {
+    throw CustomException('Clone config "androidKeyProperties" is not set');
+  }
+
+  final sourceDir = cloneAndroidSigningDir(clientId);
+  final keystorePath = p.join(
+    sourceDir,
+    resolveAndroidKeystoreFileName(configJson),
+  );
+  final propertiesPath = p.join(
+    sourceDir,
+    resolveAndroidKeyPropertiesFileName(configJson),
+  );
+
+  assertAndroidKeystoreFile(keystorePath, androidKeystoreConfigKey);
+  assertAndroidKeyPropertiesFile(propertiesPath, androidKeyPropertiesConfigKey);
+}
+
+void assertAndroidSigningOutputs(
+  String clientId,
+  Map<String, dynamic> configJson,
+) {
+  if (!androidSigningIsRequired(clientId, configJson)) return;
+
+  final keystoreName = resolveAndroidKeystoreFileName(configJson);
+  assertAndroidKeystoreFile(
+    p.join(Constants.androidDirPath, keystoreName),
+    androidKeystoreConfigKey,
+  );
+  assertAndroidKeyPropertiesFile(
+    Constants.androidKeyPropertiesFilePath,
+    androidKeyPropertiesConfigKey,
+  );
+
+  final properties = parseAndroidKeyProperties(
+    File(Constants.androidKeyPropertiesFilePath).readAsStringSync(),
+  );
+  final storeFile = properties[androidKeyPropertiesStoreFileKey]?.trim();
+  if (storeFile != keystoreName) {
+    throw CustomException(
+      '${Constants.androidKeyPropertiesFilePath} storeFile "$storeFile" must be "$keystoreName"',
+    );
+  }
+}
+
+void assertAndroidKeystoreFile(String path, String field) {
+  final file = File(path);
+  if (!file.existsSync()) {
+    throw CustomException('Missing $field at $path');
+  }
+  assertAndroidKeystoreBytes(file.readAsBytesSync(), path);
+}
+
+void assertAndroidKeyPropertiesFile(String path, String field) {
+  final file = File(path);
+  if (!file.existsSync()) {
+    throw CustomException('Missing $field at $path');
+  }
+  if (file.lengthSync() == 0) {
+    throw CustomException('$field at $path is empty');
+  }
+  assertAndroidKeyPropertiesComplete(
+    parseAndroidKeyProperties(file.readAsStringSync()),
+    path,
+  );
+}
+
 void assertPngFile(String path, String field) {
   final file = File(path);
   if (!file.existsSync()) {
@@ -259,7 +345,10 @@ Map<String, dynamic>? decodeJwtPayload(String token) {
     var normalized = parts[1].replaceAll('-', '+').replaceAll('_', '/');
     final remainder = normalized.length % 4;
     if (remainder > 0) {
-      normalized = normalized.padRight(normalized.length + (4 - remainder), '=');
+      normalized = normalized.padRight(
+        normalized.length + (4 - remainder),
+        '=',
+      );
     }
     final decoded = jsonDecode(utf8.decode(base64.decode(normalized)));
     if (decoded is! Map<String, dynamic>) return null;

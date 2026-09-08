@@ -7,6 +7,7 @@ import 'package:clonify/constants.dart';
 import 'package:clonify/models/config_model.dart';
 import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
 import 'package:clonify/src/clonify_core.dart';
+import 'package:clonify/utils/android_signing_manager.dart';
 import 'package:clonify/utils/asset_manager.dart';
 import 'package:clonify/utils/background_geolocation_license_manager.dart';
 import 'package:clonify/utils/clone_configure_validator.dart';
@@ -19,6 +20,7 @@ import 'package:clonify/utils/tui_helpers.dart';
 import 'package:yaml_edit/yaml_edit.dart';
 // ignore: depend_on_referenced_packages
 import 'package:yaml/yaml.dart' as yaml;
+
 // import 'package:clonify/src/package_rename_plus/package_rename_plus.dart'
 //     as package_rename;
 
@@ -460,8 +462,7 @@ bool _createCloneStructure(Map<String, String> config) {
       'version': config['version'],
       'launcherIcon': config['launcherIcon'],
       'splashScreen': config['splashScreen'],
-      'backgroundSplashColor':
-          config['backgroundSplashColor'] ?? '0xFFFFFFFF',
+      'backgroundSplashColor': config['backgroundSplashColor'] ?? '0xFFFFFFFF',
       'logo': config['logo'],
     };
 
@@ -480,6 +481,10 @@ bool _createCloneStructure(Map<String, String> config) {
     _createdClonePaths.add(configFile.path);
 
     logger.i('✅ Config file created at: ${configFile.path}');
+    createCloneAndroidSigningDirectory(clientId);
+    logger.i(
+      '✅ Android signing folder created at: ${cloneAndroidSigningDir(clientId)}',
+    );
     return true;
   } catch (e) {
     logger.e('❌ Failed to create clone structure: $e');
@@ -776,8 +781,7 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
       final updateAndroidLauncherIcon = clonifySettings.updateAndroidInfo;
       final updateIOSLauncherIcon = clonifySettings.updateIOSInfo;
 
-      final launcherIconPath =
-          "assets/images/${configJson['launcherIcon']}";
+      final launcherIconPath = "assets/images/${configJson['launcherIcon']}";
 
       launcherIconsYamlEditor.update([
         'flutter_launcher_icons',
@@ -798,15 +802,15 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
         'ios',
       ], updateIOSLauncherIcon);
 
-      launcherIconsYamlEditor.update([
-        'flutter_launcher_icons',
-        'web',
-      ], {
-        'generate': true,
-        'image_path': launcherIconPath,
-        'background_color': clonifySettings.defaultColor,
-        'theme_color': clonifySettings.defaultColor,
-      });
+      launcherIconsYamlEditor.update(
+        ['flutter_launcher_icons', 'web'],
+        {
+          'generate': true,
+          'image_path': launcherIconPath,
+          'background_color': clonifySettings.defaultColor,
+          'theme_color': clonifySettings.defaultColor,
+        },
+      );
 
       launcherIconsConfigFile.writeAsStringSync(
         launcherIconsYamlEditor.toString(),
@@ -819,11 +823,12 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
     }
     if (configJson['splashScreen'] != null) {
       try {
-        final splashImagePath =
-            "assets/images/${configJson['splashScreen']}";
+        final splashImagePath = "assets/images/${configJson['splashScreen']}";
         final splashColor =
             notificationColorHexFromPrimary(
-              ((configJson['backgroundSplashColor'] as String?)?.trim().isNotEmpty ??
+              ((configJson['backgroundSplashColor'] as String?)
+                          ?.trim()
+                          .isNotEmpty ??
                       false)
                   ? (configJson['backgroundSplashColor'] as String).trim()
                   : '#FFFFFF',
@@ -998,6 +1003,7 @@ Future<Map<String, dynamic>?> configureApp(
     await generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
     await applyBackgroundGeolocationLicenses(configJson);
     await applyAndroidNotificationIcon(callModel.clientId!, configJson);
+    await applyAndroidReleaseSigning(callModel.clientId!, configJson);
     assertConfigureFinished(callModel.clientId!, configJson);
 
     logger.i('✅ Successfully cloned app for ${callModel.clientId}!');

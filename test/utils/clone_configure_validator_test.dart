@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:clonify/custom_exceptions.dart';
+import 'package:clonify/utils/android_signing_manager.dart';
 import 'package:clonify/utils/background_geolocation_license_manager.dart';
 import 'package:clonify/utils/clone_configure_validator.dart';
 import 'package:test/test.dart';
@@ -158,7 +159,9 @@ void main() {
             os: 'android',
             appId: 'com.app',
           ),
-          backgroundGeolocationLicenseIosKey: fakeJwtPayload({'app_id': 'com.app'}),
+          backgroundGeolocationLicenseIosKey: fakeJwtPayload({
+            'app_id': 'com.app',
+          }),
         }),
         throwsA(
           isA<CustomException>().having(
@@ -532,20 +535,23 @@ void main() {
       );
     });
 
-    test('throws when AndroidManifest does not contain the Android license', () {
-      writeCloneAssets();
-      writeGeneratedCheckout(writeAndroidLicense: false);
-      expect(
-        () => assertConfigureFinished('client_a', validLicensedConfig()),
-        throwsA(
-          isA<CustomException>().having(
-            (error) => error.message,
-            'message',
-            contains('backgroundGeolocationLicenseAndroid'),
+    test(
+      'throws when AndroidManifest does not contain the Android license',
+      () {
+        writeCloneAssets();
+        writeGeneratedCheckout(writeAndroidLicense: false);
+        expect(
+          () => assertConfigureFinished('client_a', validLicensedConfig()),
+          throwsA(
+            isA<CustomException>().having(
+              (error) => error.message,
+              'message',
+              contains('backgroundGeolocationLicenseAndroid'),
+            ),
           ),
-        ),
-      );
-    });
+        );
+      },
+    );
 
     test('throws when Info.plist does not contain the iOS license', () {
       writeCloneAssets();
@@ -583,6 +589,69 @@ void main() {
       expect(
         () => assertConfigureFinished('client_a', validLicensedConfig()),
         returnsNormally,
+      );
+    });
+
+    test('throws when clone signing files were not copied to android/', () {
+      writeCloneAssets();
+      writeGeneratedCheckout();
+      writeCloneSigningSource();
+      expect(
+        () => assertConfigureFinished('client_a', validLicensedConfig()),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('androidKeystore'),
+          ),
+        ),
+      );
+    });
+
+    test('accepts copied Android signing outputs', () {
+      writeCloneAssets();
+      writeGeneratedCheckout();
+      writeCloneSigningSource();
+      writeAndroidSigningOutputs();
+      expect(
+        () => assertConfigureFinished('client_a', validLicensedConfig()),
+        returnsNormally,
+      );
+    });
+  });
+
+  group('assertAndroidSigningSource', () {
+    test('skips when signing is not used', () {
+      expect(() => assertAndroidSigningSource('client_a', {}), returnsNormally);
+    });
+
+    test('throws when androidKeystore key is blank', () {
+      expect(
+        () => assertAndroidSigningSource('client_a', {
+          androidKeystoreConfigKey: '   ',
+        }),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('androidKeystore'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when androidKeystore file is missing', () {
+      expect(
+        () => assertAndroidSigningSource('client_a', {
+          androidKeystoreConfigKey: 'upload-keystore.jks',
+        }),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('Missing androidKeystore'),
+          ),
+        ),
       );
     });
   });
@@ -662,15 +731,73 @@ String fakeJwtPayload(Map<String, dynamic> payload) {
 
 Uint8List pngBytes() {
   return Uint8List.fromList(const [
-    0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A,
-    0x00, 0x00, 0x00, 0x0D, 0x49, 0x48, 0x44, 0x52,
-    0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-    0x08, 0x06, 0x00, 0x00, 0x00, 0x1F, 0x15, 0xC4,
-    0x89, 0x00, 0x00, 0x00, 0x0A, 0x49, 0x44, 0x41,
-    0x54, 0x78, 0x9C, 0x63, 0x00, 0x01, 0x00, 0x00,
-    0x05, 0x00, 0x01, 0x0D, 0x0A, 0x2D, 0xB4, 0x00,
-    0x00, 0x00, 0x00, 0x49, 0x45, 0x4E, 0x44, 0xAE,
-    0x42, 0x60, 0x82,
+    0x89,
+    0x50,
+    0x4E,
+    0x47,
+    0x0D,
+    0x0A,
+    0x1A,
+    0x0A,
+    0x00,
+    0x00,
+    0x00,
+    0x0D,
+    0x49,
+    0x48,
+    0x44,
+    0x52,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x00,
+    0x00,
+    0x00,
+    0x01,
+    0x08,
+    0x06,
+    0x00,
+    0x00,
+    0x00,
+    0x1F,
+    0x15,
+    0xC4,
+    0x89,
+    0x00,
+    0x00,
+    0x00,
+    0x0A,
+    0x49,
+    0x44,
+    0x41,
+    0x54,
+    0x78,
+    0x9C,
+    0x63,
+    0x00,
+    0x01,
+    0x00,
+    0x00,
+    0x05,
+    0x00,
+    0x01,
+    0x0D,
+    0x0A,
+    0x2D,
+    0xB4,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x49,
+    0x45,
+    0x4E,
+    0x44,
+    0xAE,
+    0x42,
+    0x60,
+    0x82,
   ]);
 }
 
@@ -764,4 +891,24 @@ void writeGeneratedCheckout({
   ]) {
     writePng('android/app/src/main/res/$dirName/ic_notification.png');
   }
+}
+
+void writeCloneSigningSource() {
+  Directory('clonify/clones/client_a/android').createSync(recursive: true);
+  File(
+    'clonify/clones/client_a/android/upload-keystore.jks',
+  ).writeAsBytesSync(Uint8List.fromList(const [0xFE, 0xED, 0xFE, 0xED, 0x00]));
+  File('clonify/clones/client_a/android/key.properties').writeAsStringSync(
+    'storePassword=store-secret\nkeyPassword=key-secret\nkeyAlias=upload\nstoreFile=upload-keystore.jks\n',
+  );
+}
+
+void writeAndroidSigningOutputs() {
+  Directory('android').createSync(recursive: true);
+  File(
+    'android/upload-keystore.jks',
+  ).writeAsBytesSync(Uint8List.fromList(const [0xFE, 0xED, 0xFE, 0xED, 0x00]));
+  File('android/key.properties').writeAsStringSync(
+    'storePassword=store-secret\nkeyPassword=key-secret\nkeyAlias=upload\nstoreFile=upload-keystore.jks\n',
+  );
 }

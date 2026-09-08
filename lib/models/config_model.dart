@@ -63,6 +63,12 @@ class CloneConfigModel {
   /// Optional Transistorsoft Background Geolocation iOS JWT license.
   String? backgroundGeolocationLicenseIos;
 
+  /// Optional Android keystore filename under `clonify/clones/{id}/android/`.
+  String? androidKeystore;
+
+  /// Optional Android `key.properties` filename under the clone android folder.
+  String? androidKeyProperties;
+
   /// List of additional color configurations for the application.
 
   List<ColorModel>? colors;
@@ -111,6 +117,8 @@ class CloneConfigModel {
     backgroundGeolocationLicenseAndroid =
         json['backgroundGeolocationLicenseAndroid'];
     backgroundGeolocationLicenseIos = json['backgroundGeolocationLicenseIos'];
+    androidKeystore = json['androidKeystore'];
+    androidKeyProperties = json['androidKeyProperties'];
     if (json['colors'] != null) {
       colors = [];
       json['colors'].forEach((v) {

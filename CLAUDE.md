@@ -110,6 +110,7 @@ clonify/
 - `./clonify/clonify_settings.yaml`: Global project settings (created by `init`)
 - `./clonify/clones/<clientId>/config.json`: Per-client configuration
 - `./clonify/clones/<clientId>/assets/`: Per-client assets
+- `./clonify/clones/<clientId>/android/`: Per-client Play keystore + `key.properties`
 - `./clonify/last_client.txt`: Last used client ID
 - `./clonify/last_config.json`: Last applied configuration
 - `./lib/generated/clone_configs.dart`: Generated constants (auto-created during `configure`)

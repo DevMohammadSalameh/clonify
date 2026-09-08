@@ -384,7 +384,7 @@ clonify which
 
 ## Best Practices
 
-1. **Version Control**: Add `./clonify/clones/*/config.json` to `.gitignore` if it contains sensitive data
+1. **Version Control**: Never commit `*.jks`, `*.keystore`, or `key.properties`. Keep them only under `clonify/clones/*/android/` locally (or a secrets store).
 2. **Asset Management**: Keep client assets organized in their respective directories
 3. **Testing**: Always test after running `configure` before building
 4. **Firebase**: Keep Firebase configuration files secure and out of version control
@@ -440,13 +440,16 @@ your-flutter-project/
 │   └── clones/
 │       ├── client-a/
 │       │   ├── config.json
-│       │   └── assets/
+│       │   ├── assets/
+│       │   └── android/          # keystore + key.properties (gitignored)
 │       ├── client-b/
 │       │   ├── config.json
-│       │   └── assets/
+│       │   ├── assets/
+│       │   └── android/
 │       └── client-c/
 │           ├── config.json
-│           └── assets/
+│           ├── assets/
+│           └── android/
 ├── lib/
 │   └── generated/
 │       └── clone_configs.dart  # Auto-generated
