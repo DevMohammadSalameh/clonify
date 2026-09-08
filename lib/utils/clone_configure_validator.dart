@@ -273,6 +273,7 @@ void assertAndroidSigningSource(
 
   assertAndroidKeystoreFile(keystorePath, androidKeystoreConfigKey);
   assertAndroidKeyPropertiesFile(propertiesPath, androidKeyPropertiesConfigKey);
+  assertAndroidSigningProjectReady();
 }
 
 void assertAndroidSigningOutputs(
@@ -298,6 +299,22 @@ void assertAndroidSigningOutputs(
   if (storeFile != keystoreName) {
     throw CustomException(
       '${Constants.androidKeyPropertiesFilePath} storeFile "$storeFile" must be "$keystoreName"',
+    );
+  }
+}
+
+void assertAndroidSigningProjectReady() {
+  final androidDir = Directory(Constants.androidDirPath);
+  if (!androidDir.existsSync()) {
+    throw CustomException(
+      '${androidDir.path} not found; cannot sync Android release signing',
+    );
+  }
+  final kts = File(Constants.androidAppLevelKotlinBuildGradleFilePath);
+  final groovy = File(Constants.androidAppLevelBuildGradleFilePath);
+  if (!kts.existsSync() && !groovy.existsSync()) {
+    throw CustomException(
+      'No ${Constants.kotlinBuildGradleFileName} or ${Constants.buildGradleFileName} under ${Constants.androidAppDirPath}',
     );
   }
 }

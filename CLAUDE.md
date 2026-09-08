@@ -119,6 +119,8 @@ clonify/
 
 **Cleanup on Cancellation**: Initialization and clone creation track created files/directories in `_createdPaths` and `_createdClonePaths` lists. On error or cancellation, cleanup functions remove these paths in reverse order.
 
+**Atomic configure**: `configureApp` snapshots iOS/Android/project files first. If any later step fails, the snapshot is restored so a half-applied clone (iOS changed, Android failed) never remains.
+
 **Interactive Prompts**: Commands use `prompt()` and `promptUser()` helpers for user input. The `--skipAll` flag bypasses interactive prompts where possible.
 
 **Command Flags**: See `lib/enums.dart` for all available flags. Key flags:

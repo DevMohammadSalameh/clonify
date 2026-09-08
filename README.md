@@ -178,6 +178,8 @@ This will:
 - Generate compile-time configuration class
 - Apply Background Geolocation licenses and Android notification icon
 - Sync per-clone Android Play signing (`upload-keystore.jks` + `key.properties`)
+- Apply all file changes as one transaction: any error restores iOS, Android, and
+  other project files to the previous clone
 - **Fail immediately** if required assets or licenses are missing:
   - `launcherIcon` / `splashScreen` / `logo` missing, empty, or not PNG
   - `notificationIcon` configured but the file was not generated

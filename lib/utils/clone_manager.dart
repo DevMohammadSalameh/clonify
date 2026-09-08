@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:chalkdart/chalk.dart';
 import 'package:clonify/constants.dart';
+import 'package:clonify/custom_exceptions.dart';
 import 'package:clonify/models/config_model.dart';
 import 'package:clonify/models/commands_calls_models/configure_command_model.dart';
 import 'package:clonify/src/clonify_core.dart';
@@ -14,6 +15,7 @@ import 'package:clonify/utils/clone_configure_validator.dart';
 import 'package:clonify/utils/clonify_helpers.dart' hide saveLastClientId;
 import 'package:clonify/utils/notification_icon_manager.dart';
 import 'package:clonify/utils/firebase_manager.dart';
+import 'package:clonify/utils/file_tree_checkpoint.dart';
 import 'package:clonify/utils/package_rename_plus_manager.dart';
 import 'package:clonify/utils/shorebird_manager.dart';
 import 'package:clonify/utils/tui_helpers.dart';
@@ -654,8 +656,7 @@ Future<bool> _performInitialSetup(
 
     return true;
   } catch (e) {
-    logger.e('❌ Error during initial setup: $e');
-    return false;
+    throw CustomException('Initial setup failed: $e');
   }
 }
 
@@ -950,66 +951,57 @@ Future<bool> _configureLauncherIconsAndSplashScreen(
   }
 }
 
+Future<void> applyCloneNativeConfig(
+  String clientId,
+  Map<String, dynamic> configJson,
+) async {
+  await applyBackgroundGeolocationLicenses(configJson);
+  await applyAndroidNotificationIcon(clientId, configJson);
+  await applyAndroidReleaseSigning(clientId, configJson);
+}
+
 /// Configures an application clone based on a provided [ConfigureCommandModel].
 ///
-/// This function orchestrates the entire configuration process for a specific
-/// client ID, including:
-/// - Saving the last used client ID.
-/// - Parsing the client's configuration file.
-/// - Performing initial setup steps (package renaming, Firebase integration, asset replacement).
-/// - Managing and updating application versions.
-/// - Running necessary build commands for launcher icons and splash screens.
-///
-/// It provides robust error handling and ensures that the process can be
-/// controlled by various flags within the [callModel].
-///
-/// [callModel] A [ConfigureCommandModel] containing the client ID and
-///             various configuration flags.
-///
-/// Returns a `Future<Map<String, dynamic>?>` representing the final
-/// configuration JSON if successful, or `null` if the process is cancelled
-/// or fails at any stage.
-///
-/// Throws an [Exception] if an unhandled error occurs during the configuration process.
+/// Validates first, then applies every mutation inside an all-or-nothing
+/// checkpoint. If Android fails after iOS (or any later step fails), previous
+/// iOS/Android/project files are restored and a single error is reported.
 Future<Map<String, dynamic>?> configureApp(
   ConfigureCommandModel callModel,
 ) async {
-  saveLastClientId(callModel.clientId!);
-  logger.i('🚀 Starting cloning process for client: ${callModel.clientId}');
+  logger.i('🚀 Configuring ${callModel.clientId}…');
 
   try {
-    // Parse configuration file
-    final Map<String, dynamic> configJson = await parseConfigFile(
-      callModel.clientId!,
-    );
+    final configJson = await parseConfigFile(callModel.clientId!);
     assertConfigureReady(callModel.clientId!, configJson);
 
-    // Step 1: Perform initial setup (rename, Firebase, assets)
-    if (!await _performInitialSetup(callModel, configJson)) {
-      return null;
-    }
+    return await runConfigureTransaction(() async {
+      await _performInitialSetup(callModel, configJson);
 
-    // Step 2: Handle version management
-    final finalVersion = await _handleVersionManagement(callModel, configJson);
-    if (finalVersion == null) {
-      return null;
-    }
+      final finalVersion = await _handleVersionManagement(
+        callModel,
+        configJson,
+      );
+      if (finalVersion == null) {
+        throw CustomException('Version update failed');
+      }
 
-    // Step 3: Run build commands
-    if (!await _configureLauncherIconsAndSplashScreen(configJson)) {
-      return null;
-    }
+      if (!await _configureLauncherIconsAndSplashScreen(configJson)) {
+        throw CustomException('Launcher icon or splash screen update failed');
+      }
 
-    await generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
-    await applyBackgroundGeolocationLicenses(configJson);
-    await applyAndroidNotificationIcon(callModel.clientId!, configJson);
-    await applyAndroidReleaseSigning(callModel.clientId!, configJson);
-    assertConfigureFinished(callModel.clientId!, configJson);
-
-    logger.i('✅ Successfully cloned app for ${callModel.clientId}!');
-    return configJson;
+      await generateCloneConfigFile(CloneConfigModel.fromJson(configJson));
+      await applyCloneNativeConfig(callModel.clientId!, configJson);
+      assertConfigureFinished(callModel.clientId!, configJson);
+      saveLastClientId(callModel.clientId!);
+      logger.i('✅ Configure finished for ${callModel.clientId}');
+      return configJson;
+    });
+  } on ConfigureRolledBackException catch (error) {
+    logger.e('❌ ${error.message}');
+    logger.i('↩️  Restored previous iOS, Android, and project files.');
+    rethrow;
   } catch (e) {
-    logger.e('❌ Error during cloning: $e');
+    logger.e('❌ Configure failed: $e');
     rethrow;
   }
 }

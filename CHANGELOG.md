@@ -1,3 +1,12 @@
+## 0.4.13 - 2026-09-08
+
+### ✨ Feature
+
+- `clonify configure` is all-or-nothing: snapshot iOS/Android/project files,
+  apply once, and restore everything if any later step fails
+- If Android signing fails after iOS licenses/files changed, iOS is reverted too
+- One success line or one error + restore message (no half-applied clone)
+
 ## 0.4.12 - 2026-09-08
 
 ### ✨ Feature

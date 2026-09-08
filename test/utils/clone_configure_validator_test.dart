@@ -654,6 +654,36 @@ void main() {
         ),
       );
     });
+
+    test('throws when androidKeyProperties key is blank', () {
+      expect(
+        () => assertAndroidSigningSource('client_a', {
+          androidKeyPropertiesConfigKey: '   ',
+        }),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('androidKeyProperties'),
+          ),
+        ),
+      );
+    });
+
+    test('throws when signing files exist but Gradle is missing', () {
+      writeCloneSigningSource();
+      Directory('android/app').createSync(recursive: true);
+      expect(
+        () => assertAndroidSigningSource('client_a', {}),
+        throwsA(
+          isA<CustomException>().having(
+            (error) => error.message,
+            'message',
+            contains('build.gradle'),
+          ),
+        ),
+      );
+    });
   });
 
   group('assertConfigureReady omitted keys', () {
