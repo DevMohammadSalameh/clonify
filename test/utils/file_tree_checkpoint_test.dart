@@ -76,6 +76,50 @@ void main() {
       expect(File('ios/a.txt').readAsStringSync(), 'new');
     });
 
+    test('preserves directory symlinks under ios', () {
+      Directory('ios/Flutter').createSync(recursive: true);
+      final target = Directory('ios/Flutter/real_pkg')..createSync();
+      File('${target.path}/info.txt').writeAsStringSync('PKG');
+      Link('ios/Flutter/pkg_link').createSync(target.path);
+      File('ios/Runner/Info.plist')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('OLD');
+
+      final checkpoint = FileTreeCheckpoint.capture(const ['ios']);
+      File('ios/Runner/Info.plist').writeAsStringSync('NEW');
+      checkpoint.restore();
+
+      expect(File('ios/Runner/Info.plist').readAsStringSync(), 'OLD');
+      expect(
+        FileSystemEntity.typeSync('ios/Flutter/pkg_link', followLinks: false),
+        FileSystemEntityType.link,
+      );
+      expect(Link('ios/Flutter/pkg_link').targetSync(), target.path);
+      expect(File('ios/Flutter/real_pkg/info.txt').readAsStringSync(), 'PKG');
+    });
+
+    test('does not snapshot Flutter ephemeral dirs', () {
+      File('ios/Flutter/ephemeral/Packages/.packages/marker.txt')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('EPHEMERAL');
+      File('ios/Runner/Info.plist')
+        ..createSync(recursive: true)
+        ..writeAsStringSync('OLD');
+      final checkpoint = FileTreeCheckpoint.capture(const ['ios']);
+      File('ios/Runner/Info.plist').writeAsStringSync('NEW');
+      File(
+        'ios/Flutter/ephemeral/Packages/.packages/marker.txt',
+      ).writeAsStringSync('CHANGED');
+      checkpoint.restore();
+      expect(File('ios/Runner/Info.plist').readAsStringSync(), 'OLD');
+      expect(
+        File(
+          'ios/Flutter/ephemeral/Packages/.packages/marker.txt',
+        ).readAsStringSync(),
+        'CHANGED',
+      );
+    });
+
     test('does not snapshot skipped Gradle cache dirs', () {
       File('android/.gradle/cache.bin')
         ..createSync(recursive: true)

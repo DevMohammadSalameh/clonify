@@ -30,6 +30,9 @@ const checkpointSkipDirectoryNames = <String>{
   'build',
   '.cxx',
   'captures',
+  // Flutter regenerates this; it also contains package symlinks that
+  // File.copySync cannot copy when they point at directories.
+  'ephemeral',
 };
 
 /// Thrown after a failed configure has restored the previous project files.
@@ -189,6 +192,15 @@ Future<T> runConfigureTransaction<T>(Future<T> Function() body) async {
 void _copyEntity(String sourcePath, String destPath) {
   final type = FileSystemEntity.typeSync(sourcePath, followLinks: false);
   if (type == FileSystemEntityType.notFound) return;
+  if (type == FileSystemEntityType.link) {
+    File(destPath).parent.createSync(recursive: true);
+    final existing = FileSystemEntity.typeSync(destPath, followLinks: false);
+    if (existing != FileSystemEntityType.notFound) {
+      _deleteEntity(destPath);
+    }
+    Link(destPath).createSync(Link(sourcePath).targetSync());
+    return;
+  }
   if (type == FileSystemEntityType.directory) {
     Directory(destPath).createSync(recursive: true);
     for (final child in Directory(sourcePath).listSync(followLinks: false)) {
@@ -209,6 +221,10 @@ void _deleteEntity(String path) {
     Directory(path).deleteSync(recursive: true);
     return;
   }
+  if (type == FileSystemEntityType.link) {
+    Link(path).deleteSync();
+    return;
+  }
   File(path).deleteSync();
 }
 
@@ -218,6 +234,10 @@ void _renameEntity(String sourcePath, String destPath) {
   File(destPath).parent.createSync(recursive: true);
   if (type == FileSystemEntityType.directory) {
     Directory(sourcePath).renameSync(destPath);
+    return;
+  }
+  if (type == FileSystemEntityType.link) {
+    Link(sourcePath).renameSync(destPath);
     return;
   }
   File(sourcePath).renameSync(destPath);
